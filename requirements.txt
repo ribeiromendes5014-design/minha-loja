@@ -1,0 +1,9 @@
+streamlit==1.36.0
+pandas==2.2.2
+plotly==5.22.0
+google-api-python-client==2.129.0
+google-auth==2.29.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+httplib2==0.22.0
+protobuf<5
