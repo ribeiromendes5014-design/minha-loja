@@ -374,6 +374,29 @@ if view == "Produtos":
 # =====================================
 # VENDAS
 # =====================================
+# =====================================
+# VENDAS
+# =====================================
+# Tópicos implementados nesta aba:
+# 1. Seleção do produto
+#    - Lista suspensa com os produtos cadastrados (ID + Nome).
+# 2. Quantidade
+#    - Campo numérico para escolher a quantidade.
+# 3. Forma de pagamento
+#    - Opções: Dinheiro, PIX, Cartão, Fiado.
+#    - Se escolher Cartão, o preço unitário é recalculado.
+#    - Se escolher Fiado, aparecem campos extras: Nome do cliente, Data prevista de pagamento.
+# 4. Total do pedido
+#    - Mostra o valor calculado automaticamente.
+# 5. Registro de venda
+#    - Botão Registrar venda para Dinheiro, PIX e Cartão.
+#    - Botão Confirmar fiado para vendas a prazo.
+#    - O estoque é atualizado automaticamente após cada venda.
+# 6. Últimas vendas
+#    - Tabela exibindo as vendas registradas, ordenadas por data.
+# 7. Excluir venda
+#    - Seletor de ID de venda.
+#    - Botão Excluir venda que remove do CSV e atualiza a sessão.
 if view == "Vendas":
     show_logo("main")
     st.header("🧾 Vendas")
