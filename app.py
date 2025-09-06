@@ -746,9 +746,8 @@ if view == "Vendas":
         st.info("Novo pedido iniciado.")
 
     if b3.button("↩️ Devolução"):
-        st.info("Devolução ainda não implementada.")
+    st.info("Devolução ainda não implementada.")
 
-    
 if b4.button("📦 Fechar Caixa"):
     hoje = str(date.today())
     vendas_dia = vendas[vendas["Data"] == hoje]
@@ -778,11 +777,12 @@ if b4.button("📦 Fechar Caixa"):
         st.session_state["caixas"] = caixas
         st.success(f"Caixa do dia {hoje} fechado!")
         st.info("Caixa fechado (simulação).")
-if b5.button("✏️ Editar Pedido"):
-        st.info("Edite as quantidades acima e remova itens com o ícone 🗑️.")
 
-    if b6.button("❌ Sair"):
-        st.stop()
+if b5.button("✏️ Editar Pedido"):
+    st.info("Edite as quantidades acima e remova itens com o ícone 🗑️.")
+
+if b6.button("❌ Sair"):
+    st.stop()
 
     # Histórico com exclusão de venda
     st.markdown("### Últimas vendas")
