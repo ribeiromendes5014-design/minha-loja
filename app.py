@@ -451,14 +451,15 @@ if view == "Dashboard":
                         """, unsafe_allow_html=True)
 
     st.markdown("### Últimas vendas")
-    st.dataframe(vendas.sort_values(by=["Data","IDVenda"], ascending=False)
+st.dataframe(vendas.sort_values(by=["Data","IDVenda"], ascending=False), use_container_width=True)
 
-    st.markdown("### 📦 Relatórios de Caixa")
-    caixas = norm_caixas(pd.DataFrame())
-    if caixas.empty:
-        st.info("Nenhum fechamento de caixa registrado ainda.")
-    else:
-        st.dataframe(caixas.sort_values("Data", ascending=False), use_container_width=True).head(50), use_container_width=True)
+st.markdown("### 📦 Relatórios de Caixa")
+caixas = norm_caixas(pd.DataFrame())
+if caixas.empty:
+    st.info("Nenhum fechamento de caixa registrado ainda.")
+else:
+    st.dataframe(caixas.sort_values("Data", ascending=False).head(50), use_container_width=True)
+
 
 # =====================================
 # PRODUTOS
