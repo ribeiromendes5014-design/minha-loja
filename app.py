@@ -9,25 +9,21 @@ from io import BytesIO
 # =====================================
 # Funções auxiliares
 # =====================================
-def central_crop(image_bytes, scale=0.8):
+def central_crop(image_input, scale=0.8):
     """
     Recorta o centro da imagem para simular zoom digital.
-    scale = fração da largura/altura mantida (0.8 = menos zoom, 0.5 = mais zoom).
     """
+    # Se vier um UploadedFile do Streamlit
+    if hasattr(image_input, "getvalue"):
+        image_bytes = image_input.getvalue()
+    else:
+        image_bytes = image_input
 
-    # Converte para bytes em diferentes cenários
-    if hasattr(image_bytes, "read"):  
-        # Caso seja UploadedFile (streamlit)
-        image_bytes = image_bytes.read()
-    elif hasattr(image_bytes, "getvalue"):  
-        # Caso seja memory buffer do streamlit
-        image_bytes = image_bytes.getvalue()
-    elif hasattr(image_bytes, "tobytes"):
+    if hasattr(image_bytes, "tobytes"):
         image_bytes = image_bytes.tobytes()
     elif isinstance(image_bytes, memoryview):
         image_bytes = bytes(image_bytes)
 
-    # Agora sempre teremos bytes crus
     img = Image.open(BytesIO(image_bytes)).convert("RGB")
     w, h = img.size
     new_w, new_h = int(w * scale), int(h * scale)
@@ -40,7 +36,6 @@ def central_crop(image_bytes, scale=0.8):
     buf = BytesIO()
     cropped.save(buf, format="PNG")
     return buf.getvalue()
-
 
 
 
