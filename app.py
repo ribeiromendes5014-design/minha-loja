@@ -67,7 +67,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 
-def gerar_pdf_caixa(dados_caixa: dict, path: str):
+def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
     """Gera um relatório PDF de fechamento de caixa"""
     doc = SimpleDocTemplate(path, pagesize=A4)
     styles = getSampleStyleSheet()
