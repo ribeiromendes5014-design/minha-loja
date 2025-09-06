@@ -752,10 +752,6 @@ if view == "Vendas":
     hoje = str(date.today())
     vendas_dia = vendas[vendas["Data"] == hoje]
 
-    if b4.button("📦 Fechar Caixa"):
-    hoje = str(date.today())
-    vendas_dia = vendas[vendas["Data"] == hoje]
-
     if vendas_dia.empty:
         st.warning("Nenhuma venda registrada hoje.")
     else:
