@@ -299,14 +299,20 @@ def ler_codigo_barras(image_bytes):
         # Faz a leitura
         results = reader.decode(temp_path)
 
-st.write("Debug ZXing:", results)  
+        # Debug - mostra o retorno cru do ZXing
+        st.write("Debug ZXing:", results)
 
-codigos = []
-if results:
-    for r in results:
-        if "parsed" in r and r["parsed"]:
-            codigos.append(r["parsed"])
-return codigos
+        codigos = []
+        if results:
+            for r in results:
+                if "parsed" in r and r["parsed"]:
+                    codigos.append(r["parsed"])
+        return codigos
+
+    except Exception as e:
+        st.error(f"Erro ao ler código de barras: {e}")
+        return []
+
 
 # =====================================
 # Utilidades de persistência (CSV)
