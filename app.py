@@ -1228,7 +1228,49 @@ if view == "Promoções":
                     save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
                     st.session_state["promocoes"] = promocoes
                     st.success("Promoção cadastrada!")
+    # --- PRODUTOS PARADOS ---
+    st.subheader("📦 Produtos parados sem vendas")
+    dias_sem_venda = st.number_input("Considerar parados após quantos dias?", min_value=1, max_value=365, value=30)
 
+    # calcular última venda de cada produto
+    if not vendas.empty:
+        vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
+        ultima_venda = vendas.groupby("IDProduto")["Data"].max().reset_index()
+        ultima_venda.columns = ["IDProduto", "UltimaVenda"]
+    else:
+        ultima_venda = pd.DataFrame(columns=["IDProduto","UltimaVenda"])
+
+    produtos_parados = produtos.merge(ultima_venda, left_on="ID", right_on="IDProduto", how="left")
+    produtos_parados["UltimaVenda"].fillna(pd.Timestamp("1900-01-01"), inplace=True)
+
+    limite = datetime.now() - timedelta(days=int(dias_sem_venda))
+    produtos_parados = produtos_parados[produtos_parados["UltimaVenda"] < limite]
+
+    if produtos_parados.empty:
+        st.info("Nenhum produto parado encontrado nesse período.")
+    else:
+        st.dataframe(produtos_parados[["ID","Nome","Quantidade","UltimaVenda"]])
+
+        desconto_auto = st.number_input("Desconto automático (%)", min_value=1, max_value=100, value=20)
+        dias_validade = st.number_input("Duração da promoção (dias)", min_value=1, max_value=90, value=7)
+
+        if st.button("🔥 Criar promoção automática para produtos parados"):
+            for _, row in produtos_parados.iterrows():
+                novo = {
+                    "ID": prox_id(promocoes, "ID"),
+                    "IDProduto": str(row["ID"]),
+                    "NomeProduto": row["Nome"],
+                    "Desconto": float(desconto_auto),
+                    "DataInicio": str(date.today()),
+                    "DataFim": str(date.today() + timedelta(days=int(dias_validade))),
+                }
+                promocoes = pd.concat([promocoes, pd.DataFrame([novo])], ignore_index=True)
+
+            save_csv_github(promocoes, ARQ_PROMOCOES, "Criando promoções automáticas de produtos parados")
+            st.session_state["promocoes"] = promocoes
+            st.success(f"Promoções criadas para {len(produtos_parados)} produtos parados!")
+
+    
     st.markdown("### Lista de promoções")
     if promocoes.empty:
         st.info("Nenhuma promoção cadastrada.")
