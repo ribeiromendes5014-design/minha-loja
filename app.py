@@ -1,4 +1,4 @@
-
+    
 import streamlit as st
 import pandas as pd
 from datetime import datetime, date, timedelta
@@ -747,6 +747,10 @@ if view == "Vendas":
 
     if b3.button("↩️ Devolução"):
         st.info("Devolução ainda não implementada.")
+
+    if b4.button("📦 Fechar Caixa"):
+    hoje = str(date.today())
+    vendas_dia = vendas[vendas["Data"] == hoje]
 
     if b4.button("📦 Fechar Caixa"):
     hoje = str(date.today())
