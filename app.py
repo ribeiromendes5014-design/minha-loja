@@ -631,7 +631,27 @@ if view == "Dashboard":
     if caixas.empty:
         st.info("Nenhum fechamento de caixa registrado ainda.")
     else:
-        st.dataframe(caixas.sort_values("Data", ascending=False).head(50), use_container_width=True)
+        # --- FILTRO POR DATA ---
+    st.subheader("🔍 Filtro de Caixa por Data")
+    datas_disp = sorted(caixas["Data"].unique(), reverse=True)
+    data_sel = st.selectbox("Selecione a data do caixa", ["Todas"] + datas_disp)
+
+    caixas_filtrados = caixas.copy()
+    if data_sel != "Todas":
+        caixas_filtrados = caixas_filtrados[caixas_filtrados["Data"] == data_sel]
+
+    st.dataframe(caixas_filtrados.sort_values("Data", ascending=False), use_container_width=True)
+
+    # --- EXCLUSÃO DE RELATÓRIO ---
+    st.subheader("🗑️ Excluir Relatório de Caixa")
+    if not caixas_filtrados.empty:
+        ids = caixas_filtrados["Data"].tolist()
+        del_data = st.selectbox("Selecione a data do relatório para excluir", ids)
+        if st.button("Excluir Relatório de Caixa"):
+            caixas = caixas[caixas["Data"] != del_data]
+            st.session_state["caixas"] = caixas
+            save_csv_github(caixas, ARQ_CAIXAS, f"Excluindo relatório de caixa {del_data}")
+            st.warning(f"Relatório de caixa de {del_data} excluído!")
 
 
 # =====================================
