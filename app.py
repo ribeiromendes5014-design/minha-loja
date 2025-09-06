@@ -675,51 +675,51 @@ if view == "Vendas":
     colC.metric("Troco", brl(troco if forma == "Dinheiro" else 0.0))
 
     st.markdown("---")
-    b1, b2, b3, b4, b5, b6 = st.columns(6)
+b1, b2, b3, b4, b5 = st.columns(5)
 
-    if b1.button("✅ Finalizar Venda"):
-        # ... código de finalizar venda ...
+if b1.button("✅ Finalizar Venda"):
+    # ... código de finalizar venda ...
 
-    if b2.button("🆕 Nova Venda"):
-        st.session_state["pedido_atual"] = []
-        st.session_state["valor_pago"] = 0.0
-        st.info("Novo pedido iniciado.")
+if b2.button("🆕 Nova Venda"):
+    st.session_state["pedido_atual"] = []
+    st.session_state["valor_pago"] = 0.0
+    st.info("Novo pedido iniciado.")
 
-    if b4.button("📦 Fechar Caixa"):
-        hoje = str(date.today())
-        vendas_dia = vendas[vendas["Data"] == hoje]
+if b3.button("📦 Fechar Caixa"):
+    hoje = str(date.today())
+    vendas_dia = vendas[vendas["Data"] == hoje]
 
-        if vendas_dia.empty:
-            st.warning("Nenhuma venda registrada hoje.")
-        else:
-            total = vendas_dia["Total"].sum()
-            dinheiro = vendas_dia[vendas_dia["FormaPagamento"]=="Dinheiro"]["Total"].sum()
-            pix = vendas_dia[vendas_dia["FormaPagamento"]=="PIX"]["Total"].sum()
-            cartao = vendas_dia[vendas_dia["FormaPagamento"]=="Cartão"]["Total"].sum()
-            fiado = vendas_dia[vendas_dia["FormaPagamento"]=="Fiado"]["Total"].sum()
+    if vendas_dia.empty:
+        st.warning("Nenhuma venda registrada hoje.")
+    else:
+        total = vendas_dia["Total"].sum()
+        dinheiro = vendas_dia[vendas_dia["FormaPagamento"]=="Dinheiro"]["Total"].sum()
+        pix = vendas_dia[vendas_dia["FormaPagamento"]=="PIX"]["Total"].sum()
+        cartao = vendas_dia[vendas_dia["FormaPagamento"]=="Cartão"]["Total"].sum()
+        fiado = vendas_dia[vendas_dia["FormaPagamento"]=="Fiado"]["Total"].sum()
 
-            caixas = norm_caixas(pd.DataFrame())
-            caixas = caixas[caixas["Data"] != hoje]  # remove se já existir
-            novo = {
-                "Data": hoje,
-                "FaturamentoTotal": total,
-                "Dinheiro": dinheiro,
-                "PIX": pix,
-                "Cartão": cartao,
-                "Fiado": fiado,
-                "Status": "Fechado"
-            }
-            caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
-            save_csv(caixas, "caixas.csv")
-            st.session_state["caixas"] = caixas
-            st.success(f"Caixa do dia {hoje} fechado!")
-            st.info("Caixa fechado (simulação).")
+        caixas = norm_caixas(pd.DataFrame())
+        caixas = caixas[caixas["Data"] != hoje]  # remove se já existir
+        novo = {
+            "Data": hoje,
+            "FaturamentoTotal": total,
+            "Dinheiro": dinheiro,
+            "PIX": pix,
+            "Cartão": cartao,
+            "Fiado": fiado,
+            "Status": "Fechado"
+        }
+        caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
+        save_csv(caixas, "caixas.csv")
+        st.session_state["caixas"] = caixas
+        st.success(f"Caixa do dia {hoje} fechado!")
+        st.info("Caixa fechado (simulação).")
 
-    if b5.button("✏️ Editar Pedido"):
-        st.info("Edite as quantidades acima e remova itens com o ícone 🗑️.")
+if b4.button("✏️ Editar Pedido"):
+    st.info("Edite as quantidades acima e remova itens com o ícone 🗑️.")
 
-    if b6.button("❌ Sair"):
-        st.stop()
+if b5.button("❌ Sair"):
+    st.stop()
 
     # Histórico com exclusão de venda
     st.markdown("### Últimas vendas")
