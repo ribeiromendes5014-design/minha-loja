@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime, date, timedelta
 import os
 from pyzxing import BarCodeReader
+from github import Github
 
 # =====================================
 # Configurações básicas
@@ -28,10 +29,10 @@ FOTOS_DIR = "foto_produtos"
 os.makedirs(FOTOS_DIR, exist_ok=True)
 
 # =====================================
-# Salvar CSV no GitHub (somente produtos)
+# Salvar CSV no GitHub (genérico)
 # =====================================
-def save_csv_github(df: pd.DataFrame, path="produtos.csv", mensagem="Atualizando produtos"):
-    """Salva DataFrame CSV no GitHub e também localmente (backup)."""
+def save_csv_github(df: pd.DataFrame, path="produtos.csv", mensagem="Atualizando CSV"):
+    """Salva DataFrame CSV localmente e no GitHub."""
     # Sempre salva local
     df.to_csv(path, index=False)
 
@@ -42,17 +43,20 @@ def save_csv_github(df: pd.DataFrame, path="produtos.csv", mensagem="Atualizando
 
         g = Github(token)
         repo = g.get_repo(repo_name)
+        branch = repo.default_branch  # ✅ agora usa branch padrão automaticamente
+
         content = df.to_csv(index=False)
 
         try:
-            contents = repo.get_contents(path, ref="main")
-            repo.update_file(contents.path, mensagem, content, contents.sha, branch="main")
+            contents = repo.get_contents(path, ref=branch)
+            repo.update_file(contents.path, mensagem, content, contents.sha, branch=branch)
+            st.info(f"✅ CSV atualizado no GitHub ({path}, branch {branch})")
         except Exception:
-            repo.create_file(path, mensagem, content, branch="main")
+            repo.create_file(path, mensagem, content, branch=branch)
+            st.info(f"✅ CSV criado no GitHub ({path}, branch {branch})")
 
     except Exception as e:
         st.error(f"❌ Erro ao salvar no GitHub: {e}")
-
 
 
 # =====================================
