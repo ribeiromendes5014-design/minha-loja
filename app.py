@@ -931,11 +931,27 @@ with st.expander("Cadastrar novo produto"):
         foto_url = st.text_input("URL da Foto (opcional)")
         foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png", "jpg", "jpeg"])
 
-        # Campo Código de Barras com session_state
+        # Campo Código de Barras com suporte a session_state
         if "codigo_barras" not in st.session_state:
             st.session_state["codigo_barras"] = ""
 
         codigo_barras = st.text_input("Código de Barras", value=st.session_state["codigo_barras"])
+
+        # Função embutida para zoom digital (crop central)
+        def central_crop(image_bytes, scale=0.6):
+            from PIL import Image
+            import io
+            img = Image.open(io.BytesIO(image_bytes))
+            w, h = img.size
+            new_w, new_h = int(w * scale), int(h * scale)
+            left = (w - new_w) // 2
+            top = (h - new_h) // 2
+            right = left + new_w
+            bottom = top + new_h
+            cropped = img.crop((left, top, right, bottom))
+            buf = io.BytesIO()
+            cropped.save(buf, format="PNG")
+            return buf.getvalue()
 
         # Leitura via câmera (com zoom digital no centro)
         foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
@@ -980,6 +996,7 @@ with st.expander("Cadastrar novo produto"):
         st.session_state["produtos"] = produtos
         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
         st.success("Produto cadastrado!")
+
 
 
     # --- Lista de produtos (fora do expander) ---
