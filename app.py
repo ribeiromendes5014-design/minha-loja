@@ -20,6 +20,7 @@ ARQ_VENDAS    = "vendas.csv"
 ARQ_CLIENTES  = "clientes.csv"
 ARQ_USUARIOS  = "usuarios.csv"
 ARQ_PROMOCOES = "promocoes.csv"
+ARQ_CAIXAS = "caixas.csv"
 
 FATOR_CARTAO  = 0.8872  # preco_cartao = preco_vista / FATOR_CARTAO
 ESTOQUE_MINIMO_PADRAO = 5
