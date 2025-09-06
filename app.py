@@ -980,7 +980,7 @@ with st.expander("Cadastrar novo produto"):
 
         codigo_barras = st.text_input("Código de Barras", value=st.session_state["codigo_barras"])
 
-        # Slider para ajustar o zoom digital
+        # Slider para zoom digital
         zoom_scale = st.slider("🔍 Zoom digital (corte central)", 0.4, 1.0, 0.8, 0.05)
 
         # Leitura via câmera
