@@ -931,18 +931,19 @@ with st.expander("Cadastrar novo produto"):
         foto_url = st.text_input("URL da Foto (opcional)")
         foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png","jpg","jpeg"])
 
-        from pyzbar.pyzbar import decode
-from PIL import Image
-import io
+        from pyzxing import BarCodeReader
+import tempfile
 
-# Função para ler código de barras
+# Função para ler código de barras (usando pyzxing)
 def ler_codigo_barras(imagem_bytes):
     try:
-        img = Image.open(io.BytesIO(imagem_bytes))
-        decoded_objects = decode(img)
-        if decoded_objects:
-            return decoded_objects[0].data.decode("utf-8")
-        else:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            tmp.write(imagem_bytes)
+            tmp.flush()
+            reader = BarCodeReader()
+            result = reader.decode(tmp.name)
+            if result and "parsed" in result[0]:
+                return result[0]["parsed"]
             return None
     except Exception as e:
         st.error(f"Erro ao ler código de barras: {e}")
@@ -980,7 +981,6 @@ with st.expander("Cadastrar novo produto"):
         if foto_codigo is not None:
             codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
             if codigo_lido:
-                # atualiza o campo automaticamente
                 st.session_state["codigo_barras_cadastro"] = codigo_lido
                 st.success(f"Código lido: {codigo_lido}")
             else:
@@ -1013,7 +1013,7 @@ with st.expander("Cadastrar novo produto"):
             produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
             st.session_state["produtos"] = produtos
             save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-            st.success("Produto cadastrado!")
+            st.success("✅ Produto cadastrado!")
 
 
 
