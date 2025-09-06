@@ -1311,7 +1311,7 @@ with open(caminho_pdf, "rb") as f:
             else:
                 st.warning("Venda não encontrada.")
     
-            else:
+    else:
         st.info("Ainda não há vendas registradas.")
 
 # =====================================
