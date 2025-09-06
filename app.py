@@ -1236,8 +1236,6 @@ with open(caminho_pdf, "rb") as f:
     components.html(pdf_display, height=700)
 
 
-
-
     # --- NOVA VENDA ---
     if b2.button("🆕 Nova Venda"):
         st.session_state["pedido_atual"] = []
