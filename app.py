@@ -934,15 +934,19 @@ with st.expander("Cadastrar novo produto"):
 
         # Leitura via câmera (código de barras ou QR)
         foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
-        if foto_codigo is not None:
-            codigos_lidos = ler_codigo_barras(foto_codigo.getbuffer())
-            if codigos_lidos:
-                codigo_barras = codigos_lidos[0]  # usa o primeiro encontrado
-                st.success(f"Código lido: {codigo_barras}")
-                if len(codigos_lidos) > 1:
-                    st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
-            else:
-                st.error("Não foi possível ler nenhum código.")
+if foto_codigo is not None:
+    try:
+        codigos_lidos = ler_codigo_barras(foto_codigo.getbuffer())
+        st.write("Debug: Imagem recebida, tamanho (bytes):", len(foto_codigo.getbuffer()))
+        if codigos_lidos:
+            codigo_barras = codigos_lidos[0]
+            st.success(f"Código lido: {codigo_barras}")
+            if len(codigos_lidos) > 1:
+                st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
+        else:
+            st.error("❌ Não foi possível ler nenhum código. Tente aproximar, melhorar iluminação ou verificar dependências do ZBar.")
+    except Exception as e:
+        st.error(f"Erro na leitura: {e}")
 
         if st.button("Adicionar produto"):
             novo_id = prox_id(produtos, "ID")
