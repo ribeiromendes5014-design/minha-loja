@@ -151,46 +151,53 @@ def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
 # =====================================
 # Relatório PDF de Venda (Recibo estilo cupom)
 # =====================================
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 from reportlab.lib.units import mm
+from datetime import datetime
 
 def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.lib import colors
-    from datetime import datetime
-
-    # 📐 Define tamanho da página: 1080x1920 px
-    doc = SimpleDocTemplate(path, pagesize=(810, 1440))  
+    """Gera um PDF estilo cupom (como o exemplo Doce&Bella)"""
+    # 📐 Tamanho tipo recibo (largura pequena, altura grande)
+    doc = SimpleDocTemplate(path, pagesize=(80*mm, 200*mm),
+                            rightMargin=10, leftMargin=10,
+                            topMargin=10, bottomMargin=10)
 
     styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name="NormalCenter", fontSize=9, alignment=1))
+    styles.add(ParagraphStyle(name="BoldCenter", fontSize=10, alignment=1, spaceAfter=6))
+    styles.add(ParagraphStyle(name="BoldLeft", fontSize=10, alignment=0, spaceAfter=6))
+    styles.add(ParagraphStyle(name="Total", fontSize=12, alignment=1, spaceBefore=6, spaceAfter=6, leading=14))
+
     story = []
 
-    # --- Cabeçalho / Logo ---
+    # --- Logo ---
     logo = get_logo_source()
     if logo:
         try:
-            story.append(Image(logo, width=300, height=120))  # ajusta logo proporcional
+            story.append(Image(logo, width=55*mm, height=20*mm))
         except Exception:
-            story.append(Paragraph("Minha Loja", styles["Title"]))
+            story.append(Paragraph("Minha Loja", styles["BoldCenter"]))
     else:
-        story.append(Paragraph("Minha Loja", styles["Title"]))
+        story.append(Paragraph("Minha Loja", styles["BoldCenter"]))
 
-    story.append(Spacer(1, 20))
-    story.append(Paragraph("📞 (41) 99168-6525", styles["Normal"]))
-    story.append(Paragraph("📷 @docebellacosmetico", styles["Normal"]))
-    story.append(Spacer(1, 30))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("📞 (41) 99168-6525", styles["NormalCenter"]))
+    story.append(Paragraph("📷 @docebellacosmetico", styles["NormalCenter"]))
+    story.append(Spacer(1, 10))
 
-    # --- Dados da venda ---
+    # --- Seleciona venda ---
     venda_sel = vendas[vendas["IDVenda"].astype(int) == int(venda_id)]
     if venda_sel.empty:
-        story.append(Paragraph("Venda não encontrada.", styles["Normal"]))
+        story.append(Paragraph("Venda não encontrada.", styles["NormalCenter"]))
         doc.build(story)
         return
 
     venda_info = venda_sel.iloc[0]
-    story.append(Paragraph(f"<b>Data:</b> {venda_info['Data']}", styles["Heading3"]))
-    story.append(Paragraph(f"<b>Forma de Pagamento:</b> {venda_info['FormaPagamento']}", styles["Heading3"]))
-    story.append(Spacer(1, 20))
+    story.append(Paragraph(f"<b>Data:</b> {venda_info['Data']}", styles["BoldLeft"]))
+    story.append(Paragraph(f"<b>Forma de Pagamento:</b> {venda_info['FormaPagamento']}", styles["BoldLeft"]))
+    story.append(Spacer(1, 10))
 
     # --- Produtos ---
     tabela = [["Produto", "Qtd", "Preço Unit.", "Total"]]
@@ -201,25 +208,37 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
             f"R$ {float(row['PrecoUnitario']):.2f}",
             f"R$ {float(row['Total']):.2f}",
         ])
-    t = Table(tabela, colWidths=[300, 100, 200, 200])
+
+    t = Table(tabela, colWidths=[80*mm*0.4, 80*mm*0.15, 80*mm*0.2, 80*mm*0.25])
     t.setStyle(TableStyle([
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("LINEABOVE", (0, 0), (-1, 0), 0.5, colors.black),   # linha acima cabeçalho
+        ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.black),   # linha abaixo cabeçalho
         ("ALIGN", (1, 1), (-1, -1), "CENTER"),
-        ("FONTSIZE", (0, 0), (-1, -1), 12),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
     ]))
     story.append(t)
-    story.append(Spacer(1, 30))
 
     # --- Total ---
     valor_total = venda_sel["Total"].sum()
-    story.append(Paragraph(f"<b>Valor Total: R$ {valor_total:.2f}</b>", styles["Heading2"]))
-    story.append(Spacer(1, 30))
+    story.append(Spacer(1, 6))
+    story.append(Table(
+        [["", f"Valor Total: R$ {valor_total:.2f}"]],
+        colWidths=[80*mm*0.4, 80*mm*0.6],
+        style=[
+            ("LINEABOVE", (0, 0), (-1, 0), 0.5, colors.black),
+            ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.black),
+            ("FONTNAME", (1, 0), (1, 0), "Helvetica-Bold"),
+            ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+            ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ]
+    ))
+    story.append(Spacer(1, 10))
 
     # --- Mensagem final ---
-    story.append(Paragraph("Obrigado pela sua compra, volte sempre!", styles["Normal"]))
-    story.append(Spacer(1, 20))
-    story.append(Paragraph(datetime.now().strftime("%d/%m/%Y %H:%M:%S"), styles["Normal"]))
+    story.append(Paragraph("Obrigado pela sua compra,<br/>volte sempre!", styles["NormalCenter"]))
+    story.append(Spacer(1, 10))
+    story.append(Paragraph(datetime.now().strftime("%d/%m/%Y %H:%M:%S"), styles["NormalCenter"]))
 
     doc.build(story)
 
