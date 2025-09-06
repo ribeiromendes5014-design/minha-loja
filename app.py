@@ -1275,12 +1275,12 @@ with open(caminho_pdf, "rb") as f:
 
 
     # Histórico com exclusão de venda
-    st.markdown("### Últimas vendas")
-    if not vendas.empty:
-        ult = vendas.sort_values(by=["Data","IDVenda"], ascending=False).head(100)
-        st.dataframe(ult, use_container_width=True)
+st.markdown("### Últimas vendas")
+if not vendas.empty:
+    ult = vendas.sort_values(by=["Data","IDVenda"], ascending=False).head(100)
+    st.dataframe(ult, use_container_width=True)
 
-            # Conversão robusta para IDs de venda
+    # Conversão robusta para IDs de venda
     ids_series = pd.to_numeric(vendas["IDVenda"], errors="coerce").dropna().astype(int)
     ids = sorted(ids_series.unique().tolist(), reverse=True)
 
@@ -1313,6 +1313,7 @@ with open(caminho_pdf, "rb") as f:
 
 else:
     st.info("Ainda não há vendas registradas.")
+
 
 # =====================================
 # CLIENTES (Fiado) com busca por CB
