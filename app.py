@@ -878,6 +878,7 @@ if view == "Vendas":
         colx, coly = st.columns([3,1])
         with colx:
             id_excluir = st.selectbox("Selecione a venda para excluir (devolve estoque)", ids if ids else [0])
+        
         with coly:
 if st.button("Excluir venda"):
     if id_excluir in ids:
