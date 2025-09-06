@@ -99,23 +99,6 @@ def gerar_pdf_caixa(dados_caixa: dict, path: str):
     story.append(t)
 
     doc.build(story)
-No Dashboard → Relatórios de Caixa, depois do filtro de datas, adicione o botão para gerar e baixar PDF:
-
-python
-Copiar código
-        # --- GERAR PDF ---
-    if data_sel != "Todas" and not caixas_filtrados.empty:
-        caixa_sel = caixas_filtrados.iloc[0].to_dict()
-        if st.button("📄 Gerar PDF do Caixa Selecionado"):
-            caminho_pdf = f"caixa_{caixa_sel['Data']}.pdf"
-            gerar_pdf_caixa(caixa_sel, caminho_pdf)
-            with open(caminho_pdf, "rb") as f:
-                st.download_button(
-                    label=f"⬇️ Baixar Relatório de Caixa ({caixa_sel['Data']})",
-                    data=f,
-                    file_name=caminho_pdf,
-                    mime="application/pdf"
-                )
 
 # =====================================
 # Leitura de Código de Barras (pyzxing)
