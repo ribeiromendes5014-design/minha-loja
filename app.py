@@ -63,6 +63,37 @@ def ensure_csv(path: str, columns: list, defaults: dict = None) -> pd.DataFrame:
 
 def save_csv(df: pd.DataFrame, path: str):
     df.to_csv(path, index=False)
+# =====================================
+# Salvar CSV no GitHub (somente produtos)
+# =====================================
+from github import Github
+
+def save_csv_github(df: pd.DataFrame, path="produtos.csv", mensagem="Atualizando produtos"):
+    """Salva DataFrame CSV no GitHub e também localmente (backup)."""
+    # Sempre salva local
+    df.to_csv(path, index=False)
+
+    try:
+        gh = st.secrets["github"]
+        token = gh["token"]
+        repo_name = gh["repo"]
+
+        g = Github(token)
+        repo = g.get_repo(repo_name)
+        content = df.to_csv(index=False)
+
+        try:
+            contents = repo.get_contents(path, ref="main")
+            repo.update_file(contents.path, mensagem, content, contents.sha, branch="main")
+        except Exception:
+            repo.create_file(path, mensagem, content, branch="main")
+
+    except Exception as e:
+        st.error(f"❌ Erro ao salvar no GitHub: {e}")
+
+
+
+
 
 def to_float(x, default=0.0):
     try:
