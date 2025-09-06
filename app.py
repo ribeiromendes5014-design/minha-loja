@@ -931,19 +931,20 @@ with st.expander("Cadastrar novo produto"):
         foto_url = st.text_input("URL da Foto (opcional)")
         foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png", "jpg", "jpeg"])
 
-        # Campo Código de Barras com suporte a preenchimento automático
+        # Campo Código de Barras com session_state
         if "codigo_barras" not in st.session_state:
             st.session_state["codigo_barras"] = ""
 
         codigo_barras = st.text_input("Código de Barras", value=st.session_state["codigo_barras"])
 
-        # Leitura via câmera (código de barras ou QR)
+        # Leitura via câmera (com zoom digital no centro)
         foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
         if foto_codigo is not None:
-            codigos_lidos = ler_codigo_barras(foto_codigo.getbuffer())
+            imagem_cortada = central_crop(foto_codigo.getbuffer(), scale=0.6)
+            codigos_lidos = ler_codigo_barras(imagem_cortada)
             st.write("Debug: Imagem recebida, tamanho (bytes):", len(foto_codigo.getbuffer()))
             if codigos_lidos:
-                st.session_state["codigo_barras"] = codigos_lidos[0]  # Preenche automaticamente o campo
+                st.session_state["codigo_barras"] = codigos_lidos[0]
                 st.success(f"Código lido: {st.session_state['codigo_barras']}")
                 if len(codigos_lidos) > 1:
                     st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
