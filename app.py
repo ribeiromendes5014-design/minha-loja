@@ -5,57 +5,46 @@ from datetime import datetime, date, timedelta
 import os
 
 from pyzxing import BarCodeReader
-from PIL import Image
-import os, io
-
 reader = BarCodeReader()
 
-def ler_codigo_barras(imagem_bytes):
+def ler_codigos_pyzxing(image_bytes) -> list[str]:
+    """Retorna todos os códigos encontrados (lista de strings)."""
     try:
-        temp_file = "temp_code.png"
-        with open(temp_file, "wb") as f:
-            f.write(imagem_bytes)
+        # normaliza para bytes
+        if hasattr(image_bytes, "getvalue"):
+            image_bytes = image_bytes.getvalue()
+        elif isinstance(image_bytes, memoryview):
+            image_bytes = image_bytes.tobytes()
 
-        result = reader.decode(temp_file, try_harder=True)
+        temp_file = "temp_barcode.png"
+        with open(temp_file, "wb") as f:
+            f.write(image_bytes)
+
+        res = reader.decode(temp_file, try_harder=True)
         os.remove(temp_file)
 
-        if result:
-            return [r["parsed"] for r in result if "parsed" in r]
-        return None
+        if not res:
+            return []
+        out = []
+        for r in res:
+            v = r.get("parsed") or r.get("raw") or ""
+            v = str(v).strip()
+            if v:
+                out.append(v)
+        # remove duplicados preservando ordem
+        seen = set(); uniq = []
+        for v in out:
+            if v not in seen:
+                seen.add(v); uniq.append(v)
+        return uniq
     except Exception as e:
-        print("Erro ao ler código:", e)
-        return None
+        st.error(f"Erro ao ler código: {e}")
+        return []
 
-
-def central_crop(image_bytes, scale=0.8):
-    """
-    Recorta o centro da imagem para simular zoom digital.
-    Usa arquivo temporário para suportar webp do st.camera_input.
-    """
-    # Converte memoryview -> bytes
-    if hasattr(image_bytes, "tobytes"):
-        image_bytes = image_bytes.tobytes()
-    elif isinstance(image_bytes, memoryview):
-        image_bytes = bytes(image_bytes)
-
-    # Salva num arquivo temporário (corrige bug do webp no PIL no Streamlit Cloud)
-    temp_file = "temp_capture.webp"
-    with open(temp_file, "wb") as f:
-        f.write(image_bytes)
-
-    # Abre do arquivo e converte para RGB
-    img = Image.open(temp_file).convert("RGB")
-    w, h = img.size
-    new_w, new_h = int(w * scale), int(h * scale)
-    left = (w - new_w) // 2
-    top = (h - new_h) // 2
-    right = left + new_w
-    bottom = top + new_h
-    cropped = img.crop((left, top, right, bottom))
-
-    buf = io.BytesIO()
-    cropped.save(buf, format="PNG")
-    return buf.getvalue()
+def ler_codigo_um(image_bytes) -> str | None:
+    """Conveniência: retorna só o primeiro código, ou None."""
+    lst = ler_codigos_pyzxing(image_bytes)
+    return lst[0] if lst else None
 
 
 
