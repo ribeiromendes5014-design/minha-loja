@@ -1141,11 +1141,9 @@ if view == "Vendas":
 b1, b2, b3, b4, b5, b6 = st.columns(6)
 
 # --- FINALIZAR VENDA ---
-with b1:
-    if st.button("✅ Finalizar Venda"):
-        if not st.session_state["pedido_atual"]:
-            st.warning("Adicione itens ao pedido.")
-    
+if b1.button("✅ Finalizar Venda"):
+    if not st.session_state["pedido_atual"]:
+        st.warning("Adicione itens ao pedido.")
     else:
         novo_id = prox_id(vendas, "IDVenda")
         total_venda = 0.0
@@ -1232,6 +1230,7 @@ with b1:
                         width="400" height="650" type="application/pdf"></iframe>
             """
             components.html(pdf_display, height=700)
+
 
 
 
