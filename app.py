@@ -909,63 +909,69 @@ if view == "Produtos":
     st.header("📦 Produtos")
 
     # --- Cadastro ---
-    with st.expander("Cadastrar novo produto"):
-        c1,c2,c3 = st.columns(3)
-        with c1:
-            nome = st.text_input("Nome")
-            marca = st.text_input("Marca")
-            categoria = st.text_input("Categoria")
-        with c2:
-            qtd = st.number_input("Quantidade", min_value=0, step=1, value=0)
-            preco_custo = st.text_input("Preço de Custo", value="0,00")
-            preco_vista = st.text_input("Preço à Vista", value="0,00")
+with st.expander("Cadastrar novo produto"):
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        nome = st.text_input("Nome")
+        marca = st.text_input("Marca")
+        categoria = st.text_input("Categoria")
+    with c2:
+        qtd = st.number_input("Quantidade", min_value=0, step=1, value=0)
+        preco_custo = st.text_input("Preço de Custo", value="0,00")
+        preco_vista = st.text_input("Preço à Vista", value="0,00")
+        preco_cartao = 0.0
+        try:
+            preco_cartao = round(float(preco_vista.replace(",", ".").strip()) / FATOR_CARTAO, 2)
+        except Exception:
             preco_cartao = 0.0
-            try:
-                preco_cartao = round(float(preco_vista.replace(",", ".").strip()) / FATOR_CARTAO, 2)
-            except Exception:
-                preco_cartao = 0.0
-            st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True)
+        st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True)
 
-        with c3:
-            validade = st.date_input("Validade (opcional)", value=date.today())
-            foto_url = st.text_input("URL da Foto (opcional)")
-            foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png","jpg","jpeg"])
-            codigo_barras = st.text_input("Código de Barras")
-            foto_codigo = st.camera_input("📷 Escanear código de barras")
-            if foto_codigo is not None:
-                codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
-                if codigo_lido:
-                    codigo_barras = codigo_lido
-                    st.success(f"Código lido: {codigo_barras}")
+    with c3:
+        validade = st.date_input("Validade (opcional)", value=date.today())
+        foto_url = st.text_input("URL da Foto (opcional)")
+        foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png", "jpg", "jpeg"])
+        codigo_barras = st.text_input("Código de Barras")
 
-            if st.button("Adicionar produto"):
-                novo_id = prox_id(produtos, "ID")
+        # Leitura via câmera (código de barras ou QR)
+        foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
+        if foto_codigo is not None:
+            codigos_lidos = ler_codigo_barras(foto_codigo.getbuffer())
+            if codigos_lidos:
+                codigo_barras = codigos_lidos[0]  # usa o primeiro encontrado
+                st.success(f"Código lido: {codigo_barras}")
+                if len(codigos_lidos) > 1:
+                    st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
+            else:
+                st.error("Não foi possível ler nenhum código.")
 
-                # salva a foto se enviada
-                caminho_foto = foto_url.strip()
-                if foto_arquivo is not None:
-                    extensao = os.path.splitext(foto_arquivo.name)[1]
-                    caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
-                    with open(caminho_foto, "wb") as f:
-                        f.write(foto_arquivo.getbuffer())
+        if st.button("Adicionar produto"):
+            novo_id = prox_id(produtos, "ID")
 
-                novo = {
-                    "ID": novo_id,
-                    "Nome": nome.strip(),
-                    "Marca": marca.strip(),
-                    "Categoria": categoria.strip(),
-                    "Quantidade": int(qtd),
-                    "PrecoCusto": to_float(preco_custo),
-                    "PrecoVista": to_float(preco_vista),
-                    "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista)>0 else 0.0,
-                    "Validade": str(validade) if validade else "",
-                    "FotoURL": caminho_foto,
-                    "CodigoBarras": str(codigo_barras).strip()
-                }
-                produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
-                st.session_state["produtos"] = produtos
-                save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-                st.success("Produto cadastrado!")
+            # Salva a foto se enviada
+            caminho_foto = foto_url.strip()
+            if foto_arquivo is not None:
+                extensao = os.path.splitext(foto_arquivo.name)[1]
+                caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
+                with open(caminho_foto, "wb") as f:
+                    f.write(foto_arquivo.getbuffer())
+
+            novo = {
+                "ID": novo_id,
+                "Nome": nome.strip(),
+                "Marca": marca.strip(),
+                "Categoria": categoria.strip(),
+                "Quantidade": int(qtd),
+                "PrecoCusto": to_float(preco_custo),
+                "PrecoVista": to_float(preco_vista),
+                "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
+                "Validade": str(validade) if validade else "",
+                "FotoURL": caminho_foto,
+                "CodigoBarras": str(codigo_barras).strip()
+            }
+            produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
+            st.session_state["produtos"] = produtos
+            save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+            st.success("Produto cadastrado!")
 
     # --- Lista de produtos (fora do expander) ---
     st.markdown("### Lista de produtos")
