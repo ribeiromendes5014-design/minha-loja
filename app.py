@@ -827,6 +827,31 @@ if view == "Dashboard":
                         file_name=caminho_pdf,
                         mime="application/pdf"
                     )
+# --- RECIBOS DE VENDAS ---
+st.markdown("### 🧾 Recibos de Vendas")
+if not vendas.empty:
+    # selecionar a data
+    datas_vendas = sorted(vendas["Data"].unique(), reverse=True)
+    data_venda = st.selectbox("Selecione a data da venda", datas_vendas, key="sel_data_venda")
+
+    vendas_dia = vendas[vendas["Data"] == data_venda]
+    if not vendas_dia.empty:
+        # selecionar o ID da venda dentro da data
+        ids_vendas = vendas_dia["IDVenda"].astype(int).unique().tolist()
+        id_sel = st.selectbox("Selecione o ID da venda", ids_vendas, key="sel_id_venda")
+
+        if st.button("📄 Gerar Recibo (PDF)", key="btn_pdf_venda"):
+            caminho_pdf = f"venda_{id_sel}.pdf"
+            gerar_pdf_venda(id_sel, vendas, caminho_pdf)
+            with open(caminho_pdf, "rb") as f:
+                st.download_button(
+                    label=f"⬇️ Baixar Recibo da Venda {id_sel}",
+                    data=f,
+                    file_name=caminho_pdf,
+                    mime="application/pdf"
+                )
+else:
+    st.info("Nenhuma venda registrada ainda.")
 
 
 # =====================================
