@@ -1244,7 +1244,7 @@ if view == "Vendas":
             st.session_state["valor_pago"] = 0.0
             st.info("Novo pedido iniciado.")
 
-    # --- FECHAR CAIXA ---
+        # --- FECHAR CAIXA ---
     with b4:
         if st.button("📦 Fechar Caixa"):
             hoje = str(date.today())
@@ -1275,48 +1275,45 @@ if view == "Vendas":
                 st.session_state["caixas"] = caixas
                 st.success(f"Caixa do dia {hoje} fechado!")
 
+    # --- HISTÓRICO DE VENDAS ---
+    st.markdown("### Últimas vendas")
+    if not vendas.empty:
+        ult = vendas.sort_values(by=["Data","IDVenda"], ascending=False).head(100)
+        st.dataframe(ult, use_container_width=True)
 
+        # Conversão robusta para IDs de venda
+        ids_series = pd.to_numeric(vendas["IDVenda"], errors="coerce").dropna().astype(int)
+        ids = sorted(ids_series.unique().tolist(), reverse=True)
 
+        colx, coly = st.columns([3,1])
+        with colx:
+            id_excluir = st.selectbox("Selecione a venda para excluir (devolve estoque)", ids if ids else [0])
 
-    # Histórico com exclusão de venda
-st.markdown("### Últimas vendas")
-if not vendas.empty:
-    ult = vendas.sort_values(by=["Data","IDVenda"], ascending=False).head(100)
-    st.dataframe(ult, use_container_width=True)
+        with coly:
+            if st.button("Excluir venda"):
+                if id_excluir in ids:
+                    linhas = vendas[pd.to_numeric(vendas["IDVenda"], errors="coerce").astype(int)==int(id_excluir)]
+                    # devolve estoque
+                    for _, r in linhas.iterrows():
+                        mask = produtos["ID"].astype(str) == str(r["IDProduto"])
+                        if mask.any():
+                            produtos.loc[mask, "Quantidade"] = (
+                                produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
+                            ).astype(int)
 
-    # Conversão robusta para IDs de venda
-    ids_series = pd.to_numeric(vendas["IDVenda"], errors="coerce").dropna().astype(int)
-    ids = sorted(ids_series.unique().tolist(), reverse=True)
+                    # remove da planilha
+                    vendas = vendas[pd.to_numeric(vendas["IDVenda"], errors="coerce").astype(int)!=int(id_excluir)]
+                    save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
+                    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
 
-    colx, coly = st.columns([3,1])
-    with colx:
-        id_excluir = st.selectbox("Selecione a venda para excluir (devolve estoque)", ids if ids else [0])
+                    st.session_state["vendas"] = vendas
+                    st.session_state["produtos"] = produtos
+                    st.success(f"Venda {id_excluir} excluída e estoque ajustado.")
+                else:
+                    st.warning("Venda não encontrada.")
+    else:
+        st.info("Ainda não há vendas registradas.")
 
-    with coly:
-        if st.button("Excluir venda"):
-            if id_excluir in ids:
-                linhas = vendas[pd.to_numeric(vendas["IDVenda"], errors="coerce").astype(int)==int(id_excluir)]
-                # devolve estoque
-                for _, r in linhas.iterrows():
-                    mask = produtos["ID"].astype(str) == str(r["IDProduto"])
-                    if mask.any():
-                        produtos.loc[mask, "Quantidade"] = (
-                            produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
-                        ).astype(int)
-
-                # remove da planilha de vendas
-                vendas = vendas[pd.to_numeric(vendas["IDVenda"], errors="coerce").astype(int)!=int(id_excluir)]
-                save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
-                save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-
-                st.session_state["vendas"] = vendas
-                st.session_state["produtos"] = produtos
-                st.success(f"Venda {id_excluir} excluída e estoque ajustado.")
-            else:
-                st.warning("Venda não encontrada.")
-
-else:
-    st.info("Ainda não há vendas registradas.")
 
 
 # =====================================
