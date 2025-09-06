@@ -503,33 +503,34 @@ if view == "Produtos":
                     st.success(f"Código lido: {codigo_barras}")
 
             if st.button("Adicionar produto"):
-                novo_id = prox_id(produtos, "ID")
+    novo_id = prox_id(produtos, "ID")
 
-                # salva a foto se enviada
-                caminho_foto = foto_url.strip()
-                if foto_arquivo is not None:
-                    extensao = os.path.splitext(foto_arquivo.name)[1]
-                    caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
-                    with open(caminho_foto, "wb") as f:
-                        f.write(foto_arquivo.getbuffer())
+    # salva a foto se enviada
+    caminho_foto = foto_url.strip()
+    if foto_arquivo is not None:
+        extensao = os.path.splitext(foto_arquivo.name)[1]
+        caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
+        with open(caminho_foto, "wb") as f:
+            f.write(foto_arquivo.getbuffer())
 
-                novo = {
-                    "ID": novo_id,
-                    "Nome": nome.strip(),
-                    "Marca": marca.strip(),
-                    "Categoria": categoria.strip(),
-                    "Quantidade": int(qtd),
-                    "PrecoCusto": to_float(preco_custo),
-                    "PrecoVista": to_float(preco_vista),
-                    "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista)>0 else 0.0,
-                    "Validade": str(validade) if validade else "",
-                    "FotoURL": caminho_foto,
-                    "CodigoBarras": str(codigo_barras).strip()
-                }
-                produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
-                st.session_state["produtos"] = produtos
-                save_csv(produtos, ARQ_PRODUTOS)
-                st.success("Produto cadastrado!")
+    novo = {
+        "ID": novo_id,
+        "Nome": nome.strip(),
+        "Marca": marca.strip(),
+        "Categoria": categoria.strip(),
+        "Quantidade": int(qtd),
+        "PrecoCusto": to_float(preco_custo),
+        "PrecoVista": to_float(preco_vista),
+        "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
+        "Validade": str(validade) if validade else "",
+        "FotoURL": caminho_foto,
+        "CodigoBarras": str(codigo_barras).strip()
+    }
+    produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
+    st.session_state["produtos"] = produtos
+    save_csv(produtos, ARQ_PRODUTOS)
+    st.success("Produto cadastrado!")
+
 
     # --- Lista de produtos (fora do expander) ---
     st.markdown("### Lista de produtos")
