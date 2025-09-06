@@ -148,9 +148,9 @@ def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
     doc.build(story)
 
 
-# =====================================
-# Relatório PDF de Venda (Recibo estilo cupom)
-# =====================================
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.colors import HexColor
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
@@ -158,9 +158,16 @@ from reportlab.lib.units import mm
 from datetime import datetime
 
 def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
-    """Gera um PDF estilo cupom (como o exemplo Doce&Bella)"""
-    # 📐 Tamanho tipo recibo (largura pequena, altura grande)
-    doc = SimpleDocTemplate(path, pagesize=(80*mm, 200*mm),
+    """Gera um PDF estilo cupom com fundo amarelo claro"""
+    # 📐 Tamanho tipo recibo (80mm x 200mm)
+    page_size = (80*mm, 200*mm)
+
+    # Função para desenhar o fundo antes do conteúdo
+    def draw_background(canvas, doc):
+        canvas.setFillColor(HexColor("#FFF9C4"))  # amarelo claro
+        canvas.rect(0, 0, page_size[0], page_size[1], fill=True, stroke=False)
+
+    doc = SimpleDocTemplate(path, pagesize=page_size,
                             rightMargin=10, leftMargin=10,
                             topMargin=10, bottomMargin=10)
 
@@ -187,7 +194,7 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     venda_sel = vendas[vendas["IDVenda"].astype(int) == int(venda_id)]
     if venda_sel.empty:
         story.append(Paragraph("Venda não encontrada.", styles["NormalCenter"]))
-        doc.build(story)
+        doc.build(story, onFirstPage=draw_background, onLaterPages=draw_background)
         return
 
     venda_info = venda_sel.iloc[0]
@@ -236,7 +243,8 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     story.append(Spacer(1, 10))
     story.append(Paragraph(datetime.now().strftime("%d/%m/%Y %H:%M:%S"), styles["NormalCenter"]))
 
-    doc.build(story)
+    # gera PDF com fundo amarelo
+    doc.build(story, onFirstPage=draw_background, onLaterPages=draw_background)
 
 
 
