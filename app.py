@@ -1,50 +1,38 @@
 
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date, timedelta
 import os
+import io
+from datetime import date
+from PIL import Image   # <- importante para a função
 
-from pyzxing import BarCodeReader
-reader = BarCodeReader()
+# =====================================
+# Funções auxiliares
+# =====================================
+def central_crop(image_bytes, scale=0.8):
+    """
+    Recorta o centro da imagem para simular zoom digital.
+    scale = fração da largura/altura mantida (0.8 = menos zoom, 0.5 = mais zoom).
+    """
+    # Converte para bytes se vier como memoryview
+    if hasattr(image_bytes, "tobytes"):
+        image_bytes = image_bytes.tobytes()
+    elif isinstance(image_bytes, memoryview):
+        image_bytes = bytes(image_bytes)
 
-def ler_codigos_pyzxing(image_bytes) -> list[str]:
-    """Retorna todos os códigos encontrados (lista de strings)."""
-    try:
-        # normaliza para bytes
-        if hasattr(image_bytes, "getvalue"):
-            image_bytes = image_bytes.getvalue()
-        elif isinstance(image_bytes, memoryview):
-            image_bytes = image_bytes.tobytes()
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    w, h = img.size
+    new_w, new_h = int(w * scale), int(h * scale)
+    left = (w - new_w) // 2
+    top = (h - new_h) // 2
+    right = left + new_w
+    bottom = top + new_h
+    cropped = img.crop((left, top, right, bottom))
 
-        temp_file = "temp_barcode.png"
-        with open(temp_file, "wb") as f:
-            f.write(image_bytes)
+    buf = io.BytesIO()
+    cropped.save(buf, format="PNG")
+    return buf.getvalue()
 
-        res = reader.decode(temp_file, try_harder=True)
-        os.remove(temp_file)
-
-        if not res:
-            return []
-        out = []
-        for r in res:
-            v = r.get("parsed") or r.get("raw") or ""
-            v = str(v).strip()
-            if v:
-                out.append(v)
-        # remove duplicados preservando ordem
-        seen = set(); uniq = []
-        for v in out:
-            if v not in seen:
-                seen.add(v); uniq.append(v)
-        return uniq
-    except Exception as e:
-        st.error(f"Erro ao ler código: {e}")
-        return []
-
-def ler_codigo_um(image_bytes) -> str | None:
-    """Conveniência: retorna só o primeiro código, ou None."""
-    lst = ler_codigos_pyzxing(image_bytes)
-    return lst[0] if lst else None
 
 
 
