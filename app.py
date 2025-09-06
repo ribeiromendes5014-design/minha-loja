@@ -323,10 +323,16 @@ def norm_clientes(_: pd.DataFrame) -> pd.DataFrame:
 
 def norm_caixas(_: pd.DataFrame) -> pd.DataFrame:
     cols = ["Data","FaturamentoTotal","Dinheiro","PIX","Cartão","Fiado","Status"]
-    df = ensure_csv("caixas.csv", cols)
+
+    # tenta carregar do GitHub primeiro
+    df = load_csv_github(ARQ_CAIXAS)
+    if df is None:
+        df = ensure_csv(ARQ_CAIXAS, cols)
+
     for c in ["FaturamentoTotal","Dinheiro","PIX","Cartão","Fiado"]:
         df[c] = df[c].apply(to_float)
     return df
+    
 def norm_usuarios(_: pd.DataFrame) -> pd.DataFrame:
     cols = ["Usuario","Senha"]
     df = ensure_csv(ARQ_USUARIOS, cols)
