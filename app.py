@@ -965,7 +965,7 @@ if view == "Vendas":
                 "Status": "Fechado"
             }
             caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
-            save_csv(caixas, "caixas.csv")
+            save_csv_github(caixas, ARQ_CAIXAS, "Atualizando caixas")
             st.session_state["caixas"] = caixas
             st.success(f"Caixa do dia {hoje} fechado!")
 
