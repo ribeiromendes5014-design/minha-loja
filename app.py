@@ -1209,25 +1209,24 @@ if b1.button("✅ Finalizar Venda"):
         st.success(f"✅ Venda {novo_id} finalizada!")
 
         # --- GERA E MOSTRA O RECIBO AUTOMATICAMENTE ---
-caminho_pdf = f"recibo_venda_{novo_id}.pdf"
-gerar_pdf_venda(novo_id, vendas, caminho_pdf)
+        caminho_pdf = f"recibo_venda_{novo_id}.pdf"
+        gerar_pdf_venda(novo_id, vendas, caminho_pdf)
 
-with open(caminho_pdf, "rb") as f:
-    pdf_bytes = f.read()
+        with open(caminho_pdf, "rb") as f:
+            pdf_bytes = f.read()
 
-    # botão de download
-    st.download_button(
-        label="⬇️ Baixar Recibo da Venda",
-        data=pdf_bytes,
-        file_name=caminho_pdf,
-        mime="application/pdf"
-    )
+            st.download_button(
+                label="⬇️ Baixar Recibo da Venda",
+                data=pdf_bytes,
+                file_name=caminho_pdf,
+                mime="application/pdf"
+            )
 
-    # link para abrir em nova aba
-    import base64
-    b64 = base64.b64encode(pdf_bytes).decode("utf-8")
-    href = f'<a href="data:application/pdf;base64,{b64}" target="_blank">📄 Abrir Recibo no Navegador</a>'
-    st.markdown(href, unsafe_allow_html=True)
+            # link para abrir em nova aba
+            import base64
+            b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+            href = f'<a href="data:application/pdf;base64,{b64}" target="_blank">📄 Abrir Recibo no Navegador</a>'
+            st.markdown(href, unsafe_allow_html=True)
 
 
 
