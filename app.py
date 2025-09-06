@@ -1145,7 +1145,6 @@ if view == "Vendas":
     if not st.session_state["pedido_atual"]:
         st.warning("Adicione itens ao pedido.")
     else:
-        # todo o resto do código aqui indentado
         novo_id = prox_id(vendas, "IDVenda")
         total_venda = 0.0
         codigos_fiado = []
@@ -1216,7 +1215,6 @@ if view == "Vendas":
         with open(caminho_pdf, "rb") as f:
             pdf_bytes = f.read()
 
-            # botão de download
             st.download_button(
                 label="⬇️ Baixar Recibo da Venda",
                 data=pdf_bytes,
@@ -1224,10 +1222,8 @@ if view == "Vendas":
                 mime="application/pdf"
             )
 
-            # exibir dentro do app
             import base64
             import streamlit.components.v1 as components
-
             b64 = base64.b64encode(pdf_bytes).decode("utf-8")
             pdf_display = f"""
                 <iframe src="data:application/pdf;base64,{b64}" 
