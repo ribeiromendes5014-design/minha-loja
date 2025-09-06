@@ -1032,7 +1032,7 @@ if view == "Promoções":
                         "DataFim": str(data_fim),
                     }
                     promocoes = pd.concat([promocoes, pd.DataFrame([novo])], ignore_index=True)
-                    save_csv(promocoes, ARQ_PROMOCOES)
+                    save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
                     st.session_state["promocoes"] = promocoes
                     st.success("Promoção cadastrada!")
 
