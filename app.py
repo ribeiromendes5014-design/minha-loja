@@ -1145,6 +1145,7 @@ with b1:
     if st.button("✅ Finalizar Venda"):
         if not st.session_state["pedido_atual"]:
             st.warning("Adicione itens ao pedido.")
+    
     else:
         novo_id = prox_id(vendas, "IDVenda")
         total_venda = 0.0
