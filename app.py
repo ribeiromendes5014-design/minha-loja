@@ -114,8 +114,7 @@ Copiar código
                     label=f"⬇️ Baixar Relatório de Caixa ({caixa_sel['Data']})",
                     data=f,
                     file_name=caminho_pdf,
-                    mime="application/pdf"
-                )
+                    mime="application/pdf")
 
 # =====================================
 # Leitura de Código de Barras (pyzxing)
