@@ -467,6 +467,8 @@ if view == "Dashboard":
 if view == "Produtos":
     show_logo("main")
     st.header("📦 Produtos")
+
+    # --- Cadastro ---
     with st.expander("Cadastrar novo produto"):
         c1,c2,c3 = st.columns(3)
         with c1:
@@ -484,54 +486,48 @@ if view == "Produtos":
                 preco_cartao = 0.0
             st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True)
 
-        # cria a pasta de fotos se não existir
-FOTOS_DIR = "fotos_produtos"
-os.makedirs(FOTOS_DIR, exist_ok=True)
+        with c3:
+            validade = st.date_input("Validade (opcional)", value=date.today())
+            foto_url = st.text_input("URL da Foto (opcional)")
+            foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png","jpg","jpeg"])
+            codigo_barras = st.text_input("Código de Barras")
+            foto_codigo = st.camera_input("📷 Escanear código de barras")
+            if foto_codigo is not None:
+                codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
+                if codigo_lido:
+                    codigo_barras = codigo_lido
+                    st.success(f"Código lido: {codigo_barras}")
 
-with c3:
-    validade = st.date_input("Validade (opcional)", value=date.today())
-    foto_url = st.text_input("URL da Foto (opcional)")
-    foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png","jpg","jpeg"])
-    codigo_barras = st.text_input("Código de Barras")
-    foto_codigo = st.camera_input("📷 Escanear código de barras")
-    if foto_codigo is not None:
-        codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
-        if codigo_lido:
-            codigo_barras = codigo_lido
-            st.success(f"Código lido: {codigo_barras}")
+            if st.button("Adicionar produto"):
+                novo_id = prox_id(produtos, "ID")
 
-    if st.button("Adicionar produto"):
-        novo_id = prox_id(produtos, "ID")
+                # salva a foto se enviada
+                caminho_foto = foto_url.strip()
+                if foto_arquivo is not None:
+                    extensao = os.path.splitext(foto_arquivo.name)[1]
+                    caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
+                    with open(caminho_foto, "wb") as f:
+                        f.write(foto_arquivo.getbuffer())
 
-        # salva a foto se enviada
-        caminho_foto = foto_url.strip()
-        if foto_arquivo is not None:
-            extensao = os.path.splitext(foto_arquivo.name)[1]
-            caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
-            with open(caminho_foto, "wb") as f:
-                f.write(foto_arquivo.getbuffer())
+                novo = {
+                    "ID": novo_id,
+                    "Nome": nome.strip(),
+                    "Marca": marca.strip(),
+                    "Categoria": categoria.strip(),
+                    "Quantidade": int(qtd),
+                    "PrecoCusto": to_float(preco_custo),
+                    "PrecoVista": to_float(preco_vista),
+                    "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista)>0 else 0.0,
+                    "Validade": str(validade) if validade else "",
+                    "FotoURL": caminho_foto,
+                    "CodigoBarras": str(codigo_barras).strip()
+                }
+                produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
+                st.session_state["produtos"] = produtos
+                save_csv(produtos, ARQ_PRODUTOS)
+                st.success("Produto cadastrado!")
 
-        novo = {
-            "ID": novo_id,
-            "Nome": nome.strip(),
-            "Marca": marca.strip(),
-            "Categoria": categoria.strip(),
-            "Quantidade": int(qtd),
-            "PrecoCusto": to_float(preco_custo),
-            "PrecoVista": to_float(preco_vista),
-            "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista)>0 else 0.0,
-            "Validade": str(validade) if validade else "",
-            "FotoURL": caminho_foto,
-            "CodigoBarras": str(codigo_barras).strip()
-        }
-        produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
-        st.session_state["produtos"] = produtos
-        save_csv(produtos, ARQ_PRODUTOS)
-        st.success("Produto cadastrado!")
-
-
-
-
+    # --- Lista de produtos (fora do expander) ---
     st.markdown("### Lista de produtos")
     if produtos.empty:
         st.info("Nenhum produto cadastrado ainda.")
@@ -547,7 +543,7 @@ with c3:
                 else:
                     c[0].write("—")
                 cb = f' • CB: {row["CodigoBarras"]}' if str(row.get("CodigoBarras","")).strip() else ""
-                c[1].markdown(f"**{row['Nome']}**  \\nMarca: {row['Marca']}  \\nCat: {row['Categoria']}{cb}")
+                c[1].markdown(f"**{row['Nome']}**  \nMarca: {row['Marca']}  \nCat: {row['Categoria']}{cb}")
                 c[2].write(f"Estoque: {row['Quantidade']}")
                 c[3].write(f"Validade: {row['Validade']}")
                 col_btn = c[4]
@@ -562,6 +558,7 @@ with c3:
                     st.session_state["produtos"] = produtos
                     save_csv(produtos, ARQ_PRODUTOS)
                     st.warning(f"Produto {row['Nome']} excluído!")
+
 
         # Editor inline
         if "edit_prod" in st.session_state:
