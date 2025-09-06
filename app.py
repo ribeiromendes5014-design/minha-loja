@@ -59,6 +59,63 @@ def save_csv_github(df: pd.DataFrame, path="produtos.csv", mensagem="Atualizando
     except Exception as e:
         st.error(f"❌ Erro ao salvar no GitHub: {e}")
 
+# =====================================
+# Relatório PDF de Caixa
+# =====================================
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+
+def gerar_pdf_caixa(dados_caixa: dict, path: str):
+    """Gera um relatório PDF de fechamento de caixa"""
+    doc = SimpleDocTemplate(path, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
+
+    story.append(Paragraph("Relatório de Fechamento de Caixa", styles["Title"]))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f"Data: {dados_caixa['Data']}", styles["Heading2"]))
+    story.append(Spacer(1, 12))
+
+    tabela = [
+        ["Faturamento Total", f"R$ {dados_caixa['FaturamentoTotal']:.2f}"],
+        ["Dinheiro", f"R$ {dados_caixa['Dinheiro']:.2f}"],
+        ["PIX", f"R$ {dados_caixa['PIX']:.2f}"],
+        ["Cartão", f"R$ {dados_caixa['Cartão']:.2f}"],
+        ["Fiado", f"R$ {dados_caixa['Fiado']:.2f}"],
+        ["Status", dados_caixa['Status']],
+    ]
+
+    t = Table(tabela, hAlign="LEFT")
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+    ]))
+    story.append(t)
+
+    doc.build(story)
+No Dashboard → Relatórios de Caixa, depois do filtro de datas, adicione o botão para gerar e baixar PDF:
+
+python
+Copiar código
+    # --- GERAR PDF ---
+    if data_sel != "Todas" and not caixas_filtrados.empty:
+        caixa_sel = caixas_filtrados.iloc[0].to_dict()
+        if st.button("📄 Gerar PDF do Caixa Selecionado"):
+            caminho_pdf = f"caixa_{caixa_sel['Data']}.pdf"
+            gerar_pdf_caixa(caixa_sel, caminho_pdf)
+            with open(caminho_pdf, "rb") as f:
+                st.download_button(
+                    label=f"⬇️ Baixar Relatório de Caixa ({caixa_sel['Data']})",
+                    data=f,
+                    file_name=caminho_pdf,
+                    mime="application/pdf"
+                )
 
 # =====================================
 # Leitura de Código de Barras (pyzxing)
