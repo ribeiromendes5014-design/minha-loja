@@ -879,7 +879,7 @@ if view == "Vendas":
         with colx:
             id_excluir = st.selectbox("Selecione a venda para excluir (devolve estoque)", ids if ids else [0])
         with coly:
-            if st.button("Excluir venda"):
+if st.button("Excluir venda"):
     if id_excluir in ids:
         linhas = vendas[pd.to_numeric(vendas["IDVenda"], errors="coerce").astype(int)==int(id_excluir)]
         # devolve estoque
