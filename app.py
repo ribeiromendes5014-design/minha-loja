@@ -931,15 +931,16 @@ with st.expander("Cadastrar novo produto"):
         foto_url = st.text_input("URL da Foto (opcional)")
         foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png","jpg","jpeg"])
 
-        # Campo de código de barras com key (para poder atualizar automaticamente)
-        codigo_barras = st.text_input("Código de Barras", key="cad_codigo_barras")
+        # campo de código de barras com chave fixa (para atualizar depois)
+        codigo_barras = st.text_input("Código de Barras", value="", key="codigo_barras_cadastro")
 
-        # Câmera para leitura de código de barras
+        # câmera para ler código
         foto_codigo = st.camera_input("📷 Escanear código de barras")
         if foto_codigo is not None:
             codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
             if codigo_lido:
-                st.session_state["cad_codigo_barras"] = codigo_lido  # atualiza o campo
+                # atualiza o campo automaticamente
+                st.session_state["codigo_barras_cadastro"] = codigo_lido
                 st.success(f"Código lido: {codigo_lido}")
 
         if st.button("Adicionar produto"):
@@ -964,12 +965,13 @@ with st.expander("Cadastrar novo produto"):
                 "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
                 "Validade": str(validade) if validade else "",
                 "FotoURL": caminho_foto,
-                "CodigoBarras": str(st.session_state.get("cad_codigo_barras", "")).strip()
+                "CodigoBarras": str(st.session_state.get("codigo_barras_cadastro", "")).strip()
             }
             produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
             st.session_state["produtos"] = produtos
             save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
             st.success("Produto cadastrado!")
+
 
 
     # --- Lista de produtos (fora do expander) ---
