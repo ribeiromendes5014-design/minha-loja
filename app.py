@@ -1226,13 +1226,15 @@ if view == "Vendas":
 
             # exibir dentro do app
             import base64
-            import streamlit.components.v1 as components
-            b64 = base64.b64encode(pdf_bytes).decode("utf-8")
-            pdf_display = f"""
-            <iframe src="data:application/pdf;base64,{b64}" 
-                    width="350" height="600" type="application/pdf"></iframe>
-            """
-            components.html(pdf_display, height=650)
+import streamlit.components.v1 as components
+
+b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+pdf_display = f"""
+<iframe src="data:application/pdf;base64,{b64}" 
+        width="400" height="650" type="application/pdf"></iframe>
+"""
+components.html(pdf_display, height=700)
+
 
 
     # --- NOVA VENDA ---
