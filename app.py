@@ -669,47 +669,46 @@ if view == "Dashboard":
                         </div>
                         """, unsafe_allow_html=True)
 
-        st.markdown("### 📦 Relatórios de Caixa")
-caixas = norm_caixas(pd.DataFrame())
-if caixas.empty:
-    st.info("Nenhum fechamento de caixa registrado ainda.")
-else:
-    # --- FILTRO POR DATA ---
-    st.subheader("🔍 Filtro de Caixa por Data")
-    datas_disp = sorted(caixas["Data"].unique(), reverse=True)
-    data_sel = st.selectbox("Selecione a data do caixa", ["Todas"] + datas_disp)
+            st.markdown("### 📦 Relatórios de Caixa")
+    caixas = norm_caixas(pd.DataFrame())
+    if caixas.empty:
+        st.info("Nenhum fechamento de caixa registrado ainda.")
+    else:
+        # --- FILTRO POR DATA ---
+        st.subheader("🔍 Filtro de Caixa por Data")
+        datas_disp = sorted(caixas["Data"].unique(), reverse=True)
+        data_sel = st.selectbox("Selecione a data do caixa", ["Todas"] + datas_disp)
 
-    caixas_filtrados = caixas.copy()
-    if data_sel != "Todas":
-        caixas_filtrados = caixas_filtrados[caixas_filtrados["Data"] == data_sel]
+        caixas_filtrados = caixas.copy()
+        if data_sel != "Todas":
+            caixas_filtrados = caixas_filtrados[caixas_filtrados["Data"] == data_sel]
 
-    st.dataframe(caixas_filtrados.sort_values("Data", ascending=False), use_container_width=True)
+        st.dataframe(caixas_filtrados.sort_values("Data", ascending=False), use_container_width=True)
 
-    # --- EXCLUSÃO DE RELATÓRIO ---
-    st.subheader("🗑️ Excluir Relatório de Caixa")
-    if not caixas_filtrados.empty:
-        ids = caixas_filtrados["Data"].tolist()
-        del_data = st.selectbox("Selecione a data do relatório para excluir", ids)
-        if st.button("Excluir Relatório de Caixa"):
-            caixas = caixas[caixas["Data"] != del_data]
-            st.session_state["caixas"] = caixas
-            save_csv_github(caixas, ARQ_CAIXAS, f"Excluindo relatório de caixa {del_data}")
-            st.warning(f"Relatório de caixa de {del_data} excluído!")
+        # --- EXCLUSÃO DE RELATÓRIO ---
+        st.subheader("🗑️ Excluir Relatório de Caixa")
+        if not caixas_filtrados.empty:
+            ids = caixas_filtrados["Data"].tolist()
+            del_data = st.selectbox("Selecione a data do relatório para excluir", ids)
+            if st.button("Excluir Relatório de Caixa"):
+                caixas = caixas[caixas["Data"] != del_data]
+                st.session_state["caixas"] = caixas
+                save_csv_github(caixas, ARQ_CAIXAS, f"Excluindo relatório de caixa {del_data}")
+                st.warning(f"Relatório de caixa de {del_data} excluído!")
 
-       # --- GERAR PDF ---
-    if data_sel != "Todas" and not caixas_filtrados.empty:
-        caixa_sel = caixas_filtrados.iloc[0].to_dict()
-        if st.button("📄 Gerar PDF do Caixa Selecionado"):
-            caminho_pdf = f"caixa_{caixa_sel['Data']}.pdf"
-            gerar_pdf_caixa(caixa_sel, caminho_pdf)
-            with open(caminho_pdf, "rb") as f:
-                st.download_button(
-                    label=f"⬇️ Baixar Relatório de Caixa ({caixa_sel['Data']})",
-                    data=f,
-                    file_name=caminho_pdf,
-                    mime="application/pdf"
-                )
-
+        # --- GERAR PDF ---
+        if data_sel != "Todas" and not caixas_filtrados.empty:
+            caixa_sel = caixas_filtrados.iloc[0].to_dict()
+            if st.button("📄 Gerar PDF do Caixa Selecionado"):
+                caminho_pdf = f"caixa_{caixa_sel['Data']}.pdf"
+                gerar_pdf_caixa(caixa_sel, caminho_pdf)
+                with open(caminho_pdf, "rb") as f:
+                    st.download_button(
+                        label=f"⬇️ Baixar Relatório de Caixa ({caixa_sel['Data']})",
+                        data=f,
+                        file_name=caminho_pdf,
+                        mime="application/pdf"
+                    )
 
 
 # =====================================
