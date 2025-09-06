@@ -6,6 +6,49 @@ import os
 from pyzxing import BarCodeReader
 from github import Github
 
+from pyzxing import BarCodeReader
+from PIL import Image
+import os, io
+
+reader = BarCodeReader()
+
+def ler_codigo_barras(imagem_bytes):
+    try:
+        temp_file = "temp_code.png"
+        with open(temp_file, "wb") as f:
+            f.write(imagem_bytes)
+
+        # Usa try_harder=True para leitura mais robusta
+        result = reader.decode(temp_file, try_harder=True)
+        os.remove(temp_file)
+
+        if result:
+            return [r["parsed"] for r in result if "parsed" in r]
+        else:
+            return None
+    except Exception as e:
+        print("Erro ao ler código:", e)
+        return None
+
+
+def central_crop(image_bytes, scale=0.8):
+    """
+    Recorta o centro da imagem para simular zoom digital.
+    scale = fração da largura/altura mantida (0.8 = menos zoom, 0.5 = mais zoom).
+    """
+    img = Image.open(io.BytesIO(image_bytes))
+    w, h = img.size
+    new_w, new_h = int(w * scale), int(h * scale)
+    left = (w - new_w) // 2
+    top = (h - new_h) // 2
+    right = left + new_w
+    bottom = top + new_h
+    cropped = img.crop((left, top, right, bottom))
+    buf = io.BytesIO()
+    cropped.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 # =====================================
 # Configurações básicas
 # =====================================
