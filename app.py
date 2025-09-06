@@ -5,7 +5,6 @@ from datetime import datetime, date, timedelta
 import os
 from pyzxing import BarCodeReader
 from github import Github
-
 from pyzxing import BarCodeReader
 from PIL import Image
 import os, io
@@ -18,7 +17,7 @@ def ler_codigo_barras(imagem_bytes):
         with open(temp_file, "wb") as f:
             f.write(imagem_bytes)
 
-        # Usa try_harder=True para leitura mais robusta
+        # Usa try_harder=True para melhorar leitura
         result = reader.decode(temp_file, try_harder=True)
         os.remove(temp_file)
 
@@ -36,6 +35,10 @@ def central_crop(image_bytes, scale=0.8):
     Recorta o centro da imagem para simular zoom digital.
     scale = fração da largura/altura mantida (0.8 = menos zoom, 0.5 = mais zoom).
     """
+    # Converte memoryview -> bytes se necessário
+    if hasattr(image_bytes, "tobytes"):
+        image_bytes = image_bytes.tobytes()
+
     img = Image.open(io.BytesIO(image_bytes))
     w, h = img.size
     new_w, new_h = int(w * scale), int(h * scale)
