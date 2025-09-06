@@ -1145,6 +1145,7 @@ if view == "Vendas":
     if not st.session_state["pedido_atual"]:
         st.warning("Adicione itens ao pedido.")
     else:
+        # todo o resto do código aqui indentado
         novo_id = prox_id(vendas, "IDVenda")
         total_venda = 0.0
         codigos_fiado = []
