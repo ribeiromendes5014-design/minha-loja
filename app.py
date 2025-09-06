@@ -930,7 +930,12 @@ with st.expander("Cadastrar novo produto"):
         validade = st.date_input("Validade (opcional)", value=date.today())
         foto_url = st.text_input("URL da Foto (opcional)")
         foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png", "jpg", "jpeg"])
-        codigo_barras = st.text_input("Código de Barras")
+
+        # Campo Código de Barras com suporte a preenchimento automático
+        if "codigo_barras" not in st.session_state:
+            st.session_state["codigo_barras"] = ""
+
+        codigo_barras = st.text_input("Código de Barras", value=st.session_state["codigo_barras"])
 
         # Leitura via câmera (código de barras ou QR)
         foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
@@ -938,14 +943,14 @@ with st.expander("Cadastrar novo produto"):
             codigos_lidos = ler_codigo_barras(foto_codigo.getbuffer())
             st.write("Debug: Imagem recebida, tamanho (bytes):", len(foto_codigo.getbuffer()))
             if codigos_lidos:
-                codigo_barras = codigos_lidos[0]
-                st.success(f"Código lido: {codigo_barras}")
+                st.session_state["codigo_barras"] = codigos_lidos[0]  # Preenche automaticamente o campo
+                st.success(f"Código lido: {st.session_state['codigo_barras']}")
                 if len(codigos_lidos) > 1:
                     st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
             else:
                 st.error("❌ Não foi possível ler nenhum código. Tente aproximar, melhorar iluminação ou usar outro tipo.")
 
-    # Botão de adicionar produto (fora do try/except!)
+    # Botão de adicionar produto
     if st.button("Adicionar produto"):
         novo_id = prox_id(produtos, "ID")
 
@@ -968,7 +973,7 @@ with st.expander("Cadastrar novo produto"):
             "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
             "Validade": str(validade) if validade else "",
             "FotoURL": caminho_foto,
-            "CodigoBarras": str(codigo_barras).strip()
+            "CodigoBarras": str(st.session_state["codigo_barras"]).strip()
         }
         produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
         st.session_state["produtos"] = produtos
