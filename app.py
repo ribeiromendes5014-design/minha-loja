@@ -933,47 +933,48 @@ with st.expander("Cadastrar novo produto"):
         codigo_barras = st.text_input("Código de Barras")
 
         # Leitura via câmera (código de barras ou QR)
-foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
-if foto_codigo is not None:
-    codigos_lidos = ler_codigo_barras(foto_codigo.getbuffer())
-    st.write("Debug: Imagem recebida, tamanho (bytes):", len(foto_codigo.getbuffer()))
-    if codigos_lidos:
-        codigo_barras = codigos_lidos[0]  # pega o primeiro encontrado
-        st.success(f"Código lido: {codigo_barras}")
-        if len(codigos_lidos) > 1:
-            st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
-    else:
-        st.error("❌ Não foi possível ler nenhum código. Tente aproximar, melhorar iluminação ou usar outro tipo.")
+        foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
+        if foto_codigo is not None:
+            codigos_lidos = ler_codigo_barras(foto_codigo.getbuffer())
+            st.write("Debug: Imagem recebida, tamanho (bytes):", len(foto_codigo.getbuffer()))
+            if codigos_lidos:
+                codigo_barras = codigos_lidos[0]
+                st.success(f"Código lido: {codigo_barras}")
+                if len(codigos_lidos) > 1:
+                    st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
+            else:
+                st.error("❌ Não foi possível ler nenhum código. Tente aproximar, melhorar iluminação ou usar outro tipo.")
 
-# Botão de adicionar produto (fica fora do try/except!)
-if st.button("Adicionar produto"):
-    novo_id = prox_id(produtos, "ID")
+    # Botão de adicionar produto (fora do try/except!)
+    if st.button("Adicionar produto"):
+        novo_id = prox_id(produtos, "ID")
 
-    # Salva a foto se enviada
-    caminho_foto = foto_url.strip()
-    if foto_arquivo is not None:
-        extensao = os.path.splitext(foto_arquivo.name)[1]
-        caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
-        with open(caminho_foto, "wb") as f:
-            f.write(foto_arquivo.getbuffer())
+        # Salva a foto se enviada
+        caminho_foto = foto_url.strip()
+        if foto_arquivo is not None:
+            extensao = os.path.splitext(foto_arquivo.name)[1]
+            caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
+            with open(caminho_foto, "wb") as f:
+                f.write(foto_arquivo.getbuffer())
 
-    novo = {
-        "ID": novo_id,
-        "Nome": nome.strip(),
-        "Marca": marca.strip(),
-        "Categoria": categoria.strip(),
-        "Quantidade": int(qtd),
-        "PrecoCusto": to_float(preco_custo),
-        "PrecoVista": to_float(preco_vista),
-        "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
-        "Validade": str(validade) if validade else "",
-        "FotoURL": caminho_foto,
-        "CodigoBarras": str(codigo_barras).strip()
-    }
-    produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
-    st.session_state["produtos"] = produtos
-    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-    st.success("Produto cadastrado!")
+        novo = {
+            "ID": novo_id,
+            "Nome": nome.strip(),
+            "Marca": marca.strip(),
+            "Categoria": categoria.strip(),
+            "Quantidade": int(qtd),
+            "PrecoCusto": to_float(preco_custo),
+            "PrecoVista": to_float(preco_vista),
+            "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
+            "Validade": str(validade) if validade else "",
+            "FotoURL": caminho_foto,
+            "CodigoBarras": str(codigo_barras).strip()
+        }
+        produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
+        st.session_state["produtos"] = produtos
+        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+        st.success("Produto cadastrado!")
+
 
     # --- Lista de produtos (fora do expander) ---
     st.markdown("### Lista de produtos")
