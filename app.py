@@ -80,6 +80,75 @@ def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
 
 
 # =====================================
+# Relatório PDF de Caixa
+# =====================================
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+
+def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
+    """Gera um relatório PDF de fechamento de caixa incluindo produtos vendidos"""
+    doc = SimpleDocTemplate(path, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
+
+    # --- Cabeçalho
+    story.append(Paragraph("Relatório de Fechamento de Caixa", styles["Title"]))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f"Data: {dados_caixa['Data']}", styles["Heading2"]))
+    story.append(Spacer(1, 12))
+
+    # --- Resumo Financeiro
+    tabela = [
+        ["Faturamento Total", f"R$ {dados_caixa['FaturamentoTotal']:.2f}"],
+        ["Dinheiro", f"R$ {dados_caixa['Dinheiro']:.2f}"],
+        ["PIX", f"R$ {dados_caixa['PIX']:.2f}"],
+        ["Cartão", f"R$ {dados_caixa['Cartão']:.2f}"],
+        ["Fiado", f"R$ {dados_caixa['Fiado']:.2f}"],
+        ["Status", dados_caixa['Status']],
+    ]
+    t = Table(tabela, hAlign="LEFT")
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 20))
+
+    # --- Produtos vendidos no dia
+    if vendas_dia is not None and not vendas_dia.empty:
+        story.append(Paragraph("Produtos Vendidos", styles["Heading2"]))
+        story.append(Spacer(1, 10))
+
+        tabela_prod = [["Produto", "Qtd", "Preço Unit.", "Total"]]
+        for _, row in vendas_dia.iterrows():
+            tabela_prod.append([
+                row["NomeProduto"],
+                str(int(row["Quantidade"])),
+                f"R$ {row['PrecoUnitario']:.2f}",
+                f"R$ {row['Total']:.2f}"
+            ])
+
+        tp = Table(tabela_prod, hAlign="LEFT", colWidths=[200, 50, 80, 80])
+        tp.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ]))
+        story.append(tp)
+
+    doc.build(story)
+
+
+# =====================================
 # Relatório PDF de Venda (Recibo estilo cupom)
 # =====================================
 from reportlab.lib.units import mm
@@ -145,60 +214,6 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     story.append(Paragraph("Obrigado pela sua compra, volte sempre!", styles["Normal"]))
     story.append(Spacer(1, 6))
     story.append(Paragraph(datetime.now().strftime("%d/%m/%Y %H:%M:%S"), styles["Normal"]))
-
-    doc.build(story)
-    
-    # --- Cabeçalho
-    story.append(Paragraph("Relatório de Fechamento de Caixa", styles["Title"]))
-    story.append(Spacer(1, 12))
-    story.append(Paragraph(f"Data: {dados_caixa['Data']}", styles["Heading2"]))
-    story.append(Spacer(1, 12))
-
-    # --- Resumo Financeiro
-    tabela = [
-        ["Faturamento Total", f"R$ {dados_caixa['FaturamentoTotal']:.2f}"],
-        ["Dinheiro", f"R$ {dados_caixa['Dinheiro']:.2f}"],
-        ["PIX", f"R$ {dados_caixa['PIX']:.2f}"],
-        ["Cartão", f"R$ {dados_caixa['Cartão']:.2f}"],
-        ["Fiado", f"R$ {dados_caixa['Fiado']:.2f}"],
-        ["Status", dados_caixa['Status']],
-    ]
-    t = Table(tabela, hAlign="LEFT")
-    t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
-    ]))
-    story.append(t)
-    story.append(Spacer(1, 20))
-
-    # --- Produtos vendidos no dia
-    if vendas_dia is not None and not vendas_dia.empty:
-        story.append(Paragraph("Produtos Vendidos", styles["Heading2"]))
-        story.append(Spacer(1, 10))
-
-        tabela_prod = [["Produto", "Qtd", "Preço Unit.", "Total"]]
-        for _, row in vendas_dia.iterrows():
-            tabela_prod.append([
-                row["NomeProduto"],
-                str(int(row["Quantidade"])),
-                f"R$ {row['PrecoUnitario']:.2f}",
-                f"R$ {row['Total']:.2f}"
-            ])
-
-        tp = Table(tabela_prod, hAlign="LEFT", colWidths=[200, 50, 80, 80])
-        tp.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ]))
-        story.append(tp)
 
     doc.build(story)
 
