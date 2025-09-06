@@ -901,9 +901,6 @@ if view == "Vendas":
                 st.success(f"Venda {id_excluir} excluída e estoque ajustado.")
             else:
                 st.warning("Venda não encontrada.")
-
-
-
     else:
         st.info("Ainda não há vendas registradas.")
 
