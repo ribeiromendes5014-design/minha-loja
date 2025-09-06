@@ -3,8 +3,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, date, timedelta
 import os
-from pyzxing import BarCodeReader
-from github import Github
+
 from pyzxing import BarCodeReader
 from PIL import Image
 import os, io
@@ -17,14 +16,12 @@ def ler_codigo_barras(imagem_bytes):
         with open(temp_file, "wb") as f:
             f.write(imagem_bytes)
 
-        # Usa try_harder=True para melhorar leitura
-        result = reader.decode(temp_file, try_harder=True)
+        result = reader.decode(temp_file, try_harder=True)  # leitura mais robusta
         os.remove(temp_file)
 
         if result:
             return [r["parsed"] for r in result if "parsed" in r]
-        else:
-            return None
+        return None
     except Exception as e:
         print("Erro ao ler código:", e)
         return None
@@ -35,11 +32,13 @@ def central_crop(image_bytes, scale=0.8):
     Recorta o centro da imagem para simular zoom digital.
     scale = fração da largura/altura mantida (0.8 = menos zoom, 0.5 = mais zoom).
     """
-    # Converte memoryview -> bytes se necessário
+    # Converte para bytes se vier como memoryview
     if hasattr(image_bytes, "tobytes"):
         image_bytes = image_bytes.tobytes()
+    elif isinstance(image_bytes, memoryview):
+        image_bytes = bytes(image_bytes)
 
-    img = Image.open(io.BytesIO(image_bytes))
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     w, h = img.size
     new_w, new_h = int(w * scale), int(h * scale)
     left = (w - new_w) // 2
@@ -47,9 +46,11 @@ def central_crop(image_bytes, scale=0.8):
     right = left + new_w
     bottom = top + new_h
     cropped = img.crop((left, top, right, bottom))
+
     buf = io.BytesIO()
     cropped.save(buf, format="PNG")
     return buf.getvalue()
+
 
 
 # =====================================
