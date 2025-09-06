@@ -103,7 +103,7 @@ No Dashboard → Relatórios de Caixa, depois do filtro de datas, adicione o bot
 
 python
 Copiar código
-    # --- GERAR PDF ---
+        # --- GERAR PDF ---
     if data_sel != "Todas" and not caixas_filtrados.empty:
         caixa_sel = caixas_filtrados.iloc[0].to_dict()
         if st.button("📄 Gerar PDF do Caixa Selecionado"):
@@ -114,7 +114,8 @@ Copiar código
                     label=f"⬇️ Baixar Relatório de Caixa ({caixa_sel['Data']})",
                     data=f,
                     file_name=caminho_pdf,
-                    mime="application/pdf")
+                    mime="application/pdf"
+                )
 
 # =====================================
 # Leitura de Código de Barras (pyzxing)
