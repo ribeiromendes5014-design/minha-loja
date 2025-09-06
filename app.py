@@ -988,22 +988,19 @@ st.write("Debug: Imagem recebida, tamanho (bytes):", len(imagem_cortada_bytes))
 
 # Mostrar a imagem cortada
 st.image(imagem_cortada_bytes, caption="Pré-visualização (zoom aplicado)")
-    st.write("Debug: Imagem recebida, tamanho (bytes):", len(foto_codigo.getvalue()))
 
-    # Mostra prévia da imagem cortada (debug)
-    st.image(imagem_cortada, caption="Pré-visualização (zoom aplicado)")
+if codigos_lidos:
+    st.session_state["codigo_barras"] = codigos_lidos[0]
+    st.success(f"Código lido: {st.session_state['codigo_barras']}")
+    if len(codigos_lidos) > 1:
+        st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
+else:
+    st.error("❌ Não foi possível ler nenhum código. Ajuste o zoom, aproxime ou melhore a iluminação.")
 
-    if codigos_lidos:
-        st.session_state["codigo_barras"] = codigos_lidos[0]
-        st.success(f"Código lido: {st.session_state['codigo_barras']}")
-        if len(codigos_lidos) > 1:
-            st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
-    else:
-        st.error("❌ Não foi possível ler nenhum código. Ajuste o zoom, aproxime ou melhore a iluminação.")
+# Botão de adicionar produto
+if st.button("Adicionar produto"):
+    novo_id = prox_id(produtos, "ID")
 
-        # Botão de adicionar produto
-        if st.button("Adicionar produto"):
-            novo_id = prox_id(produtos, "ID")
 
             # Salva a foto se enviada
             caminho_foto = foto_url.strip()
