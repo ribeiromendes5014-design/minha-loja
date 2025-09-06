@@ -778,6 +778,7 @@ if view == "Vendas":
         st.success(f"Caixa do dia {hoje} fechado!")
         st.info("Caixa fechado (simulação).")
 
+
     if b5.button("✏️ Editar Pedido"):
         st.info("Edite as quantidades acima e remova itens com o ícone 🗑️.")
 
