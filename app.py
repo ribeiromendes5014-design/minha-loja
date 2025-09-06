@@ -484,16 +484,23 @@ if view == "Produtos":
                 preco_cartao = 0.0
             st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True)
 
-        with c3:
-            validade = st.date_input("Validade (opcional)", value=date.today())
-            foto_url = st.text_input("URL da Foto (opcional)")
-            codigo_barras = st.text_input("Código de Barras")
-            foto_codigo = st.camera_input("📷 Escanear código de barras")
-            if foto_codigo is not None:
-                codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
-                if codigo_lido:
-                    codigo_barras = codigo_lido
-                    st.success(f"Código lido: {codigo_barras}")
+        # cria a pasta de fotos se não existir
+FOTOS_DIR = "fotos_produtos"
+os.makedirs(FOTOS_DIR, exist_ok=True)
+
+with c3:
+    validade = st.date_input("Validade (opcional)", value=date.today())
+    # opção de enviar URL ainda existe
+    foto_url = st.text_input("URL da Foto (opcional)")
+    # nova opção: upload de imagem
+    foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png","jpg","jpeg"])
+    codigo_barras = st.text_input("Código de Barras")
+    foto_codigo = st.camera_input("📷 Escanear código de barras")
+    if foto_codigo is not None:
+        codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
+        if codigo_lido:
+            codigo_barras = codigo_lido
+            st.success(f"Código lido: {codigo_barras}")
 
         if st.button("Adicionar produto"):
             novo = {
