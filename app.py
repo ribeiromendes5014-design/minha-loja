@@ -745,8 +745,6 @@ if view == "Vendas":
         st.session_state["valor_pago"] = 0.0
         st.info("Novo pedido iniciado.")
 
-    if b3.button("↩️ Devolução"):
-    st.info("Devolução ainda não implementada.")
 
 if b4.button("📦 Fechar Caixa"):
     hoje = str(date.today())
