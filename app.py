@@ -931,32 +931,19 @@ with st.expander("Cadastrar novo produto"):
         foto_url = st.text_input("URL da Foto (opcional)")
         foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png", "jpg", "jpeg"])
 
-        # Campo Código de Barras com suporte a session_state
+        # Campo Código de Barras com session_state
         if "codigo_barras" not in st.session_state:
             st.session_state["codigo_barras"] = ""
 
         codigo_barras = st.text_input("Código de Barras", value=st.session_state["codigo_barras"])
 
-        # Função embutida para zoom digital (crop central)
-        def central_crop(image_bytes, scale=0.6):
-            from PIL import Image
-            import io
-            img = Image.open(io.BytesIO(image_bytes))
-            w, h = img.size
-            new_w, new_h = int(w * scale), int(h * scale)
-            left = (w - new_w) // 2
-            top = (h - new_h) // 2
-            right = left + new_w
-            bottom = top + new_h
-            cropped = img.crop((left, top, right, bottom))
-            buf = io.BytesIO()
-            cropped.save(buf, format="PNG")
-            return buf.getvalue()
+        # Slider para ajustar o zoom digital
+        zoom_scale = st.slider("🔍 Zoom digital (corte central)", 0.4, 1.0, 0.8, 0.05)
 
-        # Leitura via câmera (com zoom digital no centro)
+        # Leitura via câmera
         foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
         if foto_codigo is not None:
-            imagem_cortada = central_crop(foto_codigo.getbuffer(), scale=0.6)
+            imagem_cortada = central_crop(foto_codigo.getbuffer(), scale=zoom_scale)
             codigos_lidos = ler_codigo_barras(imagem_cortada)
             st.write("Debug: Imagem recebida, tamanho (bytes):", len(foto_codigo.getbuffer()))
             if codigos_lidos:
@@ -965,7 +952,7 @@ with st.expander("Cadastrar novo produto"):
                 if len(codigos_lidos) > 1:
                     st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
             else:
-                st.error("❌ Não foi possível ler nenhum código. Tente aproximar, melhorar iluminação ou usar outro tipo.")
+                st.error("❌ Não foi possível ler nenhum código. Ajuste o zoom, aproxime ou melhore a iluminação.")
 
     # Botão de adicionar produto
     if st.button("Adicionar produto"):
@@ -996,6 +983,7 @@ with st.expander("Cadastrar novo produto"):
         st.session_state["produtos"] = produtos
         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
         st.success("Produto cadastrado!")
+
 
 
 
