@@ -953,31 +953,33 @@ def ler_codigo_barras(imagem_bytes):
 # --- Cadastro ---
 with st.expander("Cadastrar novo produto"):
     c1, c2, c3 = st.columns(3)
+
     with c1:
-        nome = st.text_input("Nome")
-        marca = st.text_input("Marca")
-        categoria = st.text_input("Categoria")
+        nome = st.text_input("Nome", key="cadastro_nome_produto")
+        marca = st.text_input("Marca", key="cadastro_marca_produto")
+        categoria = st.text_input("Categoria", key="cadastro_categoria_produto")
+
     with c2:
-        qtd = st.number_input("Quantidade", min_value=0, step=1, value=0)
-        preco_custo = st.text_input("Preço de Custo", value="0,00")
-        preco_vista = st.text_input("Preço à Vista", value="0,00")
+        qtd = st.number_input("Quantidade", min_value=0, step=1, value=0, key="cadastro_qtd_produto")
+        preco_custo = st.text_input("Preço de Custo", value="0,00", key="cadastro_preco_custo")
+        preco_vista = st.text_input("Preço à Vista", value="0,00", key="cadastro_preco_vista")
         preco_cartao = 0.0
         try:
             preco_cartao = round(float(preco_vista.replace(",", ".").strip()) / FATOR_CARTAO, 2)
         except Exception:
             preco_cartao = 0.0
-        st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True)
+        st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True, key="cadastro_preco_cartao")
 
     with c3:
-        validade = st.date_input("Validade (opcional)", value=date.today())
-        foto_url = st.text_input("URL da Foto (opcional)")
-        foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png","jpg","jpeg"])
+        validade = st.date_input("Validade (opcional)", value=date.today(), key="cadastro_validade")
+        foto_url = st.text_input("URL da Foto (opcional)", key="cadastro_foto_url")
+        foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png", "jpg", "jpeg"], key="cadastro_foto_arquivo")
 
         # campo de código de barras
         codigo_barras = st.text_input("Código de Barras", value="", key="codigo_barras_cadastro")
 
         # câmera para ler código
-        foto_codigo = st.camera_input("📷 Escanear código de barras")
+        foto_codigo = st.camera_input("📷 Escanear código de barras", key="cadastro_camera_codigo")
         if foto_codigo is not None:
             codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
             if codigo_lido:
@@ -986,7 +988,7 @@ with st.expander("Cadastrar novo produto"):
             else:
                 st.warning("Não foi possível ler o código. Tente novamente com mais foco/luz.")
 
-        if st.button("Adicionar produto"):
+        if st.button("Adicionar produto", key="btn_adicionar_produto"):
             novo_id = prox_id(produtos, "ID")
 
             # salva a foto se enviada
