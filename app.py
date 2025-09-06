@@ -1042,7 +1042,7 @@ if view == "Promoções":
                         "DataFim": str(data_fim),
                     }
                     promocoes = pd.concat([promocoes, pd.DataFrame([novo])], ignore_index=True)
-                    save_csv(promocoes, ARQ_PROMOCOES)
+                    save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
                     st.session_state["promocoes"] = promocoes
                     st.success("Promoção cadastrada!")
 
@@ -1095,7 +1095,7 @@ if view == "Promoções":
                         promocoes.loc[idx, ["IDProduto","NomeProduto","Desconto","DataInicio","DataFim"]] = [
                             str(pid_e), pnome_e, float(dnum), str(data_ini_e), str(data_fim_e)
                         ]
-                        save_csv(promocoes, ARQ_PROMOCOES)
+                        save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
                         st.session_state["promocoes"] = promocoes
                         st.success("Promoção atualizada!")
 
@@ -1104,6 +1104,6 @@ if view == "Promoções":
         del_id = st.selectbox("Selecione ID para excluir", promocoes["ID"].astype(str).tolist())
         if st.button("Excluir promoção"):
             promocoes = promocoes[promocoes["ID"].astype(str)!=del_id]
-            save_csv(promocoes, ARQ_PROMOCOES)
+            save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
             st.session_state["promocoes"] = promocoes
             st.warning(f"Promoção {del_id} excluída!")
