@@ -4,7 +4,8 @@ import pandas as pd
 import os
 from datetime import date, datetime, timedelta
 from PIL import Image
-from io import BytesIO   
+from io import BytesIO
+from pyzxing import BarCodeReader  
 
 # =====================================
 # Funções auxiliares
