@@ -16,7 +16,7 @@ def ler_codigo_barras(imagem_bytes):
         with open(temp_file, "wb") as f:
             f.write(imagem_bytes)
 
-        result = reader.decode(temp_file, try_harder=True)  # leitura mais robusta
+        result = reader.decode(temp_file, try_harder=True)
         os.remove(temp_file)
 
         if result:
@@ -30,15 +30,21 @@ def ler_codigo_barras(imagem_bytes):
 def central_crop(image_bytes, scale=0.8):
     """
     Recorta o centro da imagem para simular zoom digital.
-    scale = fração da largura/altura mantida (0.8 = menos zoom, 0.5 = mais zoom).
+    Usa arquivo temporário para suportar webp do st.camera_input.
     """
-    # Converte para bytes se vier como memoryview
+    # Converte memoryview -> bytes
     if hasattr(image_bytes, "tobytes"):
         image_bytes = image_bytes.tobytes()
     elif isinstance(image_bytes, memoryview):
         image_bytes = bytes(image_bytes)
 
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    # Salva num arquivo temporário (corrige bug do webp no PIL no Streamlit Cloud)
+    temp_file = "temp_capture.webp"
+    with open(temp_file, "wb") as f:
+        f.write(image_bytes)
+
+    # Abre do arquivo e converte para RGB
+    img = Image.open(temp_file).convert("RGB")
     w, h = img.size
     new_w, new_h = int(w * scale), int(h * scale)
     left = (w - new_w) // 2
@@ -50,6 +56,7 @@ def central_crop(image_bytes, scale=0.8):
     buf = io.BytesIO()
     cropped.save(buf, format="PNG")
     return buf.getvalue()
+
 
 
 
