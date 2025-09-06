@@ -1208,29 +1208,31 @@ if view == "Vendas":
 
             st.success(f"✅ Venda {novo_id} finalizada!")
 
+        
             # --- GERA E MOSTRA O RECIBO AUTOMATICAMENTE ---
-caminho_pdf = f"recibo_venda_{novo_id}.pdf"
-gerar_pdf_venda(novo_id, vendas, caminho_pdf)
+        caminho_pdf = f"recibo_venda_{novo_id}.pdf"
+        gerar_pdf_venda(novo_id, vendas, caminho_pdf)
 
-with open(caminho_pdf, "rb") as f:
-    pdf_bytes = f.read()
+        with open(caminho_pdf, "rb") as f:
+            pdf_bytes = f.read()
 
-    # botão de download
-    st.download_button(
-        label="⬇️ Baixar Recibo da Venda",
-        data=pdf_bytes,
-        file_name=caminho_pdf,
-        mime="application/pdf"
-    )
+            # botão de download
+            st.download_button(
+                label="⬇️ Baixar Recibo da Venda",
+                data=pdf_bytes,
+                file_name=caminho_pdf,
+                mime="application/pdf"
+            )
 
-    # exibir o recibo dentro do app
-    import base64
-    import streamlit.components.v1 as components
-    b64 = base64.b64encode(pdf_bytes).decode("utf-8")
-    pdf_display = f"""
-    <iframe src="data:application/pdf;base64,{b64}" width="400" height="600" type="application/pdf"></iframe>
-    """
-    components.html(pdf_display, height=650)
+            # exibir dentro do app
+            import base64
+            import streamlit.components.v1 as components
+            b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+            pdf_display = f"""
+            <iframe src="data:application/pdf;base64,{b64}" 
+                    width="350" height="600" type="application/pdf"></iframe>
+            """
+            components.html(pdf_display, height=650)
 
 
     # --- NOVA VENDA ---
