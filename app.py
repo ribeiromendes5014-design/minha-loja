@@ -889,15 +889,18 @@ if view == "Vendas":
                 produtos.loc[mask, "Quantidade"] = (
                     produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
                 ).astype(int)
+
         # remove da planilha de vendas
         vendas = vendas[pd.to_numeric(vendas["IDVenda"], errors="coerce").astype(int)!=int(id_excluir)]
-        save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")   # ✅ agora salva no GitHub também
+        save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+
         st.session_state["vendas"] = vendas
         st.session_state["produtos"] = produtos
         st.success(f"Venda {id_excluir} excluída e estoque ajustado.")
     else:
         st.warning("Venda não encontrada.")
+
     else:
         st.info("Ainda não há vendas registradas.")
 
