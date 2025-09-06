@@ -502,34 +502,44 @@ with c3:
             codigo_barras = codigo_lido
             st.success(f"Código lido: {codigo_barras}")
 
-        if st.button("Adicionar produto"):
-    novo_id = prox_id(produtos, "ID")
+                if st.button("Adicionar produto"):
+            novo_id = prox_id(produtos, "ID")
 
-    # salva a foto se enviada
-    caminho_foto = foto_url.strip()
-    if foto_arquivo is not None:
-        extensao = os.path.splitext(foto_arquivo.name)[1]
-        caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
-        with open(caminho_foto, "wb") as f:
-            f.write(foto_arquivo.getbuffer())
+            # cria a pasta de fotos se não existir
+            FOTOS_DIR = "fotos_produtos"
+            os.makedirs(FOTOS_DIR, exist_ok=True)
 
-    novo = {
-        "ID": novo_id,
-        "Nome": nome.strip(),
-        "Marca": marca.strip(),
-        "Categoria": categoria.strip(),
-        "Quantidade": int(qtd),
-        "PrecoCusto": to_float(preco_custo),
-        "PrecoVista": to_float(preco_vista),
-        "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista)>0 else 0.0,
-        "Validade": str(validade) if validade else "",
-        "FotoURL": caminho_foto,  # agora guarda o caminho da foto local
-        "CodigoBarras": str(codigo_barras).strip()
-    }
-    produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
-    st.session_state["produtos"] = produtos
-    save_csv(produtos, ARQ_PRODUTOS)
-    st.success("Produto cadastrado!")
+            # decide o caminho da foto
+            caminho_foto = foto_url.strip()
+            if foto_codigo is not None:  # se tirou foto com a câmera
+                extensao = ".png"
+                caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
+                with open(caminho_foto, "wb") as f:
+                    f.write(foto_codigo.getbuffer())
+            elif 'foto_arquivo' in locals() and foto_arquivo is not None:  # se usou uploader
+                extensao = os.path.splitext(foto_arquivo.name)[1]
+                caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
+                with open(caminho_foto, "wb") as f:
+                    f.write(foto_arquivo.getbuffer())
+
+            novo = {
+                "ID": novo_id,
+                "Nome": nome.strip(),
+                "Marca": marca.strip(),
+                "Categoria": categoria.strip(),
+                "Quantidade": int(qtd),
+                "PrecoCusto": to_float(preco_custo),
+                "PrecoVista": to_float(preco_vista),
+                "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
+                "Validade": str(validade) if validade else "",
+                "FotoURL": caminho_foto,
+                "CodigoBarras": str(codigo_barras).strip()
+            }
+            produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
+            st.session_state["produtos"] = produtos
+            save_csv(produtos, ARQ_PRODUTOS)
+            st.success("Produto cadastrado!")
+
 
 
     st.markdown("### Lista de produtos")
