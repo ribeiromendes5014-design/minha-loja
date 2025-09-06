@@ -980,14 +980,16 @@ if view == "Produtos":
             zoom_scale = st.slider("🔍 Zoom digital (corte central)", 0.4, 1.0, 0.8, 0.05)
 
             # Leitura via câmera
-            foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
-            if foto_codigo is not None:
-                imagem_cortada = central_crop(foto_codigo.getvalue(), scale=zoom_scale)
-                codigos_lidos = ler_codigo_barras(imagem_cortada)
-                st.write("Debug: Imagem recebida, tamanho (bytes):", len(foto_codigo.getvalue()))
+foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
+if foto_codigo is not None:
+    # Passa o UploadedFile direto para a função
+    imagem_cortada = central_crop(foto_codigo, scale=zoom_scale)
+    codigos_lidos = ler_codigo_barras(imagem_cortada)
+    st.write("Debug: Imagem recebida, tamanho (bytes):", len(foto_codigo.getvalue()))
 
-                # Mostra prévia da imagem cortada (debug)
-                st.image(imagem_cortada, caption="Pré-visualização (zoom aplicado)")
+    # Mostra prévia da imagem cortada (debug)
+    st.image(imagem_cortada, caption="Pré-visualização (zoom aplicado)")
+
 
                 if codigos_lidos:
                     st.session_state["codigo_barras"] = codigos_lidos[0]
