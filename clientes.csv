@@ -1,2 +1,2 @@
 ID,Cliente,Produto,CodigoBarras,Valor,DataPagamento,Status,FormaPagamento
-1,Rose,Pedido 1,nan,19.9,2025-09-20,Aberto,
+1,Rose,Pedido 1,,22.43,2025-09-20,Pago,Cartão
