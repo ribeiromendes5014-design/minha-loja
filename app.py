@@ -669,6 +669,7 @@ if view == "Dashboard":
                         </div>
                         """, unsafe_allow_html=True)
 
+            # --- RELATÓRIOS DE CAIXA ---
             st.markdown("### 📦 Relatórios de Caixa")
     caixas = norm_caixas(pd.DataFrame())
     if caixas.empty:
