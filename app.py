@@ -931,7 +931,48 @@ with st.expander("Cadastrar novo produto"):
         foto_url = st.text_input("URL da Foto (opcional)")
         foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png","jpg","jpeg"])
 
-        # campo de código de barras com chave fixa (para atualizar depois)
+        from pyzbar.pyzbar import decode
+from PIL import Image
+import io
+
+# Função para ler código de barras
+def ler_codigo_barras(imagem_bytes):
+    try:
+        img = Image.open(io.BytesIO(imagem_bytes))
+        decoded_objects = decode(img)
+        if decoded_objects:
+            return decoded_objects[0].data.decode("utf-8")
+        else:
+            return None
+    except Exception as e:
+        st.error(f"Erro ao ler código de barras: {e}")
+        return None
+
+
+# --- Cadastro ---
+with st.expander("Cadastrar novo produto"):
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        nome = st.text_input("Nome")
+        marca = st.text_input("Marca")
+        categoria = st.text_input("Categoria")
+    with c2:
+        qtd = st.number_input("Quantidade", min_value=0, step=1, value=0)
+        preco_custo = st.text_input("Preço de Custo", value="0,00")
+        preco_vista = st.text_input("Preço à Vista", value="0,00")
+        preco_cartao = 0.0
+        try:
+            preco_cartao = round(float(preco_vista.replace(",", ".").strip()) / FATOR_CARTAO, 2)
+        except Exception:
+            preco_cartao = 0.0
+        st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True)
+
+    with c3:
+        validade = st.date_input("Validade (opcional)", value=date.today())
+        foto_url = st.text_input("URL da Foto (opcional)")
+        foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png","jpg","jpeg"])
+
+        # campo de código de barras
         codigo_barras = st.text_input("Código de Barras", value="", key="codigo_barras_cadastro")
 
         # câmera para ler código
@@ -942,6 +983,8 @@ with st.expander("Cadastrar novo produto"):
                 # atualiza o campo automaticamente
                 st.session_state["codigo_barras_cadastro"] = codigo_lido
                 st.success(f"Código lido: {codigo_lido}")
+            else:
+                st.warning("Não foi possível ler o código. Tente novamente com mais foco/luz.")
 
         if st.button("Adicionar produto"):
             novo_id = prox_id(produtos, "ID")
