@@ -172,15 +172,11 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 
     story = []
 
-    # --- Logo ---
-    logo = get_logo_source()
-    if logo:
-        try:
-            story.append(Image(logo, width=55*mm, height=20*mm))
-        except Exception:
-            story.append(Paragraph("Minha Loja", styles["BoldCenter"]))
-    else:
-        story.append(Paragraph("Minha Loja", styles["BoldCenter"]))
+    # --- Logo fixa ---
+    try:
+        story.append(Image("logo_docebella.png", width=55*mm, height=25*mm))
+    except Exception:
+        story.append(Paragraph("Doce&Bella Cosmético", styles["BoldCenter"]))
 
     story.append(Spacer(1, 6))
     story.append(Paragraph("📞 (41) 99168-6525", styles["NormalCenter"]))
@@ -211,8 +207,8 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 
     t = Table(tabela, colWidths=[80*mm*0.4, 80*mm*0.15, 80*mm*0.2, 80*mm*0.25])
     t.setStyle(TableStyle([
-        ("LINEABOVE", (0, 0), (-1, 0), 0.5, colors.black),   # linha acima cabeçalho
-        ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.black),   # linha abaixo cabeçalho
+        ("LINEABOVE", (0, 0), (-1, 0), 0.5, colors.black),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.black),
         ("ALIGN", (1, 1), (-1, -1), "CENTER"),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("FONTSIZE", (0, 0), (-1, -1), 9),
@@ -241,6 +237,7 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     story.append(Paragraph(datetime.now().strftime("%d/%m/%Y %H:%M:%S"), styles["NormalCenter"]))
 
     doc.build(story)
+
 
 
 # =====================================
