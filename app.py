@@ -978,55 +978,55 @@ zoom_scale = st.slider("🔍 Zoom digital (corte central)", 0.4, 1.0, 0.8, 0.05)
 foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
 if foto_codigo is not None:
     # Passa UploadedFile (foto_codigo) para central_crop e obtém bytes PNG já cortados
-imagem_cortada_bytes = central_crop(foto_codigo, scale=zoom_scale)
+    imagem_cortada_bytes = central_crop(foto_codigo, scale=zoom_scale)
 
-# Agora envia para o leitor de código de barras
-codigos_lidos = ler_codigo_barras(imagem_cortada_bytes)
+    # Agora envia para o leitor de código de barras
+    codigos_lidos = ler_codigo_barras(imagem_cortada_bytes)
 
-# Debug
-st.write("Debug: Imagem recebida, tamanho (bytes):", len(imagem_cortada_bytes))
+    # Debug
+    st.write("Debug: Imagem recebida, tamanho (bytes):", len(imagem_cortada_bytes))
 
-# Mostrar a imagem cortada
-st.image(imagem_cortada_bytes, caption="Pré-visualização (zoom aplicado)")
+    # Mostrar a imagem cortada
+    st.image(imagem_cortada_bytes, caption="Pré-visualização (zoom aplicado)")
 
-if codigos_lidos:
-    st.session_state["codigo_barras"] = codigos_lidos[0]
-    st.success(f"Código lido: {st.session_state['codigo_barras']}")
-    if len(codigos_lidos) > 1:
-        st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
-else:
-    st.error("❌ Não foi possível ler nenhum código. Ajuste o zoom, aproxime ou melhore a iluminação.")
+    if codigos_lidos:
+        st.session_state["codigo_barras"] = codigos_lidos[0]
+        st.success(f"Código lido: {st.session_state['codigo_barras']}")
+        if len(codigos_lidos) > 1:
+            st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
+    else:
+        st.error("❌ Não foi possível ler nenhum código. Ajuste o zoom, aproxime ou melhore a iluminação.")
 
 # Botão de adicionar produto
 if st.button("Adicionar produto"):
     novo_id = prox_id(produtos, "ID")
 
+    # Salva a foto se enviada
+    caminho_foto = foto_url.strip()
+    if foto_arquivo is not None:
+        extensao = os.path.splitext(foto_arquivo.name)[1]
+        caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
+        with open(caminho_foto, "wb") as f:
+            f.write(foto_arquivo.getbuffer())
 
-            # Salva a foto se enviada
-            caminho_foto = foto_url.strip()
-            if foto_arquivo is not None:
-                extensao = os.path.splitext(foto_arquivo.name)[1]
-                caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
-                with open(caminho_foto, "wb") as f:
-                    f.write(foto_arquivo.getbuffer())
+    novo = {
+        "ID": novo_id,
+        "Nome": nome.strip(),
+        "Marca": marca.strip(),
+        "Categoria": categoria.strip(),
+        "Quantidade": int(qtd),
+        "PrecoCusto": to_float(preco_custo),
+        "PrecoVista": to_float(preco_vista),
+        "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
+        "Validade": str(validade) if validade else "",
+        "FotoURL": caminho_foto,
+        "CodigoBarras": str(st.session_state["codigo_barras"]).strip()
+    }
+    produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
+    st.session_state["produtos"] = produtos
+    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+    st.success("Produto cadastrado!")
 
-            novo = {
-                "ID": novo_id,
-                "Nome": nome.strip(),
-                "Marca": marca.strip(),
-                "Categoria": categoria.strip(),
-                "Quantidade": int(qtd),
-                "PrecoCusto": to_float(preco_custo),
-                "PrecoVista": to_float(preco_vista),
-                "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
-                "Validade": str(validade) if validade else "",
-                "FotoURL": caminho_foto,
-                "CodigoBarras": str(st.session_state["codigo_barras"]).strip()
-            }
-            produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
-            st.session_state["produtos"] = produtos
-            save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-            st.success("Produto cadastrado!")
 
     
 
