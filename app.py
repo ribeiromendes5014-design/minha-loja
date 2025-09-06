@@ -804,7 +804,7 @@ if view == "Vendas":
                 if str(item.get("CodigoBarras","")).strip():
                     codigos_fiado.append(str(item.get("CodigoBarras")).strip())
 
-            save_csv(vendas, ARQ_VENDAS)
+            save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
             save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
 
             # Se for fiado, registra nos clientes (salva lista de códigos de barras vinculados)
