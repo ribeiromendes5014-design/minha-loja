@@ -77,7 +77,75 @@ def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
     doc = SimpleDocTemplate(path, pagesize=A4)
     styles = getSampleStyleSheet()
     story = []
+# =====================================
+# Relatório PDF de Venda (Recibo estilo cupom)
+# =====================================
+from reportlab.lib.units import mm
 
+def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
+    """Gera um PDF estilo cupom de uma venda específica"""
+    doc = SimpleDocTemplate(path, pagesize=(80*mm, 200*mm))  # formato de cupom
+    styles = getSampleStyleSheet()
+    story = []
+
+    # --- Cabeçalho / Logo ---
+    logo = get_logo_source()
+    if logo:
+        try:
+            from reportlab.platypus import Image
+            story.append(Image(logo, width=50*mm, height=20*mm))
+        except Exception:
+            story.append(Paragraph("Minha Loja", styles["Title"]))
+    else:
+        story.append(Paragraph("Minha Loja", styles["Title"]))
+
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("📞 (41) 99168-6525", styles["Normal"]))
+    story.append(Paragraph("📷 @docebellacosmetico", styles["Normal"]))
+    story.append(Spacer(1, 12))
+
+    # --- Dados da venda ---
+    venda_sel = vendas[vendas["IDVenda"].astype(int) == int(venda_id)]
+    if venda_sel.empty:
+        story.append(Paragraph("Venda não encontrada.", styles["Normal"]))
+        doc.build(story)
+        return
+
+    venda_info = venda_sel.iloc[0]
+    story.append(Paragraph(f"Data: {venda_info['Data']}", styles["Heading3"]))
+    story.append(Paragraph(f"Forma de Pagamento: {venda_info['FormaPagamento']}", styles["Heading3"]))
+    story.append(Spacer(1, 12))
+
+    # --- Produtos ---
+    tabela = [["Produto", "Qtd", "Preço Unit.", "Total"]]
+    for _, row in venda_sel.iterrows():
+        tabela.append([
+            str(row["NomeProduto"]),
+            str(int(row["Quantidade"])),
+            f"R$ {float(row['PrecoUnitario']):.2f}",
+            f"R$ {float(row['Total']):.2f}",
+        ])
+    t = Table(tabela, colWidths=[80*mm*0.4, 80*mm*0.15, 80*mm*0.2, 80*mm*0.25])
+    t.setStyle(TableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+        ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 12))
+
+    # --- Total ---
+    valor_total = venda_sel["Total"].sum()
+    story.append(Paragraph(f"<b>Valor Total: R$ {valor_total:.2f}</b>", styles["Heading2"]))
+    story.append(Spacer(1, 12))
+
+    # --- Mensagem final ---
+    story.append(Paragraph("Obrigado pela sua compra, volte sempre!", styles["Normal"]))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph(datetime.now().strftime("%d/%m/%Y %H:%M:%S"), styles["Normal"]))
+
+    doc.build(story)
+    
     # --- Cabeçalho
     story.append(Paragraph("Relatório de Fechamento de Caixa", styles["Title"]))
     story.append(Spacer(1, 12))
