@@ -782,8 +782,6 @@ if view == "Vendas":
             st.session_state["caixas"] = caixas
             st.success(f"Caixa do dia {hoje} fechado!")
 
-    if b5.button("✏️ Editar Pedido"):
-        st.info("Edite as quantidades acima e remova itens com o ícone 🗑️.")
 
     # Histórico com exclusão de venda
     st.markdown("### Últimas vendas")
