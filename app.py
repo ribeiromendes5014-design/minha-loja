@@ -623,15 +623,12 @@ if view == "Dashboard":
                         </div>
                         """, unsafe_allow_html=True)
 
-        st.markdown("### Últimas vendas")
-    st.dataframe(vendas.sort_values(by=["Data","IDVenda"], ascending=False), use_container_width=True)
-
-    st.markdown("### 📦 Relatórios de Caixa")
-    caixas = norm_caixas(pd.DataFrame())
-    if caixas.empty:
-        st.info("Nenhum fechamento de caixa registrado ainda.")
-    else:
-        # --- FILTRO POR DATA ---
+        st.markdown("### 📦 Relatórios de Caixa")
+caixas = norm_caixas(pd.DataFrame())
+if caixas.empty:
+    st.info("Nenhum fechamento de caixa registrado ainda.")
+else:
+    # --- FILTRO POR DATA ---
     st.subheader("🔍 Filtro de Caixa por Data")
     datas_disp = sorted(caixas["Data"].unique(), reverse=True)
     data_sel = st.selectbox("Selecione a data do caixa", ["Todas"] + datas_disp)
