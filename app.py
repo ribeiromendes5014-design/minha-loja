@@ -669,7 +669,7 @@ if view == "Dashboard":
                         </div>
                         """, unsafe_allow_html=True)
 
-            # --- RELATÓRIOS DE CAIXA ---
+                # --- RELATÓRIOS DE CAIXA ---
     st.markdown("### 📦 Relatórios de Caixa")
     caixas = norm_caixas(pd.DataFrame())
     if caixas.empty:
@@ -685,6 +685,22 @@ if view == "Dashboard":
             caixas_filtrados = caixas_filtrados[caixas_filtrados["Data"] == data_sel]
 
         st.dataframe(caixas_filtrados.sort_values("Data", ascending=False), use_container_width=True)
+
+        # --- PRODUTOS DO DIA ---
+        if data_sel != "Todas":
+            vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
+            vendas_dia = vendas[vendas["Data"].dt.strftime("%Y-%m-%d") == data_sel]
+
+            st.subheader(f"🛒 Produtos vendidos em {data_sel}")
+            if vendas_dia.empty:
+                st.info("Nenhum produto vendido nesse dia.")
+            else:
+                st.dataframe(
+                    vendas_dia[["IDProduto","NomeProduto","Quantidade","PrecoUnitario","Total"]],
+                    use_container_width=True
+                )
+        else:
+            vendas_dia = pd.DataFrame()  # vazio para não dar erro no PDF
 
         # --- EXCLUSÃO DE RELATÓRIO ---
         st.subheader("🗑️ Excluir Relatório de Caixa")
@@ -702,7 +718,7 @@ if view == "Dashboard":
             caixa_sel = caixas_filtrados.iloc[0].to_dict()
             if st.button("📄 Gerar PDF do Caixa Selecionado"):
                 caminho_pdf = f"caixa_{caixa_sel['Data']}.pdf"
-                gerar_pdf_caixa(caixa_sel, caminho_pdf)
+                gerar_pdf_caixa(caixa_sel, vendas_dia, caminho_pdf)  # <-- agora leva vendas do dia também
                 with open(caminho_pdf, "rb") as f:
                     st.download_button(
                         label=f"⬇️ Baixar Relatório de Caixa ({caixa_sel['Data']})",
@@ -710,6 +726,7 @@ if view == "Dashboard":
                         file_name=caminho_pdf,
                         mime="application/pdf"
                     )
+
 
 # =====================================
 # PRODUTOS
