@@ -996,7 +996,7 @@ if view == "Clientes":
             else:
                 clientes = clientes[clientes["ID"].astype(str)!=str(sel)]
                 st.session_state["clientes"] = clientes
-                save_csv(clientes, ARQ_CLIENTES)
+                save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
                 st.warning(f"Registro {sel} excluído!")
 
 # =====================================
