@@ -79,6 +79,9 @@ def ler_codigo_barras(imagem_bytes: bytes) -> str | None:
 # =====================================
 # Utilidades de persistência (CSV)
 # =====================================
+# =====================================
+# Utilidades de persistência (CSV)
+# =====================================
 def ensure_csv(path: str, columns: list, defaults: dict = None) -> pd.DataFrame:
     try:
         df = pd.read_csv(path, dtype=str)
@@ -95,6 +98,108 @@ def ensure_csv(path: str, columns: list, defaults: dict = None) -> pd.DataFrame:
 
 def save_csv(df: pd.DataFrame, path: str):
     df.to_csv(path, index=False)
+
+# =====================================
+# Salvar no GitHub
+# =====================================
+def save_csv_github(df: pd.DataFrame, path: str, mensagem: str):
+    try:
+        gh = st.secrets["github"]
+        token = gh["token"]
+        repo_name = gh["repo"]
+
+        g = Github(token)
+        repo = g.get_repo(repo_name)
+        branch = repo.default_branch
+
+        # Ler arquivo atual (se existir)
+        try:
+            contents = repo.get_contents(path, ref=branch)
+            sha = contents.sha
+        except Exception:
+            sha = None
+
+        from io import StringIO
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        repo.update_file(
+            path,
+            mensagem,
+            csv_buffer.getvalue(),
+            sha if sha else None,
+            branch=branch,
+        )
+    except Exception as e:
+        st.error(f"❌ Erro ao salvar no GitHub: {e}")
+
+# =====================================
+# Carregar do GitHub
+# =====================================
+def load_csv_github(path: str) -> pd.DataFrame | None:
+    """Carrega CSV do GitHub (se existir)."""
+    try:
+        gh = st.secrets["github"]
+        token = gh["token"]
+        repo_name = gh["repo"]
+
+        g = Github(token)
+        repo = g.get_repo(repo_name)
+        branch = repo.default_branch
+
+        contents = repo.get_contents(path, ref=branch)
+        import io
+        return pd.read_csv(io.StringIO(contents.decoded_content.decode()), dtype=str)
+    except Exception:
+        return None
+
+# =====================================
+# Usuários e Login
+# =====================================
+def norm_usuarios(_: pd.DataFrame) -> pd.DataFrame:
+    cols = ["Usuario","Senha"]
+
+    # tenta carregar do GitHub primeiro
+    df = load_csv_github(ARQ_USUARIOS)
+    if df is None:
+        df = ensure_csv(ARQ_USUARIOS, cols)
+
+    # Se vazio, cria admin padrão
+    if df.empty:
+        df = pd.DataFrame([{"Usuario":"admin","Senha":"123"}])
+        save_csv_github(df, ARQ_USUARIOS, "Criando admin inicial")
+
+    return df
+
+def reset_admin_user():
+    """Cria/atualiza o usuário admin com senha 123 para recuperar acesso."""
+    df = norm_usuarios(pd.DataFrame())
+    if "Usuario" not in df.columns:
+        df = pd.DataFrame(columns=["Usuario","Senha"])
+    if (df["Usuario"] == "admin").any():
+        df.loc[df["Usuario"]=="admin", "Senha"] = "123"
+    else:
+        df.loc[len(df)] = {"Usuario":"admin","Senha":"123"}
+    save_csv_github(df, ARQ_USUARIOS, "Resetando admin")
+    return True
+
+def do_login(usuarios: pd.DataFrame) -> bool:
+    st.subheader("Login")
+
+    user = st.text_input("Usuário")
+    pwd = st.text_input("Senha", type="password")
+
+    if st.button("Entrar"):
+        if ((usuarios["Usuario"] == user) & (usuarios["Senha"] == pwd)).any():
+            st.session_state["logado"] = True
+            st.session_state["usuario"] = user
+            st.success(f"Bem-vindo, {user}!")
+            return True
+        else:
+            st.error("Usuário ou senha inválidos.")
+            return False
+
+    return st.session_state.get("logado", False)
+
 # =====================================
 # Salvar CSV no GitHub (somente produtos)
 # =====================================
