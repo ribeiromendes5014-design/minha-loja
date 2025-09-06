@@ -1141,7 +1141,7 @@ if view == "Vendas":
     b1, b2, b3, b4, b5, b6 = st.columns(6)
 
     # --- FINALIZAR VENDA ---
-    if b1.button("✅ Finalizar Venda"):
+if b1.button("✅ Finalizar Venda"):
     if not st.session_state["pedido_atual"]:
         st.warning("Adicione itens ao pedido.")
     else:
@@ -1230,6 +1230,7 @@ if view == "Vendas":
                         width="400" height="650" type="application/pdf"></iframe>
             """
             components.html(pdf_display, height=700)
+
 
 
 
