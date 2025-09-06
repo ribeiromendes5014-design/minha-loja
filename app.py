@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import os
 import io
-from datetime import date
+from datetime import date, datetime, timedelta
 from PIL import Image   # <- importante para a função
 
 # =====================================
