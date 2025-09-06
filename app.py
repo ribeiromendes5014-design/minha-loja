@@ -1212,7 +1212,6 @@ if view == "Vendas":
         caminho_pdf = f"recibo_venda_{novo_id}.pdf"
         gerar_pdf_venda(novo_id, vendas, caminho_pdf)
 
-        # Mostra o PDF embutido no navegador
         with open(caminho_pdf, "rb") as f:
             pdf_bytes = f.read()
             st.download_button(
@@ -1227,6 +1226,7 @@ if view == "Vendas":
             b64 = base64.b64encode(pdf_bytes).decode("utf-8")
             pdf_display = f'<iframe src="data:application/pdf;base64,{b64}" width="100%" height="600" type="application/pdf"></iframe>'
             st.markdown(pdf_display, unsafe_allow_html=True)
+
 
 
             st.session_state["pedido_atual"] = []
