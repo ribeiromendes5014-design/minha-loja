@@ -20,7 +20,7 @@ def central_crop(image_bytes, scale=0.8):
     elif isinstance(image_bytes, memoryview):
         image_bytes = bytes(image_bytes)
 
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    img = Image.open(BytesIO(image_bytes)).convert("RGB")
     w, h = img.size
     new_w, new_h = int(w * scale), int(h * scale)
     left = (w - new_w) // 2
@@ -29,7 +29,7 @@ def central_crop(image_bytes, scale=0.8):
     bottom = top + new_h
     cropped = img.crop((left, top, right, bottom))
 
-    buf = io.BytesIO()
+    buf = BytesIO()
     cropped.save(buf, format="PNG")
     return buf.getvalue()
 
