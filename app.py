@@ -821,7 +821,7 @@ if view == "Vendas":
                     "FormaPagamento": ""
                 }
                 clientes = pd.concat([clientes, pd.DataFrame([novo_cli])], ignore_index=True)
-                save_csv(clientes, ARQ_CLIENTES)
+                save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
                 st.session_state["clientes"] = clientes
 
             st.session_state["pedido_atual"] = []
