@@ -14,12 +14,20 @@ def central_crop(image_bytes, scale=0.8):
     Recorta o centro da imagem para simular zoom digital.
     scale = fração da largura/altura mantida (0.8 = menos zoom, 0.5 = mais zoom).
     """
-    # Converte para bytes se vier como memoryview
-    if hasattr(image_bytes, "tobytes"):
+
+    # Converte para bytes em diferentes cenários
+    if hasattr(image_bytes, "read"):  
+        # Caso seja UploadedFile (streamlit)
+        image_bytes = image_bytes.read()
+    elif hasattr(image_bytes, "getvalue"):  
+        # Caso seja memory buffer do streamlit
+        image_bytes = image_bytes.getvalue()
+    elif hasattr(image_bytes, "tobytes"):
         image_bytes = image_bytes.tobytes()
     elif isinstance(image_bytes, memoryview):
         image_bytes = bytes(image_bytes)
 
+    # Agora sempre teremos bytes crus
     img = Image.open(BytesIO(image_bytes)).convert("RGB")
     w, h = img.size
     new_w, new_h = int(w * scale), int(h * scale)
