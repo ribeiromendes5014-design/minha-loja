@@ -977,9 +977,17 @@ zoom_scale = st.slider("🔍 Zoom digital (corte central)", 0.4, 1.0, 0.8, 0.05)
 # Leitura via câmera
 foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
 if foto_codigo is not None:
-    # Passa o UploadedFile direto para a função
-    imagem_cortada = central_crop(foto_codigo.getvalue(), scale=zoom_scale)
-    codigos_lidos = ler_codigo_barras(imagem_cortada)
+    # Passa UploadedFile (foto_codigo) para central_crop e obtém bytes PNG já cortados
+imagem_cortada_bytes = central_crop(foto_codigo, scale=zoom_scale)
+
+# Agora envia para o leitor de código de barras
+codigos_lidos = ler_codigo_barras(imagem_cortada_bytes)
+
+# Debug
+st.write("Debug: Imagem recebida, tamanho (bytes):", len(imagem_cortada_bytes))
+
+# Mostrar a imagem cortada
+st.image(imagem_cortada_bytes, caption="Pré-visualização (zoom aplicado)")
     st.write("Debug: Imagem recebida, tamanho (bytes):", len(foto_codigo.getvalue()))
 
     # Mostra prévia da imagem cortada (debug)
