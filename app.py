@@ -909,114 +909,63 @@ if view == "Produtos":
     st.header("📦 Produtos")
 
     # --- Cadastro ---
-with st.expander("Cadastrar novo produto"):
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        nome = st.text_input("Nome")
-        marca = st.text_input("Marca")
-        categoria = st.text_input("Categoria")
-    with c2:
-        qtd = st.number_input("Quantidade", min_value=0, step=1, value=0)
-        preco_custo = st.text_input("Preço de Custo", value="0,00")
-        preco_vista = st.text_input("Preço à Vista", value="0,00")
-        preco_cartao = 0.0
-        try:
-            preco_cartao = round(float(preco_vista.replace(",", ".").strip()) / FATOR_CARTAO, 2)
-        except Exception:
+    with st.expander("Cadastrar novo produto"):
+        c1,c2,c3 = st.columns(3)
+        with c1:
+            nome = st.text_input("Nome")
+            marca = st.text_input("Marca")
+            categoria = st.text_input("Categoria")
+        with c2:
+            qtd = st.number_input("Quantidade", min_value=0, step=1, value=0)
+            preco_custo = st.text_input("Preço de Custo", value="0,00")
+            preco_vista = st.text_input("Preço à Vista", value="0,00")
             preco_cartao = 0.0
-        st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True)
+            try:
+                preco_cartao = round(float(preco_vista.replace(",", ".").strip()) / FATOR_CARTAO, 2)
+            except Exception:
+                preco_cartao = 0.0
+            st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True)
 
-    with c3:
-        validade = st.date_input("Validade (opcional)", value=date.today())
-        foto_url = st.text_input("URL da Foto (opcional)")
-        foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png","jpg","jpeg"])
+        with c3:
+            validade = st.date_input("Validade (opcional)", value=date.today())
+            foto_url = st.text_input("URL da Foto (opcional)")
+            foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png","jpg","jpeg"])
+            codigo_barras = st.text_input("Código de Barras")
+            foto_codigo = st.camera_input("📷 Escanear código de barras")
+            if foto_codigo is not None:
+                codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
+                if codigo_lido:
+                    codigo_barras = codigo_lido
+                    st.success(f"Código lido: {codigo_barras}")
 
-        from pyzxing import BarCodeReader
-import tempfile
+            if st.button("Adicionar produto"):
+                novo_id = prox_id(produtos, "ID")
 
-# Função para ler código de barras (usando pyzxing)
-def ler_codigo_barras(imagem_bytes):
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
-            tmp.write(imagem_bytes)
-            tmp.flush()
-            reader = BarCodeReader()
-            result = reader.decode(tmp.name)
-            if result and "parsed" in result[0]:
-                return result[0]["parsed"]
-            return None
-    except Exception as e:
-        st.error(f"Erro ao ler código de barras: {e}")
-        return None
+                # salva a foto se enviada
+                caminho_foto = foto_url.strip()
+                if foto_arquivo is not None:
+                    extensao = os.path.splitext(foto_arquivo.name)[1]
+                    caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
+                    with open(caminho_foto, "wb") as f:
+                        f.write(foto_arquivo.getbuffer())
 
-
-# --- Cadastro ---
-with st.expander("Cadastrar novo produto"):
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-        nome = st.text_input("Nome", key="cadastro_nome_produto")
-        marca = st.text_input("Marca", key="cadastro_marca_produto")
-        categoria = st.text_input("Categoria", key="cadastro_categoria_produto")
-
-    with c2:
-        qtd = st.number_input("Quantidade", min_value=0, step=1, value=0, key="cadastro_qtd_produto")
-        preco_custo = st.text_input("Preço de Custo", value="0,00", key="cadastro_preco_custo")
-        preco_vista = st.text_input("Preço à Vista", value="0,00", key="cadastro_preco_vista")
-        preco_cartao = 0.0
-        try:
-            preco_cartao = round(float(preco_vista.replace(",", ".").strip()) / FATOR_CARTAO, 2)
-        except Exception:
-            preco_cartao = 0.0
-        st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True, key="cadastro_preco_cartao")
-
-    with c3:
-        validade = st.date_input("Validade (opcional)", value=date.today(), key="cadastro_validade")
-        foto_url = st.text_input("URL da Foto (opcional)", key="cadastro_foto_url")
-        foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png", "jpg", "jpeg"], key="cadastro_foto_arquivo")
-
-        # campo de código de barras
-        codigo_barras = st.text_input("Código de Barras", value="", key="codigo_barras_cadastro")
-
-        # câmera para ler código
-        foto_codigo = st.camera_input("📷 Escanear código de barras", key="cadastro_camera_codigo")
-        if foto_codigo is not None:
-            codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
-            if codigo_lido:
-                st.session_state["codigo_barras_cadastro"] = codigo_lido
-                st.success(f"Código lido: {codigo_lido}")
-            else:
-                st.warning("Não foi possível ler o código. Tente novamente com mais foco/luz.")
-
-        if st.button("Adicionar produto", key="btn_adicionar_produto"):
-            novo_id = prox_id(produtos, "ID")
-
-            # salva a foto se enviada
-            caminho_foto = foto_url.strip()
-            if foto_arquivo is not None:
-                extensao = os.path.splitext(foto_arquivo.name)[1]
-                caminho_foto = os.path.join(FOTOS_DIR, f"produto_{novo_id}{extensao}")
-                with open(caminho_foto, "wb") as f:
-                    f.write(foto_arquivo.getbuffer())
-
-            novo = {
-                "ID": novo_id,
-                "Nome": nome.strip(),
-                "Marca": marca.strip(),
-                "Categoria": categoria.strip(),
-                "Quantidade": int(qtd),
-                "PrecoCusto": to_float(preco_custo),
-                "PrecoVista": to_float(preco_vista),
-                "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
-                "Validade": str(validade) if validade else "",
-                "FotoURL": caminho_foto,
-                "CodigoBarras": str(st.session_state.get("codigo_barras_cadastro", "")).strip()
-            }
-            produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
-            st.session_state["produtos"] = produtos
-            save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-            st.success("✅ Produto cadastrado!")
-
+                novo = {
+                    "ID": novo_id,
+                    "Nome": nome.strip(),
+                    "Marca": marca.strip(),
+                    "Categoria": categoria.strip(),
+                    "Quantidade": int(qtd),
+                    "PrecoCusto": to_float(preco_custo),
+                    "PrecoVista": to_float(preco_vista),
+                    "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista)>0 else 0.0,
+                    "Validade": str(validade) if validade else "",
+                    "FotoURL": caminho_foto,
+                    "CodigoBarras": str(codigo_barras).strip()
+                }
+                produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
+                st.session_state["produtos"] = produtos
+                save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                st.success("Produto cadastrado!")
 
 
     # --- Lista de produtos (fora do expander) ---
