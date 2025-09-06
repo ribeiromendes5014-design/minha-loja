@@ -23,6 +23,10 @@ ARQ_PROMOCOES = "promocoes.csv"
 FATOR_CARTAO  = 0.8872  # preco_cartao = preco_vista / FATOR_CARTAO
 ESTOQUE_MINIMO_PADRAO = 5
 
+# Pasta para salvar as fotos dos produtos
+FOTOS_DIR = "foto_produtos"
+os.makedirs(FOTOS_DIR, exist_ok=True)
+
 # =====================================
 # Leitura de Código de Barras (pyzxing)
 # =====================================
