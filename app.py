@@ -28,6 +28,34 @@ FOTOS_DIR = "foto_produtos"
 os.makedirs(FOTOS_DIR, exist_ok=True)
 
 # =====================================
+# Salvar CSV no GitHub (somente produtos)
+# =====================================
+def save_csv_github(df: pd.DataFrame, path="produtos.csv", mensagem="Atualizando produtos"):
+    """Salva DataFrame CSV no GitHub e também localmente (backup)."""
+    # Sempre salva local
+    df.to_csv(path, index=False)
+
+    try:
+        gh = st.secrets["github"]
+        token = gh["token"]
+        repo_name = gh["repo"]
+
+        g = Github(token)
+        repo = g.get_repo(repo_name)
+        content = df.to_csv(index=False)
+
+        try:
+            contents = repo.get_contents(path, ref="main")
+            repo.update_file(contents.path, mensagem, content, contents.sha, branch="main")
+        except Exception:
+            repo.create_file(path, mensagem, content, branch="main")
+
+    except Exception as e:
+        st.error(f"❌ Erro ao salvar no GitHub: {e}")
+
+
+
+# =====================================
 # Leitura de Código de Barras (pyzxing)
 # =====================================
 def ler_codigo_barras(imagem_bytes: bytes) -> str | None:
