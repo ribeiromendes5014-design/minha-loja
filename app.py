@@ -800,7 +800,7 @@ if view == "Vendas":
                 if str(item.get("CodigoBarras","")).strip():
                     codigos_fiado.append(str(item.get("CodigoBarras")).strip())
 
-            save_csv(vendas, ARQ_VENDAS)
+            save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
             save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
 
             # Se for fiado, registra nos clientes (salva lista de códigos de barras vinculados)
@@ -817,7 +817,7 @@ if view == "Vendas":
                     "FormaPagamento": ""
                 }
                 clientes = pd.concat([clientes, pd.DataFrame([novo_cli])], ignore_index=True)
-                save_csv(clientes, ARQ_CLIENTES)
+                save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
                 st.session_state["clientes"] = clientes
 
             st.session_state["pedido_atual"] = []
