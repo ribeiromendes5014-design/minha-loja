@@ -77,6 +77,8 @@ def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
     doc = SimpleDocTemplate(path, pagesize=A4)
     styles = getSampleStyleSheet()
     story = []
+
+
 # =====================================
 # Relatório PDF de Venda (Recibo estilo cupom)
 # =====================================
