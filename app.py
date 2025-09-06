@@ -670,7 +670,7 @@ if view == "Dashboard":
                         """, unsafe_allow_html=True)
 
             # --- RELATÓRIOS DE CAIXA ---
-            st.markdown("### 📦 Relatórios de Caixa")
+    st.markdown("### 📦 Relatórios de Caixa")
     caixas = norm_caixas(pd.DataFrame())
     if caixas.empty:
         st.info("Nenhum fechamento de caixa registrado ainda.")
@@ -710,7 +710,6 @@ if view == "Dashboard":
                         file_name=caminho_pdf,
                         mime="application/pdf"
                     )
-
 
 # =====================================
 # PRODUTOS
