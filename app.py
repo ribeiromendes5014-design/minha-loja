@@ -986,7 +986,7 @@ if view == "Clientes":
                         st.info(f"Valor atualizado para pagamento no cartão: {brl(val_num)}")
 
                 st.session_state["clientes"] = clientes
-                save_csv(clientes, ARQ_CLIENTES)
+                save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
                 st.success("Status atualizado!")
 
         st.markdown("#### Excluir registro de fiado")
