@@ -990,9 +990,12 @@ with st.expander("Cadastrar novo produto"):
         # Leitura via câmera
         foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
         if foto_codigo is not None:
-            imagem_cortada = central_crop(foto_codigo.getvalue(), scale=zoom_scale)  # <<< usa getvalue()
+            imagem_cortada = central_crop(foto_codigo.getvalue(), scale=zoom_scale)
             codigos_lidos = ler_codigo_barras(imagem_cortada)
             st.write("Debug: Imagem recebida, tamanho (bytes):", len(foto_codigo.getvalue()))
+
+            # Mostra prévia da imagem cortada (debug)
+            st.image(imagem_cortada, caption="Pré-visualização (zoom aplicado)")
 
             if codigos_lidos:
                 st.session_state["codigo_barras"] = codigos_lidos[0]
