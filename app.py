@@ -690,7 +690,7 @@ else:
             save_csv_github(caixas, ARQ_CAIXAS, f"Excluindo relatório de caixa {del_data}")
             st.warning(f"Relatório de caixa de {del_data} excluído!")
 
-    # --- GERAR PDF ---
+       # --- GERAR PDF ---
     if data_sel != "Todas" and not caixas_filtrados.empty:
         caixa_sel = caixas_filtrados.iloc[0].to_dict()
         if st.button("📄 Gerar PDF do Caixa Selecionado"):
