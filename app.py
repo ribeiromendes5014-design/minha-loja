@@ -1310,9 +1310,9 @@ with open(caminho_pdf, "rb") as f:
                 st.success(f"Venda {id_excluir} excluída e estoque ajustado.")
             else:
                 st.warning("Venda não encontrada.")
-    
-    else:
-        st.info("Ainda não há vendas registradas.")
+
+else:
+    st.info("Ainda não há vendas registradas.")
 
 # =====================================
 # CLIENTES (Fiado) com busca por CB
