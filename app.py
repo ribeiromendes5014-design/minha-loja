@@ -1193,7 +1193,7 @@ if view == "Vendas":
         nome_cliente = st.text_input("Nome do cliente")
         data_prevista = st.date_input("Data prevista de pagamento", value=date.today() + timedelta(days=7))
 
-    # -- Dinheiro
+        # -- Dinheiro
     valor_pago = st.session_state.get("valor_pago", 0.0)
     troco = 0.0
     if forma == "Dinheiro":
@@ -1201,15 +1201,16 @@ if view == "Vendas":
         st.session_state["valor_pago"] = valor_pago
         troco = max(valor_pago - valor_total, 0.0)
 
-colA, colB, colC = st.columns(3)
-with colA:
-    st.metric("Valor Total", brl(valor_total))
-with colB:
-    st.metric("Valor Pago", brl(valor_pago if forma == "Dinheiro" else 0.0))
-with colC:
-    st.metric("Troco", brl(troco if forma == "Dinheiro" else 0.0))
+    colA, colB, colC = st.columns(3)
+    with colA:
+        st.metric("Valor Total", brl(valor_total))
+    with colB:
+        st.metric("Valor Pago", brl(valor_pago if forma == "Dinheiro" else 0.0))
+    with colC:
+        st.metric("Troco", brl(troco if forma == "Dinheiro" else 0.0))
 
-st.markdown("---")
+    st.markdown("---")
+
 
 b1, b2, b3, b4, b5, b6 = st.columns(6)
 # --- FINALIZAR VENDA ---
