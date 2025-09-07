@@ -1406,6 +1406,7 @@ if view == "Vendas":
 if view == "Clientes":
     show_logo("main")
     st.header("👥 Clientes (Fiado)")
+
     if clientes.empty:
         st.info("Nenhum fiado lançado.")
     else:
@@ -1419,14 +1420,22 @@ if view == "Clientes":
             if foto_codigo_cliente is not None:
                 codigo_cliente_lido = ler_codigo_barras(foto_codigo_cliente.getbuffer())
                 if codigo_cliente_lido:
-                    codigo_barras_filtro = codigo_cliente_lido
-                    st.success(f"Código lido: {codigo_barras_filtro}")
+                    st.session_state["codigo_cliente_filtro"] = codigo_cliente_lido
+                    st.success(f"Código lido: {codigo_cliente_lido}")
+                    st.rerun()  # 🔑 atualização imediata
+
+        # usa session_state se existir
+        codigo_barras_filtro = st.session_state.get("codigo_cliente_filtro", codigo_barras_filtro)
 
         clientes_filtrados = clientes.copy()
         if nome_cliente_filtro:
-            clientes_filtrados = clientes_filtrados[clientes_filtrados["Cliente"].astype(str).str.contains(nome_cliente_filtro, case=False, na=False)]
+            clientes_filtrados = clientes_filtrados[
+                clientes_filtrados["Cliente"].astype(str).str.contains(nome_cliente_filtro, case=False, na=False)
+            ]
         if codigo_barras_filtro:
-            clientes_filtrados = clientes_filtrados[clientes_filtrados["CodigoBarras"].astype(str).str.contains(str(codigo_barras_filtro), case=False, na=False)]
+            clientes_filtrados = clientes_filtrados[
+                clientes_filtrados["CodigoBarras"].astype(str).str.contains(str(codigo_barras_filtro), case=False, na=False)
+            ]
 
         if clientes_filtrados.empty:
             st.info("Nenhum registro encontrado com os filtros aplicados.")
@@ -1449,17 +1458,14 @@ if view == "Clientes":
                 idx = clientes["ID"].astype(str)==str(sel)
                 clientes.loc[idx, "Status"] = novo_status
 
-                # Aplica alterações de acordo com forma de pagamento escolhida ao marcar "Pago"
                 if forma_pag:
                     clientes.loc[idx, "FormaPagamento"] = forma_pag
 
                     if forma_pag == "Cartão":
-                        # Recalcula valor do cliente com taxa de cartão
                         valor_vista = clientes.loc[idx, "Valor"].astype(float)
                         novo_valor = (valor_vista / FATOR_CARTAO).round(2)
                         clientes.loc[idx, "Valor"] = novo_valor
 
-                        # Atualiza também possíveis vendas fiado relacionadas (heurística)
                         produto_nome = clientes.loc[idx, "Produto"].values[0]
                         valor_original = float(valor_vista.iloc[0]) if hasattr(valor_vista, "iloc") else float(valor_vista)
                         venda_idx = (
@@ -1473,7 +1479,6 @@ if view == "Clientes":
                             vendas.loc[venda_idx, "Total"] = (vendas.loc[venda_idx, "Total"].astype(float) / FATOR_CARTAO).round(2)
                             save_csv(vendas, ARQ_VENDAS)
 
-                        # Aviso visual do novo valor
                         try:
                             val_num = float(novo_valor.iloc[0])
                         except Exception:
@@ -1483,6 +1488,7 @@ if view == "Clientes":
                 st.session_state["clientes"] = clientes
                 save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
                 st.success("Status atualizado!")
+                st.rerun()  # 🔑 atualização imediata
 
         st.markdown("#### Excluir registro de fiado")
         if st.button("Excluir registro selecionado"):
@@ -1493,6 +1499,8 @@ if view == "Clientes":
                 st.session_state["clientes"] = clientes
                 save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
                 st.warning(f"Registro {sel} excluído!")
+                st.rerun()  # 🔑 atualização imediata
+
 
 # =====================================
 # PROMOÇÕES
