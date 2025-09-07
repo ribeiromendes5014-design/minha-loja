@@ -1267,29 +1267,32 @@ if view == "Vendas":
         else:
             st.info("Ainda não há vendas registradas.")
 
-    # ================= TAB 3 =================
-    with tab3:
-        st.subheader("📄 Recibos de Vendas")
-        datas = sorted(vendas["Data"].unique()) if not vendas.empty else []
-        if datas:
-            data_sel = st.selectbox("Selecione a data da venda", datas)
-            vendas_dia = vendas[vendas["Data"] == data_sel]
-            ids_dia = vendas_dia["IDVenda"].unique().tolist()
-            id_sel = st.selectbox("Selecione o ID da venda", ids_dia)
+   # ================= TAB 3 =================
+with tab3:
+    st.subheader("📄 Recibos de Vendas")
 
-            if st.button("Gerar Recibo (PDF)"):
-                caminho_pdf = f"recibo_venda_{id_sel}.pdf"
-                gerar_pdf_venda(id_sel, vendas, caminho_pdf)
-                with open(caminho_pdf, "rb") as f:
-                    st.download_button(
-                        label="⬇️ Baixar Recibo",
-                        data=f,
-                        file_name=caminho_pdf,
-                        mime="application/pdf"
-                    )
-        else:
-            st.info("Nenhuma venda para gerar recibo.")
+    datas = sorted(vendas["Data"].unique()) if not vendas.empty else []
+    if datas:
+        data_sel = st.selectbox("Selecione a data da venda", datas)
+        vendas_dia = vendas[vendas["Data"] == data_sel]
+        ids_dia = vendas_dia["IDVenda"].unique().tolist()
+        id_sel = st.selectbox("Selecione o ID da venda", ids_dia)
 
+        if st.button("Gerar Recibo (PDF)"):
+            caminho_pdf = f"recibo_venda_{id_sel}.pdf"
+            gerar_pdf_venda(id_sel, vendas, caminho_pdf)
+            with open(caminho_pdf, "rb") as f:
+                st.download_button(
+                    label="⬇️ Baixar Recibo",
+                    data=f,
+                    file_name=caminho_pdf,
+                    mime="application/pdf"
+                )
+
+            # opcional: mostrar logo/imagem abaixo do recibo
+            st.image("logo.png", width=200)
+    else:
+        st.info("Nenhuma venda para gerar recibo.")
 
 
 
