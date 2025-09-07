@@ -1105,7 +1105,12 @@ with tab1:
                                value=st.session_state["codigo_venda"],
                                key="venda_codigo")
 
-       # Botão para abrir a câmera somente quando clicar
+       # Campo para digitar código de barras
+codigo = st.text_input("Código / Código de Barras",
+                       value=st.session_state["codigo_venda"],
+                       key="venda_codigo")
+
+# Botão para abrir câmera
 if st.button("📷 Tirar foto do código de barras"):
     foto_codigo = st.camera_input("Escanear código de barras (Venda)", key="venda_cam")
     if foto_codigo is not None:
@@ -1119,6 +1124,7 @@ if st.button("📷 Tirar foto do código de barras"):
             st.rerun()
         else:
             st.error("❌ Não foi possível ler nenhum código.")
+
 
     with c2:
         nome_filtro = st.text_input("Pesquisar por nome")
