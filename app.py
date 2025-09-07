@@ -944,6 +944,7 @@ if view == "Produtos":
 
             codigo_barras = st.text_input("Código de Barras", value=st.session_state["codigo_barras"], key="cad_cb")
 
+            # --- Escanear com câmera ---
             foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code", key="cad_cam")
             if foto_codigo is not None:
                 imagem_bytes = foto_codigo.getvalue()
@@ -954,6 +955,18 @@ if view == "Produtos":
                     st.rerun()
                 else:
                     st.error("❌ Não foi possível ler nenhum código.")
+
+            # --- Upload de imagem do código de barras ---
+            foto_codigo_upload = st.file_uploader("📤 Upload de imagem do código de barras", type=["png", "jpg", "jpeg"], key="cad_cb_upload")
+            if foto_codigo_upload is not None:
+                imagem_bytes = foto_codigo_upload.getvalue()
+                codigos_lidos = ler_codigo_barras_api(imagem_bytes)
+                if codigos_lidos:
+                    st.session_state["codigo_barras"] = codigos_lidos[0]
+                    st.success(f"Código lido via upload: {st.session_state['codigo_barras']}")
+                    st.rerun()
+                else:
+                    st.error("❌ Não foi possível ler nenhum código da imagem enviada.")
 
         if st.button("💾 Salvar Produto", use_container_width=True, key="cad_salvar"):
             novo_id = prox_id(produtos, "ID")
@@ -975,6 +988,7 @@ if view == "Produtos":
             save_csv_github(produtos, ARQ_PRODUTOS, "Novo produto cadastrado")
             st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
             st.rerun()
+
 
     # --- Busca minimalista ---
     with st.expander("🔍 Pesquisar produto"):
