@@ -992,7 +992,7 @@ if foto_codigo is not None:
     imagem_bytes = foto_codigo.getvalue()
 
     # Agora envia para o leitor de código de barras
-    codigos_lidos = ler_codigo_barras(imagem_bytes)
+    codigos_lidos = ler_codigo_barras_api(imagem_bytes)
 
     # Debug
     st.write("Debug: Imagem recebida, tamanho (bytes):", len(imagem_bytes))
