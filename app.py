@@ -79,15 +79,6 @@ if foto_codigo is not None:
     else:
         st.error("❌ Não foi possível ler nenhum código. Ajuste a iluminação ou o enquadramento.")
 
-# =====================================
-# Exemplo de uso corrigido em Clientes
-# =====================================
-foto_codigo_cliente = st.camera_input("📷 Escanear código de barras para buscar")
-if foto_codigo_cliente is not None:
-    codigo_cliente_lido = ler_codigo_barras_api(foto_codigo_cliente.getbuffer())   # ✅ corrigido
-    if codigo_cliente_lido:
-        codigo_barras_filtro = codigo_cliente_lido
-        st.success(f"Código lido: {codigo_barras_filtro}")
 
 # =====================================
 # Exemplo de uso corrigido em Vendas
