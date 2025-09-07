@@ -1202,14 +1202,15 @@ if view == "Vendas":
         troco = max(valor_pago - valor_total, 0.0)
 
     colA, colB, colC = st.columns(3)
-    colA.metric("Valor Total", brl(valor_total))
-    colB.metric("Valor Pago", brl(valor_pago if forma == "Dinheiro" else 0.0))
-    colC.metric("Troco", brl(troco if forma == "Dinheiro" else 0.0))
+colA.metric("Valor Total", brl(valor_total))
+colB.metric("Valor Pago", brl(valor_pago if forma == "Dinheiro" else 0.0))
+colC.metric("Troco", brl(troco if forma == "Dinheiro" else 0.0))
 
-    st.markdown("---")
-    
-    b1, b2, b3, b4, b5, b6 = st.columns(6)
-    # --- FINALIZAR VENDA ---
+st.markdown("---")
+
+b1, b2, b3, b4, b5, b6 = st.columns(6)
+
+# --- FINALIZAR VENDA ---
 with b1:
     if st.button("✅ Finalizar Venda"):
         if not st.session_state["pedido_atual"]:
