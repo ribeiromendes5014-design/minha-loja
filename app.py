@@ -1337,14 +1337,18 @@ if view == "Vendas":
             if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
                 if not st.session_state["pedido_atual"]:
                     st.warning("Adicione itens ao pedido.")
-                else:
-                    novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
-                    tz_brasilia = pytz.timezone("America/Sao_Paulo")
-agora = datetime.now(tz_brasilia)
-data_venda = agora.strftime("%Y-%m-%d")
-hora_venda = agora.strftime("%H:%M:%S")
+else:
+    novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
+    
+    import pytz
+    tz_brasilia = pytz.timezone("America/Sao_Paulo")
+    agora = datetime.now(tz_brasilia)
+    data_venda = agora.strftime("%Y-%m-%d")
+    hora_venda = agora.strftime("%H:%M:%S")
 
-                    
+    registros = []
+    for item in st.session_state["pedido_atual"]:
+        ...
 
                     registros = []
                     for item in st.session_state["pedido_atual"]:
