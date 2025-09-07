@@ -780,130 +780,142 @@ if view == "Dashboard":
     show_logo("main")
     st.title("📊 Dashboard")
 
-    col1, col2, col3, col4 = st.columns(4)
-    total_vendas = vendas["Total"].sum() if not vendas.empty else 0.0
-    hoje_str = str(date.today())
-    vendas_hoje = vendas[vendas["Data"]==hoje_str]["Total"].sum() if not vendas.empty else 0.0
-    qntd_vendas = len(vendas) if not vendas.empty else 0
-    fiados_abertos = len(clientes[clientes["Status"].astype(str).str.lower()=="aberto"]) if not clientes.empty else 0
-    with col1: st.metric("Faturamento Total", brl(total_vendas))
-    with col2: st.metric("Vendas Hoje", brl(vendas_hoje))
-    with col3: st.metric("Qtde de Vendas", qntd_vendas)
-    with col4: st.metric("Fiados em Aberto", fiados_abertos)
+    # 🔹 Sub-abas
+    tab1, tab2, tab3, tab4 = st.tabs(["Faturamento", "Alertas", "Promoções Ativas", "Relatório de Caixa"])
 
-    st.markdown("### ⚠️ Alertas")
-    hoje = date.today()
-    estoque_min = st.session_state["estoque_minimo"]
+    # ================= TAB 1 - FATURAMENTO =================
+    with tab1:
+        col1, col2, col3, col4 = st.columns(4)
+        total_vendas = vendas["Total"].sum() if not vendas.empty else 0.0
+        hoje_str = str(date.today())
+        vendas_hoje = vendas[vendas["Data"] == hoje_str]["Total"].sum() if not vendas.empty else 0.0
+        qntd_vendas = len(vendas) if not vendas.empty else 0
+        fiados_abertos = len(clientes[clientes["Status"].astype(str).str.lower() == "aberto"]) if not clientes.empty else 0
+        with col1: st.metric("Faturamento Total", brl(total_vendas))
+        with col2: st.metric("Vendas Hoje", brl(vendas_hoje))
+        with col3: st.metric("Qtde de Vendas", qntd_vendas)
+        with col4: st.metric("Fiados em Aberto", fiados_abertos)
 
-    def parse_data(v):
-        try:
-            return datetime.strptime(str(v)[:10], "%Y-%m-%d").date()
-        except Exception:
-            return None
+    # ================= TAB 2 - ALERTAS =================
+    with tab2:
+        st.subheader("⚠️ Alertas")
+        hoje = date.today()
+        estoque_min = st.session_state["estoque_minimo"]
 
-    produtos["ValidadeDate"] = produtos["Validade"].apply(parse_data)
-    validade_proxima = produtos.dropna(subset=["ValidadeDate"])
-    validade_proxima = validade_proxima[validade_proxima["ValidadeDate"] <= (hoje + timedelta(days=60))]
+        def parse_data(v):
+            try:
+                return datetime.strptime(str(v)[:10], "%Y-%m-%d").date()
+            except Exception:
+                return None
 
-    estoque_baixo = produtos[produtos["Quantidade"] <= estoque_min]
+        produtos["ValidadeDate"] = produtos["Validade"].apply(parse_data)
+        validade_proxima = produtos.dropna(subset=["ValidadeDate"])
+        validade_proxima = validade_proxima[validade_proxima["ValidadeDate"] <= (hoje + timedelta(days=60))]
 
-    if validade_proxima.empty and estoque_baixo.empty:
-        st.success("Nenhum alerta no momento!")
-    else:
-        if not validade_proxima.empty:
-            st.warning("Produtos com validade próxima (≤ 60 dias):")
-            st.dataframe(validade_proxima[["ID","Nome","Quantidade","Validade"]], use_container_width=True)
-        if not estoque_baixo.empty:
-            st.error(f"Produtos com estoque baixo (≤ {estoque_min}):")
-            st.dataframe(estoque_baixo[["ID","Nome","Quantidade"]], use_container_width=True)
+        estoque_baixo = produtos[produtos["Quantidade"] <= estoque_min]
 
-    # ---- PROMOÇÕES ATIVAS EM CARDS ----
-    st.markdown("### 🏷️ Promoções Ativas")
-    hoje = date.today()
-    if promocoes.empty:
-        st.info("Nenhuma promoção ativa no momento.")
-    else:
-        # filtra ativas
-        p = promocoes.copy()
-        p["di"] = p["DataInicio"].apply(parse_date_yyyy_mm_dd)
-        p["df"] = p["DataFim"].apply(parse_date_yyyy_mm_dd)
-        p = p[(p["di"].notna()) & (p["df"].notna())]
-        p = p[(p["di"] <= hoje) & (hoje <= p["df"])]
-        if p.empty:
-            st.info("Nenhuma promoção ativa hoje.")
+        if validade_proxima.empty and estoque_baixo.empty:
+            st.success("Nenhum alerta no momento!")
         else:
-            # mostrar em linhas de 3 cards
-            cards = p[["NomeProduto","Desconto","DataFim"]].values.tolist()
-            step = 3
-            for i in range(0, len(cards), step):
-                cols = st.columns(step)
-                for j, (nome, desc, datafim) in enumerate(cards[i:i+step]):
-                    with cols[j]:
-                        st.markdown(f"""
-                        <div style="border:1px solid #e5e7eb; border-radius:16px; padding:16px; box-shadow:0 1px 6px rgba(0,0,0,0.06)">
-                            <div style="font-size:18px; font-weight:700;">{nome}</div>
-                            <div style="font-size:32px; font-weight:800; margin:8px 0;">🔥 {float(desc):.0f}% OFF</div>
-                            <div style="color:#6b7280;">Válido até {str(datafim)}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
+            if not validade_proxima.empty:
+                st.warning("Produtos com validade próxima (≤ 60 dias):")
+                st.dataframe(validade_proxima[["ID", "Nome", "Quantidade", "Validade"]], use_container_width=True)
+            if not estoque_baixo.empty:
+                st.error(f"Produtos com estoque baixo (≤ {estoque_min}):")
+                st.dataframe(estoque_baixo[["ID", "Nome", "Quantidade"]], use_container_width=True)
 
-                # --- RELATÓRIOS DE CAIXA ---
-    st.markdown("### 📦 Relatórios de Caixa")
-    caixas = norm_caixas(pd.DataFrame())
-    if caixas.empty:
-        st.info("Nenhum fechamento de caixa registrado ainda.")
-    else:
-        # --- FILTRO POR DATA ---
-        st.subheader("🔍 Filtro de Caixa por Data")
-        datas_disp = sorted(caixas["Data"].unique(), reverse=True)
-        data_sel = st.selectbox("Selecione a data do caixa", ["Todas"] + datas_disp)
-
-        caixas_filtrados = caixas.copy()
-        if data_sel != "Todas":
-            caixas_filtrados = caixas_filtrados[caixas_filtrados["Data"] == data_sel]
-
-        st.dataframe(caixas_filtrados.sort_values("Data", ascending=False), use_container_width=True)
-
-        # --- PRODUTOS DO DIA ---
-        if data_sel != "Todas":
-            vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
-            vendas_dia = vendas[vendas["Data"].dt.strftime("%Y-%m-%d") == data_sel]
-
-            st.subheader(f"🛒 Produtos vendidos em {data_sel}")
-            if vendas_dia.empty:
-                st.info("Nenhum produto vendido nesse dia.")
+    # ================= TAB 3 - PROMOÇÕES ATIVAS =================
+    with tab3:
+        st.subheader("🏷️ Promoções Ativas")
+        hoje = date.today()
+        if promocoes.empty:
+            st.info("Nenhuma promoção ativa no momento.")
+        else:
+            # filtra ativas
+            p = promocoes.copy()
+            p["di"] = p["DataInicio"].apply(parse_date_yyyy_mm_dd)
+            p["df"] = p["DataFim"].apply(parse_date_yyyy_mm_dd)
+            p = p[(p["di"].notna()) & (p["df"].notna())]
+            p = p[(p["di"] <= hoje) & (hoje <= p["df"])]
+            if p.empty:
+                st.info("Nenhuma promoção ativa hoje.")
             else:
-                st.dataframe(
-                    vendas_dia[["IDProduto","NomeProduto","Quantidade","PrecoUnitario","Total"]],
-                    use_container_width=True
-                )
+                # mostrar em linhas de 3 cards
+                cards = p[["NomeProduto", "Desconto", "DataFim"]].values.tolist()
+                step = 3
+                for i in range(0, len(cards), step):
+                    cols = st.columns(step)
+                    for j, (nome, desc, datafim) in enumerate(cards[i:i + step]):
+                        with cols[j]:
+                            st.markdown(f"""
+                            <div style="border:1px solid #e5e7eb; border-radius:16px; padding:16px; box-shadow:0 1px 6px rgba(0,0,0,0.06)">
+                                <div style="font-size:18px; font-weight:700;">{nome}</div>
+                                <div style="font-size:32px; font-weight:800; margin:8px 0;">🔥 {float(desc):.0f}% OFF</div>
+                                <div style="color:#6b7280;">Válido até {str(datafim)}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+    # ================= TAB 4 - RELATÓRIO DE CAIXA =================
+    with tab4:
+        st.subheader("📦 Relatórios de Caixa")
+        caixas = norm_caixas(pd.DataFrame())
+        if caixas.empty:
+            st.info("Nenhum fechamento de caixa registrado ainda.")
         else:
-            vendas_dia = pd.DataFrame()  # vazio para não dar erro no PDF
+            # --- FILTRO POR DATA ---
+            st.subheader("🔍 Filtro de Caixa por Data")
+            datas_disp = sorted(caixas["Data"].unique(), reverse=True)
+            data_sel = st.selectbox("Selecione a data do caixa", ["Todas"] + datas_disp)
 
-        # --- EXCLUSÃO DE RELATÓRIO ---
-        st.subheader("🗑️ Excluir Relatório de Caixa")
-        if not caixas_filtrados.empty:
-            ids = caixas_filtrados["Data"].tolist()
-            del_data = st.selectbox("Selecione a data do relatório para excluir", ids)
-            if st.button("Excluir Relatório de Caixa"):
-                caixas = caixas[caixas["Data"] != del_data]
-                st.session_state["caixas"] = caixas
-                save_csv_github(caixas, ARQ_CAIXAS, f"Excluindo relatório de caixa {del_data}")
-                st.warning(f"Relatório de caixa de {del_data} excluído!")
+            caixas_filtrados = caixas.copy()
+            if data_sel != "Todas":
+                caixas_filtrados = caixas_filtrados[caixas_filtrados["Data"] == data_sel]
 
-        # --- GERAR PDF ---
-        if data_sel != "Todas" and not caixas_filtrados.empty:
-            caixa_sel = caixas_filtrados.iloc[0].to_dict()
-            if st.button("📄 Gerar PDF do Caixa Selecionado"):
-                caminho_pdf = f"caixa_{caixa_sel['Data']}.pdf"
-                gerar_pdf_caixa(caixa_sel, vendas_dia, caminho_pdf)  # <-- agora leva vendas do dia também
-                with open(caminho_pdf, "rb") as f:
-                    st.download_button(
-                        label=f"⬇️ Baixar Relatório de Caixa ({caixa_sel['Data']})",
-                        data=f,
-                        file_name=caminho_pdf,
-                        mime="application/pdf"
+            st.dataframe(caixas_filtrados.sort_values("Data", ascending=False), use_container_width=True)
+
+            # --- PRODUTOS DO DIA ---
+            if data_sel != "Todas":
+                vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
+                vendas_dia = vendas[vendas["Data"].dt.strftime("%Y-%m-%d") == data_sel]
+
+                st.subheader(f"🛒 Produtos vendidos em {data_sel}")
+                if vendas_dia.empty:
+                    st.info("Nenhum produto vendido nesse dia.")
+                else:
+                    st.dataframe(
+                        vendas_dia[["IDProduto", "NomeProduto", "Quantidade", "PrecoUnitario", "Total"]],
+                        use_container_width=True
                     )
+            else:
+                vendas_dia = pd.DataFrame()  # vazio para não dar erro no PDF
+
+            # --- EXCLUSÃO DE RELATÓRIO ---
+            st.subheader("🗑️ Excluir Relatório de Caixa")
+            if not caixas_filtrados.empty:
+                ids = caixas_filtrados["Data"].tolist()
+                del_data = st.selectbox("Selecione a data do relatório para excluir", ids)
+                if st.button("Excluir Relatório de Caixa"):
+                    caixas = caixas[caixas["Data"] != del_data]
+                    st.session_state["caixas"] = caixas
+                    save_csv_github(caixas, ARQ_CAIXAS, f"Excluindo relatório de caixa {del_data}")
+                    st.warning(f"Relatório de caixa de {del_data} excluído!")
+                    st.rerun()  # 🔄 Atualiza a aba automaticamente
+
+            # --- GERAR PDF ---
+            if data_sel != "Todas" and not caixas_filtrados.empty:
+                caixa_sel = caixas_filtrados.iloc[0].to_dict()
+                if st.button("📄 Gerar PDF do Caixa Selecionado"):
+                    caminho_pdf = f"caixa_{caixa_sel['Data']}.pdf"
+                    gerar_pdf_caixa(caixa_sel, vendas_dia, caminho_pdf)
+                    with open(caminho_pdf, "rb") as f:
+                        st.download_button(
+                            label=f"⬇️ Baixar Relatório de Caixa ({caixa_sel['Data']})",
+                            data=f,
+                            file_name=caminho_pdf,
+                            mime="application/pdf"
+                        )
+                    st.rerun()  # 🔄 Atualiza após gerar PDF
+
 
 
 
