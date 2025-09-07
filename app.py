@@ -1120,10 +1120,10 @@ if view == "Vendas":
         # Campo sincronizado com session_state
         if "codigo_venda" not in st.session_state:
             st.session_state["codigo_venda"] = ""
-        if "venda_cam" not in st.session_state:
-            st.session_state["venda_cam"] = None
 
-        codigo = st.text_input("Código / Código de Barras", value=st.session_state["codigo_venda"], key="venda_codigo")
+        codigo = st.text_input("Código / Código de Barras",
+                               value=st.session_state["codigo_venda"],
+                               key="venda_codigo")
 
         foto_codigo = st.camera_input("📷 Escanear código de barras (Venda)", key="venda_cam")
         if foto_codigo is not None:
@@ -1132,7 +1132,6 @@ if view == "Vendas":
 
             if codigos_lidos:
                 st.session_state["codigo_venda"] = codigos_lidos[0]
-                st.session_state["venda_cam"] = None   # ✅ limpa a foto
                 st.success(f"Código lido: {st.session_state['codigo_venda']}")
                 st.rerun()
             else:
@@ -1152,8 +1151,12 @@ if view == "Vendas":
 
     escolha = None
     if not df_sel.empty:
-        st.dataframe(df_sel[["ID", "Nome", "CodigoBarras", "Quantidade", "PrecoVista"]], use_container_width=True)
-        escolha = st.selectbox("Selecione o produto", (df_sel["ID"].astype(str) + " - " + df_sel["Nome"].astype(str)).tolist())
+        st.dataframe(df_sel[["ID", "Nome", "CodigoBarras", "Quantidade", "PrecoVista"]],
+                     use_container_width=True)
+        escolha = st.selectbox(
+            "Selecione o produto",
+            (df_sel["ID"].astype(str) + " - " + df_sel["Nome"].astype(str)).tolist()
+        )
 
     col_qtd, col_preco = st.columns([1, 3])
     with col_qtd:
@@ -1167,7 +1170,9 @@ if view == "Vendas":
                 preco_vista = float(rowp["PrecoVista"])
 
                 # Aplica promoção
-                preco_vista_aplicado, promo = preco_vista_com_promocao(pid, preco_vista, date.today(), promocoes)
+                preco_vista_aplicado, promo = preco_vista_com_promocao(
+                    pid, preco_vista, date.today(), promocoes
+                )
                 preco_unit = preco_por_forma(preco_vista_aplicado, forma)
 
                 if promo:
@@ -1194,13 +1199,15 @@ if view == "Vendas":
     if forma == "Fiado":
         st.markdown("#### Dados do fiado")
         nome_cliente = st.text_input("Nome do cliente")
-        data_prevista = st.date_input("Data prevista de pagamento", value=date.today() + timedelta(days=7))
+        data_prevista = st.date_input("Data prevista de pagamento",
+                                      value=date.today() + timedelta(days=7))
 
     # -- Dinheiro
     valor_pago = st.session_state.get("valor_pago", 0.0)
     troco = 0.0
     if forma == "Dinheiro":
-        valor_pago = st.number_input("Valor pago", min_value=0.0, value=float(valor_pago), step=1.0)
+        valor_pago = st.number_input("Valor pago", min_value=0.0,
+                                     value=float(valor_pago), step=1.0)
         st.session_state["valor_pago"] = valor_pago
         troco = max(valor_pago - valor_total, 0.0)
 
@@ -1228,7 +1235,8 @@ if view == "Vendas":
 
                 for item in st.session_state["pedido_atual"]:
                     preco_vista_aplicado, _promo = preco_vista_com_promocao(
-                        item["IDProduto"], float(item["PrecoVista"]), date.today(), promocoes
+                        item["IDProduto"], float(item["PrecoVista"]),
+                        date.today(), promocoes
                     )
                     preco_unit = preco_por_forma(preco_vista_aplicado, forma)
                     total_item = preco_unit * int(item["Quantidade"])
@@ -1245,13 +1253,15 @@ if view == "Vendas":
                         "PrecoUnitario": float(preco_unit),
                         "Total": float(total_item),
                     }
-                    vendas = pd.concat([vendas, pd.DataFrame([nova_linha])], ignore_index=True)
+                    vendas = pd.concat([vendas, pd.DataFrame([nova_linha])],
+                                       ignore_index=True)
 
                     # baixa estoque
                     mask = produtos["ID"].astype(str) == str(item["IDProduto"])
                     if mask.any():
                         produtos.loc[mask, "Quantidade"] = (
-                            produtos.loc[mask, "Quantidade"].astype(int) - int(item["Quantidade"])
+                            produtos.loc[mask, "Quantidade"].astype(int)
+                            - int(item["Quantidade"])
                         ).astype(int)
 
                     if str(item.get("CodigoBarras", "")).strip():
@@ -1273,7 +1283,8 @@ if view == "Vendas":
                         "Status": "Aberto",
                         "FormaPagamento": ""
                     }
-                    clientes = pd.concat([clientes, pd.DataFrame([novo_cli])], ignore_index=True)
+                    clientes = pd.concat([clientes, pd.DataFrame([novo_cli])],
+                                         ignore_index=True)
                     save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
                     st.session_state["clientes"] = clientes
 
@@ -1283,7 +1294,6 @@ if view == "Vendas":
                 st.session_state["vendas"] = vendas
                 st.session_state["produtos"] = produtos
                 st.session_state["codigo_venda"] = ""   # ✅ limpa CB
-                st.session_state["venda_cam"] = None    # ✅ limpa foto
 
                 st.success(f"✅ Venda {novo_id} finalizada!")
 
@@ -1293,8 +1303,8 @@ if view == "Vendas":
             st.session_state["pedido_atual"] = []
             st.session_state["valor_pago"] = 0.0
             st.session_state["codigo_venda"] = ""   # ✅ limpa CB
-            st.session_state["venda_cam"] = None    # ✅ limpa foto
             st.info("Novo pedido iniciado.")
+
 
     # --- FECHAR CAIXA ---
     with b4:
