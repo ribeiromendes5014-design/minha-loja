@@ -1335,7 +1335,7 @@ if view == "Vendas":
 
         b1, b2, b4 = st.columns([1, 1, 1])
 
-        # --- FINALIZAR VENDA ---
+                # --- FINALIZAR VENDA ---
         with b1:
             if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
                 if not st.session_state["pedido_atual"]:
@@ -1343,6 +1343,7 @@ if view == "Vendas":
                 else:
                     novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
 
+                    # horário Brasil
                     tz_brasilia = pytz.timezone("America/Sao_Paulo")
                     agora = datetime.now(tz_brasilia)
                     data_venda = agora.strftime("%Y-%m-%d")
@@ -1396,6 +1397,8 @@ if view == "Vendas":
                         mensagem += f"   - {forma1}: {brl(valor1)}\n   - {forma2}: {brl(valor2)}\n"
                     mensagem += f"💰 Total: {brl(valor_total)}\n\n📦 Produtos:\n{lista_produtos}"
 
+                    # 🔹 Enviar mensagem WhatsApp
+                    print("DEBUG: tentando enviar WhatsApp...")
                     enviar_whatsapp(NUMERO_DESTINO, mensagem)
 
                     # 🔹 Atualiza session_state
@@ -1408,7 +1411,6 @@ if view == "Vendas":
 
                     st.success(f"✅ Venda {novo_id} finalizada e registrada!")
                     st.rerun()
-
         with b2:
             if st.button("🆕 Nova Venda", key="btn_nova_venda"):
                 st.session_state["pedido_atual"] = []
