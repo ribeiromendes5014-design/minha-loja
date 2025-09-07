@@ -1339,8 +1339,12 @@ if view == "Vendas":
                     st.warning("Adicione itens ao pedido.")
                 else:
                     novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
-                    data_venda = date.today().strftime("%Y-%m-%d")
-                    hora_venda = datetime.now().strftime("%H:%M:%S")
+                    tz_brasilia = pytz.timezone("America/Sao_Paulo")
+agora = datetime.now(tz_brasilia)
+data_venda = agora.strftime("%Y-%m-%d")
+hora_venda = agora.strftime("%H:%M:%S")
+
+                    
 
                     registros = []
                     for item in st.session_state["pedido_atual"]:
