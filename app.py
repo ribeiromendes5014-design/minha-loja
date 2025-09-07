@@ -286,20 +286,26 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 # =====================================
 # Leitura de Código de Barras (pyzxing)
 # =====================================
+from PIL import ImageEnhance  # <-- adicione esse import junto dos outros no topo
+
 def ler_codigo_barras(image_bytes):
     try:
-        # Salva a imagem temporária
+        # Abre a imagem recebida e converte para escala de cinza
+        img = Image.open(BytesIO(image_bytes)).convert("L")
+
+        # Aumenta contraste para destacar melhor os códigos
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(2.0)
+
+        # Salva imagem temporária
         temp_path = "temp_barcode.png"
-        with open(temp_path, "wb") as f:
-            f.write(image_bytes)
+        img.save(temp_path)
 
-        # Cria o leitor
+        # Cria o leitor ZXing
         reader = BarCodeReader()
-
-        # Faz a leitura
         results = reader.decode(temp_path)
 
-        # Debug - mostra o retorno cru do ZXing
+        # Debug - mostra resultado cru do ZXing
         st.write("Debug ZXing:", results)
 
         codigos = []
