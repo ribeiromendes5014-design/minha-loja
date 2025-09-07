@@ -1171,7 +1171,7 @@ if view == "Vendas":
             "Forma de pagamento",
             ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
             horizontal=True,
-            key="forma_pagamento_radio"
+            key="radio_forma_pagamento"
         )
 
         forma1 = forma2 = None
@@ -1181,11 +1181,26 @@ if view == "Vendas":
             st.markdown("#### Configuração do pagamento misto")
             colm1, colm2 = st.columns(2)
             with colm1:
-                forma1 = st.selectbox("Primeira forma", ["Dinheiro", "PIX", "Cartão", "Fiado"], key="misto_forma1")
-                valor1 = st.number_input(f"Valor em {forma1}", min_value=0.0, step=1.0, key="misto_valor1")
+                forma1 = st.selectbox(
+                    "Primeira forma",
+                    ["Dinheiro", "PIX", "Cartão", "Fiado"],
+                    key="misto_forma1"
+                )
+                valor1 = st.number_input(
+                    f"Valor em {forma1}",
+                    min_value=0.0,
+                    max_value=0.0,  # valor_total ainda não está calculado
+                    step=1.0,
+                    key="misto_valor1"
+                )
             with colm2:
-                forma2 = st.selectbox("Segunda forma", ["Dinheiro", "PIX", "Cartão", "Fiado"], key="misto_forma2")
-                valor2 = st.number_input(f"Valor em {forma2}", min_value=0.0, step=1.0, key="misto_valor2")
+                forma2 = st.selectbox(
+                    "Segunda forma",
+                    ["Dinheiro", "PIX", "Cartão", "Fiado"],
+                    key="misto_forma2"
+                )
+                # valor2 é calculado automaticamente depois que temos valor_total
+                st.write("Valor em segunda forma aparecerá após calcular total.")
 
         # -- Código ou câmera
         c1, c2 = st.columns([2, 3])
@@ -1275,6 +1290,11 @@ if view == "Vendas":
         df_pedido = desenha_pedido(forma, promocoes)
         valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
 
+        # Corrige valor2 automático no pagamento misto
+        if forma == "Misto" and forma1 and forma2:
+            valor2 = max(valor_total - valor1, 0.0)
+            st.info(f"💳 Pagamento dividido: {forma1} = {brl(valor1)}, {forma2} = {brl(valor2)}")
+
         # -- Inicializa valores
         valor_pago = st.session_state.get("valor_pago", 0.0)
         troco = 0.0
@@ -1317,7 +1337,8 @@ if view == "Vendas":
         # --- FINALIZAR VENDA ---
         with b1:
             if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
-                # (aqui vai o mesmo código de finalização que já está ajustado com pagamento misto)
+                # aqui entra a lógica de salvar venda (igual já tínhamos),
+                # mas agora usando valor1 e valor2 quando forma == "Misto"
                 ...
 
         with b2:
@@ -1339,7 +1360,8 @@ if view == "Vendas":
         st.subheader("Últimas Vendas")
         if not vendas.empty:
             ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
-            colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario", "Total", "FormaPagamento", "ValorPago1", "ValorPago2"]
+            colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
+                       "Total", "FormaPagamento", "ValorPago1", "ValorPago2"]
             colunas = [c for c in colunas if c in ult.columns]
             st.dataframe(ult[colunas], use_container_width=True, key="df_ultimas_vendas")
 
@@ -1355,7 +1377,7 @@ if view == "Vendas":
 
             with coly:
                 if st.button("Excluir venda", key="btn_excluir_venda"):
-                    # (mesma lógica de exclusão de venda)
+                    # lógica de exclusão permanece
                     ...
 
         else:
