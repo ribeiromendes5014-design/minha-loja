@@ -1117,12 +1117,20 @@ if view == "Vendas":
     c1, c2, c3, c4 = st.columns([2, 3, 2, 2])
     with c1:
         codigo = st.text_input("Código / Código de Barras")
-        foto_codigo = st.camera_input("📷 Escanear código de barras")
-        if foto_codigo is not None:
-            codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
-            if codigo_lido:
-                codigo = codigo_lido
-                st.success(f"Código lido: {codigo}")
+        foto_codigo = st.camera_input("📷 Escanear código de barras (Venda)", key="venda_cam")
+if foto_codigo is not None:
+    imagem_bytes = foto_codigo.getvalue()
+    codigos_lidos = ler_codigo_barras_api(imagem_bytes)
+
+    if codigos_lidos:
+        codigo = codigos_lidos[0]
+        st.success(f"Código lido: {codigo}")
+
+        # Atualiza o campo automaticamente
+        st.session_state["codigo_venda"] = codigo
+    else:
+        st.error("❌ Não foi possível ler nenhum código.")
+
     with c2:
         nome_filtro = st.text_input("Pesquisar por nome")
 
