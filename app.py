@@ -1162,6 +1162,44 @@ if view == "Vendas":
         except Exception as e:
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
+    # 🔹 Ajuste na função desenha_pedido para não duplicar keys
+    def desenha_pedido(forma, promocoes):
+        pedido = st.session_state.get("pedido_atual", [])
+        if not pedido:
+            return pd.DataFrame()
+
+        linhas = []
+        for idx, item in enumerate(pedido):
+            preco_vista, promo = preco_vista_com_promocao(
+                item["IDProduto"], float(item["PrecoVista"]), date.today(), promocoes
+            )
+            preco_unit = preco_por_forma(preco_vista, forma)
+            subtotal = preco_unit * item["Quantidade"]
+
+            # usa prefixo "venda_" no key para não repetir em outras abas
+            nova_qtd = st.number_input(
+                "Qtd",
+                min_value=1,
+                value=int(item["Quantidade"]),
+                key=f"venda_q_{idx}"
+            )
+            pedido[idx]["Quantidade"] = nova_qtd
+
+            if st.button("❌", key=f"venda_del_{idx}"):
+                st.session_state["pedido_atual"].pop(idx)
+                st.rerun()
+
+            linhas.append({
+                "Produto": item["NomeProduto"],
+                "Qtd": nova_qtd,
+                "Preço Unit": preco_unit,
+                "Total": subtotal
+            })
+
+        df = pd.DataFrame(linhas)
+        st.dataframe(df, use_container_width=True, key="df_pedido_venda")
+        return df
+
     # 🔹 Função para finalizar venda
     def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                         valor_pago=0.0, troco=0.0, nome_cliente="", data_pagamento=None):
@@ -1210,7 +1248,7 @@ if view == "Vendas":
 
         vendas = pd.concat([vendas, pd.DataFrame(linhas)], ignore_index=True)
 
-        # Se for fiado, também registra no CSV de clientes
+        # Se for fiado, registra também em clientes
         if forma == "Fiado" and nome_cliente:
             clientes = st.session_state.get("clientes", pd.DataFrame())
             novo_id_cli = prox_id(clientes, "IDCliente")
@@ -1225,7 +1263,6 @@ if view == "Vendas":
             save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
             st.session_state["clientes"] = clientes
 
-        # Salva CSVs
         save_csv_github(vendas, ARQ_VENDAS, "Nova venda")
         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando estoque")
 
@@ -1235,7 +1272,6 @@ if view == "Vendas":
 
         st.success(f"Venda {novo_id} finalizada com sucesso!")
 
-        # Gera recibo PDF
         try:
             caminho_pdf = f"recibo_{novo_id}.pdf"
             gerar_pdf_venda(novo_id, vendas, caminho_pdf)
@@ -1250,10 +1286,9 @@ if view == "Vendas":
         except Exception as e:
             st.error(f"Erro ao gerar recibo: {e}")
 
-    # 🔹 Sub-abas principais
+    # 🔹 Sub-abas
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
-
-    # ================= TAB 1 - VENDA DETALHADA =================
+ # ================= TAB 1 - VENDA DETALHADA =================
     with tab1:
         st.subheader("🛒 Venda Detalhada")
 
@@ -1405,8 +1440,71 @@ if view == "Vendas":
                     fechar_caixa()
         else:
             st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
+# ================= TAB 2 - ÚLTIMAS VENDAS =================
+    with tab2:
+        st.subheader("📊 Últimas Vendas")
+        if not vendas.empty:
+            ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
+            colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
+                       "Total", "FormaPagamento", "ValorPago1", "ValorPago2"]
+            colunas = [c for c in colunas if c in ult.columns]
+            st.dataframe(ult[colunas], use_container_width=True, key="df_ultimas_vendas")
 
-    # ================= TAB 2 e TAB 3 continuam iguais...
+            ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
+
+            colx, coly = st.columns([3, 1])
+            with colx:
+                id_excluir = st.selectbox("Selecione a venda para excluir (devolve estoque)", ids if ids else [0], key="select_excluir_venda")
+            with coly:
+                if st.button("Excluir venda", key="btn_excluir_venda"):
+                    try:
+                        id_excluir_int = int(id_excluir)
+                    except:
+                        id_excluir_int = None
+                    if id_excluir_int and id_excluir_int in ids:
+                        linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
+                        for _, r in linhas.iterrows():
+                            mask = produtos["ID"].astype(str) == str(r["IDProduto"])
+                            if mask.any():
+                                produtos.loc[mask, "Quantidade"] = (
+                                    produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
+                                ).astype(int)
+                        vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
+                        save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
+                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                        st.session_state["vendas"] = vendas
+                        st.session_state["produtos"] = produtos
+                        st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
+                        st.rerun()
+                    else:
+                        st.warning("Venda não encontrada.")
+        else:
+            st.info("Ainda não há vendas registradas.")
+
+    # ================= TAB 3 - RECIBOS =================
+    with tab3:
+        st.subheader("📄 Recibos de Vendas")
+        if not vendas.empty:
+            datas = sorted(vendas["Data"].unique())
+            data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
+            vendas_dia = vendas[vendas["Data"] == data_sel]
+            ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
+            id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
+            if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
+                caminho_pdf = f"recibo_venda_{id_sel}.pdf"
+                gerar_pdf_venda(id_sel, vendas, caminho_pdf)
+                with open(caminho_pdf, "rb") as f:
+                    st.download_button(
+                        label="⬇️ Baixar Recibo",
+                        data=f,
+                        file_name=caminho_pdf,
+                        mime="application/pdf",
+                        key="download_recibo"
+                    )
+                st.image("logo.png", width=200, key="logo_recibo")
+        else:
+            st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
