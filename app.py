@@ -95,6 +95,43 @@ def save_csv_github(df: pd.DataFrame, path="produtos.csv", mensagem="Atualizando
         st.error(f"❌ Erro ao salvar no GitHub: {e}")
 
 
+# =====================================
+# FUNÇÃO PDF - RELATÓRIO PRODUTOS MAIS VENDIDOS
+# =====================================
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+
+def gerar_pdf_produtos_vendidos(df, caminho_pdf, data_inicio, data_fim):
+    doc = SimpleDocTemplate(caminho_pdf, pagesize=A4)
+    styles = getSampleStyleSheet()
+    elementos = []
+
+    # Cabeçalho
+    titulo = f"Relatório de Produtos Mais Vendidos ({data_inicio} a {data_fim})"
+    elementos.append(Paragraph(titulo, styles["Title"]))
+    elementos.append(Spacer(1, 20))
+
+    # Montar tabela
+    data = [["ID Produto", "Nome Produto", "Quantidade Vendida"]]
+    for _, row in df.iterrows():
+        data.append([str(row["IDProduto"]), str(row["NomeProduto"]), int(row["Quantidade"])])
+
+    tabela = Table(data, colWidths=[80, 300, 120])
+    tabela.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.lightgrey),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.black),
+        ("ALIGN", (0,0), (-1,-1), "CENTER"),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("BOTTOMPADDING", (0,0), (-1,0), 8),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
+    ]))
+
+    elementos.append(tabela)
+    doc.build(elementos)
+
+
 
 # =====================================
 # Relatório PDF de Caixa
