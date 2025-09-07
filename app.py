@@ -968,7 +968,7 @@ if view == "Produtos":
                 if codigos_lidos:
                     st.session_state["codigo_barras"] = codigos_lidos[0]
                     st.success(f"Código lido: {st.session_state['codigo_barras']}")
-                    st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.error("❌ Não foi possível ler nenhum código.")
 
@@ -991,6 +991,7 @@ if view == "Produtos":
             st.session_state["produtos"] = produtos
             save_csv_github(produtos, ARQ_PRODUTOS, "Novo produto cadastrado")
             st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
+            st.rerun()
 
     # --- Busca minimalista ---
     with st.expander("🔍 Pesquisar produto"):
@@ -1052,6 +1053,7 @@ if view == "Produtos":
                 # Editar → abre direto
                 if acao == "✏️ Editar":
                     st.session_state["edit_prod"] = eid
+                    st.rerun()
 
                 # Excluir → precisa confirmar
                 if acao == "🗑️ Excluir":
@@ -1060,6 +1062,7 @@ if view == "Produtos":
                         st.session_state["produtos"] = produtos
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
                         st.warning(f"Produto {row['Nome']} excluído!")
+                        st.rerun()
 
         # Editor inline
         if "edit_prod" in st.session_state:
@@ -1113,13 +1116,14 @@ if view == "Produtos":
                         ]
                         st.session_state["produtos"] = produtos
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-                        del st.session_state["edit_prod"]  # 🔑 fecha a edição imediatamente
+                        del st.session_state["edit_prod"]
                         st.success("Produto atualizado!")
-
+                        st.rerun()
                 with col_cancel:
                     if st.button("Cancelar edição", key=f"cancel_{eid}"):
-                        del st.session_state["edit_prod"]  # 🔑 fecha a edição imediatamente
+                        del st.session_state["edit_prod"]
                         st.info("Edição cancelada.")
+                        st.rerun()
 
 
 
