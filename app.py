@@ -217,7 +217,7 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 
     # --- Logo fixa ---
     try:
-        story.append(Image("logo_docebella.png", width=55*mm, height=25*mm))
+        story.append(RLImage("logo.png", width=55*mm, height=25*mm))
     except Exception:
         story.append(Paragraph("Doce&Bella Cosmético", styles["BoldCenter"]))
 
