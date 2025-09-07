@@ -1706,6 +1706,7 @@ if view == "Promoções":
             st.success(f"Promoções criadas para {len(produtos_parados)} produtos parados!")
             st.rerun()  # 🔑 atualização imediata
 
+    # --- LISTA DE PROMOÇÕES ---
     st.markdown("### Lista de promoções")
     if promocoes.empty:
         st.info("Nenhuma promoção cadastrada.")
@@ -1777,6 +1778,7 @@ if view == "Promoções":
                 st.session_state["promocoes"] = promocoes
                 st.warning(f"Promoção {del_id} excluída!")
                 st.rerun()  # 🔑 atualização imediata
+
 
 
 
