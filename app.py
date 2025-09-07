@@ -1210,15 +1210,66 @@ with tab1:
 
     b1, b2, b4 = st.columns([1,1,1])
     with b1:
-        if st.button("✅ Finalizar Venda"):
-            if not st.session_state["pedido_atual"]:
-                st.warning("Adicione itens ao pedido.")
-            else:
-                st.success("✅ Venda finalizada!")
-                st.session_state["pedido_atual"] = []
-                st.session_state["valor_pago"] = 0.0
-                st.session_state["codigo_venda"] = ""
-                st.session_state["venda_cam"] = None
+        with b1:
+    if st.button("✅ Finalizar Venda"):
+        if not st.session_state["pedido_atual"]:
+            st.warning("Adicione itens ao pedido.")
+        else:
+            # Gera novo ID de venda
+            novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
+
+            # Data da venda
+            data_venda = date.today().strftime("%Y-%m-%d")
+
+            # Cria registros da venda
+            registros = []
+            for item in st.session_state["pedido_atual"]:
+                preco_vista_aplicado, promo = preco_vista_com_promocao(
+                    item["IDProduto"],
+                    item["PrecoVista"],
+                    date.today(),
+                    promocoes
+                )
+                preco_unit = preco_por_forma(preco_vista_aplicado, forma)
+                total = preco_unit * item["Quantidade"]
+
+                registros.append({
+                    "IDVenda": novo_id,
+                    "Data": data_venda,
+                    "IDProduto": item["IDProduto"],
+                    "NomeProduto": item["NomeProduto"],
+                    "Quantidade": item["Quantidade"],
+                    "PrecoUnitario": preco_unit,
+                    "Total": total,
+                    "FormaPagamento": forma
+                })
+
+                # Atualiza estoque
+                mask = produtos["ID"].astype(str) == str(item["IDProduto"])
+                if mask.any():
+                    produtos.loc[mask, "Quantidade"] = (
+                        produtos.loc[mask, "Quantidade"].astype(int) - int(item["Quantidade"])
+                    ).astype(int)
+
+            # Adiciona ao DataFrame de vendas
+            vendas = pd.concat([vendas, pd.DataFrame(registros)], ignore_index=True)
+
+            # Salva nos CSVs
+            save_csv_github(vendas, ARQ_VENDAS, "Adicionando nova venda")
+            save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando estoque após venda")
+
+            # Atualiza session_state
+            st.session_state["vendas"] = vendas
+            st.session_state["produtos"] = produtos
+
+            # Limpa carrinho
+            st.session_state["pedido_atual"] = []
+            st.session_state["valor_pago"] = 0.0
+            st.session_state["codigo_venda"] = ""
+            st.session_state["venda_cam"] = None
+
+            st.success(f"✅ Venda {novo_id} finalizada e registrada!")
+
     with b2:
         if st.button("🆕 Nova Venda"):
             st.session_state["pedido_atual"] = []
