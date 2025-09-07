@@ -25,7 +25,7 @@ def central_crop(image_input, scale=0.8):
     elif isinstance(image_bytes, memoryview):
         image_bytes = bytes(image_bytes)
 
-    img = Image.open(BytesIO(image_bytes)).convert("RGB")
+    Img = Image.open(BytesIO(image_bytes)).convert("RGB")
     w, h = img.size
     new_w, new_h = int(w * scale), int(h * scale)
     left = (w - new_w) // 2
