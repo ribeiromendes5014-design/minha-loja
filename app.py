@@ -1105,21 +1105,20 @@ with tab1:
                                value=st.session_state["codigo_venda"],
                                key="venda_codigo")
 
-       # Campo para digitar código de barras
+       # Campo para digitar código
 codigo = st.text_input("Código / Código de Barras",
                        value=st.session_state["codigo_venda"],
-                       key="venda_codigo")
+                       key="codigo_manual")  # <-- alterei key aqui
 
-# Botão para abrir câmera
+# Botão + câmera
 if st.button("📷 Tirar foto do código de barras"):
-    foto_codigo = st.camera_input("Escanear código de barras (Venda)", key="venda_cam")
+    foto_codigo = st.camera_input("Escanear código de barras (Venda)", key="codigo_camera")  # <-- key diferente
     if foto_codigo is not None:
         imagem_bytes = foto_codigo.getvalue()
         codigos_lidos = ler_codigo_barras_api(imagem_bytes)
 
         if codigos_lidos:
             st.session_state["codigo_venda"] = codigos_lidos[0]
-            st.session_state["venda_cam"] = None
             st.success(f"Código lido: {st.session_state['codigo_venda']}")
             st.rerun()
         else:
