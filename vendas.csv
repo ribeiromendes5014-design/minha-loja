@@ -1,1 +1,2 @@
-IDVenda,Data,IDProduto,NomeProduto,CodigoBarras,FormaPagamento,Quantidade,PrecoUnitario,Total
+IDVenda,Data,IDProduto,NomeProduto,CodigoBarras,FormaPagamento,Quantidade,PrecoUnitario,Total,ValorPago1,ValorPago2
+1,2025-09-07,4,Kit Shampoo babasoul,,Dinheiro+Cartão,1,29.45,29.45,10.0,21.922903516681696
