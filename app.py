@@ -1078,17 +1078,7 @@ if view == "Produtos":
                     st.success("Produto atualizado!")
 
 
-# =====================================
-# VENDAS (com sub-abas: Venda, Últimas, Recibos)
-# =====================================
-if view == "Vendas":
-    show_logo("main")
-    st.header("🧾 Vendas")
-
-    # Sub-abas
-    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
-
-    # ================= TAB 1 =================
+# ================= TAB 1 =================
 with tab1:
     st.subheader("Venda Detalhada")
 
@@ -1101,29 +1091,34 @@ with tab1:
         if "codigo_venda" not in st.session_state:
             st.session_state["codigo_venda"] = ""
 
-        codigo = st.text_input("Código / Código de Barras",
-                               value=st.session_state["codigo_venda"],
-                               key="venda_codigo")
+        if "mostrar_camera" not in st.session_state:
+            st.session_state["mostrar_camera"] = False
 
-       # Campo para digitar código
-codigo = st.text_input("Código / Código de Barras",
-                       value=st.session_state["codigo_venda"],
-                       key="codigo_manual")  # <-- alterei key aqui
+        # Campo para digitar código manual
+        codigo = st.text_input(
+            "Código / Código de Barras",
+            value=st.session_state["codigo_venda"],
+            key="codigo_manual"
+        )
 
-# Botão + câmera
-if st.button("📷 Tirar foto do código de barras"):
-    foto_codigo = st.camera_input("Escanear código de barras (Venda)", key="codigo_camera")  # <-- key diferente
-    if foto_codigo is not None:
-        imagem_bytes = foto_codigo.getvalue()
-        codigos_lidos = ler_codigo_barras_api(imagem_bytes)
+        # Botão que alterna câmera
+        if st.button("📷 Tirar foto do código de barras"):
+            st.session_state["mostrar_camera"] = not st.session_state["mostrar_camera"]
 
-        if codigos_lidos:
-            st.session_state["codigo_venda"] = codigos_lidos[0]
-            st.success(f"Código lido: {st.session_state['codigo_venda']}")
-            st.rerun()
-        else:
-            st.error("❌ Não foi possível ler nenhum código.")
+        # Só mostra a câmera se a flag estiver ativa
+        if st.session_state["mostrar_camera"]:
+            foto_codigo = st.camera_input("Escanear código de barras (Venda)", key="codigo_camera")
+            if foto_codigo is not None:
+                imagem_bytes = foto_codigo.getvalue()
+                codigos_lidos = ler_codigo_barras_api(imagem_bytes)
 
+                if codigos_lidos:
+                    st.session_state["codigo_venda"] = codigos_lidos[0]
+                    st.success(f"Código lido: {st.session_state['codigo_venda']}")
+                    st.session_state["mostrar_camera"] = False  # esconde após capturar
+                    st.rerun()
+                else:
+                    st.error("❌ Não foi possível ler nenhum código.")
 
     with c2:
         nome_filtro = st.text_input("Pesquisar por nome")
@@ -1144,7 +1139,6 @@ if st.button("📷 Tirar foto do código de barras"):
             "Selecione o produto",
             (df_sel["ID"].astype(str) + " - " + df_sel["Nome"].astype(str)).tolist()
         )
-
 
         # -- Qtd e Preço
         col_qtd, col_preco = st.columns([1, 3])
@@ -1178,55 +1172,55 @@ if st.button("📷 Tirar foto do código de barras"):
                         })
                         st.success("Item adicionado.")
 
-        # -- Pedido atual
-        df_pedido = desenha_pedido(forma, promocoes)
-        valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
+    # -- Pedido atual
+    df_pedido = desenha_pedido(forma, promocoes)
+    valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
 
-        # -- Fiado
-        nome_cliente, data_prevista = "", None
-        if forma == "Fiado":
-            st.markdown("#### Dados do fiado")
-            nome_cliente = st.text_input("Nome do cliente")
-            data_prevista = st.date_input("Data prevista de pagamento",
-                                          value=date.today() + timedelta(days=7))
+    # -- Fiado
+    nome_cliente, data_prevista = "", None
+    if forma == "Fiado":
+        st.markdown("#### Dados do fiado")
+        nome_cliente = st.text_input("Nome do cliente")
+        data_prevista = st.date_input("Data prevista de pagamento",
+                                      value=date.today() + timedelta(days=7))
 
-        # -- Dinheiro
-        valor_pago = st.session_state.get("valor_pago", 0.0)
-        troco = 0.0
-        if forma == "Dinheiro":
-            valor_pago = st.number_input("Valor pago", min_value=0.0,
-                                         value=float(valor_pago), step=1.0)
-            st.session_state["valor_pago"] = valor_pago
-            troco = max(valor_pago - valor_total, 0.0)
+    # -- Dinheiro
+    valor_pago = st.session_state.get("valor_pago", 0.0)
+    troco = 0.0
+    if forma == "Dinheiro":
+        valor_pago = st.number_input("Valor pago", min_value=0.0,
+                                     value=float(valor_pago), step=1.0)
+        st.session_state["valor_pago"] = valor_pago
+        troco = max(valor_pago - valor_total, 0.0)
 
-        colA, colB, colC = st.columns(3)
-        colA.metric("Valor Total", brl(valor_total))
-        colB.metric("Valor Pago", brl(valor_pago if forma == "Dinheiro" else 0.0))
-        colC.metric("Troco", brl(troco if forma == "Dinheiro" else 0.0))
+    colA, colB, colC = st.columns(3)
+    colA.metric("Valor Total", brl(valor_total))
+    colB.metric("Valor Pago", brl(valor_pago if forma == "Dinheiro" else 0.0))
+    colC.metric("Troco", brl(troco if forma == "Dinheiro" else 0.0))
 
-        st.markdown("---")
+    st.markdown("---")
 
-        b1, b2, b4 = st.columns([1,1,1])
-        with b1:
-            if st.button("✅ Finalizar Venda"):
-                if not st.session_state["pedido_atual"]:
-                    st.warning("Adicione itens ao pedido.")
-                else:
-                    st.success("✅ Venda finalizada!")
-                    st.session_state["pedido_atual"] = []
-                    st.session_state["valor_pago"] = 0.0
-                    st.session_state["codigo_venda"] = ""
-                    st.session_state["venda_cam"] = None
-        with b2:
-            if st.button("🆕 Nova Venda"):
+    b1, b2, b4 = st.columns([1,1,1])
+    with b1:
+        if st.button("✅ Finalizar Venda"):
+            if not st.session_state["pedido_atual"]:
+                st.warning("Adicione itens ao pedido.")
+            else:
+                st.success("✅ Venda finalizada!")
                 st.session_state["pedido_atual"] = []
                 st.session_state["valor_pago"] = 0.0
                 st.session_state["codigo_venda"] = ""
                 st.session_state["venda_cam"] = None
-                st.info("Novo pedido iniciado.")
-        with b4:
-            if st.button("📦 Fechar Caixa"):
-                st.success("Caixa fechado!")
+    with b2:
+        if st.button("🆕 Nova Venda"):
+            st.session_state["pedido_atual"] = []
+            st.session_state["valor_pago"] = 0.0
+            st.session_state["codigo_venda"] = ""
+            st.session_state["venda_cam"] = None
+            st.info("Novo pedido iniciado.")
+    with b4:
+        if st.button("📦 Fechar Caixa"):
+            st.success("Caixa fechado!")
 
     # ================= TAB 2 =================
     with tab2:
