@@ -1049,10 +1049,13 @@ if view == "Produtos":
                     key=f"acao_{eid}"
                 )
 
-                if col_btn.button("Confirmar", key=f"conf_{eid}"):
-                    if acao == "✏️ Editar":
-                        st.session_state["edit_prod"] = eid
-                    elif acao == "🗑️ Excluir":
+                # Editar → abre direto
+                if acao == "✏️ Editar":
+                    st.session_state["edit_prod"] = eid
+
+                # Excluir → precisa confirmar
+                if acao == "🗑️ Excluir":
+                    if col_btn.button("Confirmar exclusão", key=f"conf_del_{eid}"):
                         produtos = produtos[produtos["ID"] != str(eid)]
                         st.session_state["produtos"] = produtos
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
@@ -1089,23 +1092,30 @@ if view == "Produtos":
                             novo_cb = codigo_lido
                             st.success(f"Código lido: {novo_cb}")
 
-                if st.button("Salvar alterações"):
-                    produtos.loc[produtos["ID"]==str(eid), ["Nome","Marca","Categoria","Quantidade","PrecoCusto","PrecoVista","PrecoCartao","Validade","FotoURL","CodigoBarras"]] = [
-                        novo_nome.strip(),
-                        nova_marca.strip(),
-                        nova_cat.strip(),
-                        int(nova_qtd),
-                        to_float(novo_preco_custo),
-                        to_float(novo_preco_vista),
-                        round(to_float(novo_preco_vista) / FATOR_CARTAO, 2) if to_float(novo_preco_vista)>0 else 0.0,
-                        str(nova_validade),
-                        nova_foto.strip(),
-                        str(novo_cb).strip()
-                    ]
-                    st.session_state["produtos"] = produtos
-                    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-                    del st.session_state["edit_prod"]
-                    st.success("Produto atualizado!")
+                col_save, col_cancel = st.columns([1,1])
+                with col_save:
+                    if st.button("Salvar alterações", key=f"save_{eid}"):
+                        produtos.loc[produtos["ID"]==str(eid), ["Nome","Marca","Categoria","Quantidade","PrecoCusto","PrecoVista","PrecoCartao","Validade","FotoURL","CodigoBarras"]] = [
+                            novo_nome.strip(),
+                            nova_marca.strip(),
+                            nova_cat.strip(),
+                            int(nova_qtd),
+                            to_float(novo_preco_custo),
+                            to_float(novo_preco_vista),
+                            round(to_float(novo_preco_vista) / FATOR_CARTAO, 2) if to_float(novo_preco_vista)>0 else 0.0,
+                            str(nova_validade),
+                            nova_foto.strip(),
+                            str(novo_cb).strip()
+                        ]
+                        st.session_state["produtos"] = produtos
+                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                        del st.session_state["edit_prod"]
+                        st.success("Produto atualizado!")
+                with col_cancel:
+                    if st.button("Cancelar edição", key=f"cancel_{eid}"):
+                        del st.session_state["edit_prod"]
+                        st.info("Edição cancelada.")
+
 
 
 # =====================================
