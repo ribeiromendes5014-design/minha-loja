@@ -37,6 +37,7 @@ def ler_codigo_barras_api(image_bytes):
 # =====================================
 # Funções auxiliares
 # =====================================
+
 def central_crop(image_input, scale=0.8):
 
 
