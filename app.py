@@ -1176,16 +1176,18 @@ if view == "Vendas":
             preco_unit = preco_por_forma(preco_vista, forma)
             subtotal = preco_unit * item["Quantidade"]
 
-            # usa prefixo "venda_" no key para não repetir em outras abas
+            # usa IDProduto no key para garantir unicidade
+            key_prefix = f"venda_{item['IDProduto']}_{idx}"
+
             nova_qtd = st.number_input(
                 "Qtd",
                 min_value=1,
                 value=int(item["Quantidade"]),
-                key=f"venda_q_{idx}"
+                key=f"{key_prefix}_qtd"
             )
             pedido[idx]["Quantidade"] = nova_qtd
 
-            if st.button("❌", key=f"venda_del_{idx}"):
+            if st.button("❌", key=f"{key_prefix}_del"):
                 st.session_state["pedido_atual"].pop(idx)
                 st.rerun()
 
@@ -1288,6 +1290,8 @@ if view == "Vendas":
 
     # 🔹 Sub-abas
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+    ...
+
  # ================= TAB 1 - VENDA DETALHADA =================
     with tab1:
         st.subheader("🛒 Venda Detalhada")
