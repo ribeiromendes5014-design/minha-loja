@@ -925,7 +925,8 @@ if view == "Dashboard":
 
 
 
-    # =====================================
+    
+# =====================================
 # PRODUTOS
 # =====================================
 if view == "Produtos":
@@ -1018,7 +1019,7 @@ if view == "Produtos":
         else:
             produtos_filtrados = produtos.copy()
 
-    # --- Lista de produtos (fora do expander) ---
+    # --- Lista de produtos ---
     st.markdown("### Lista de produtos")
     if produtos_filtrados.empty:
         st.info("Nenhum produto encontrado.")
@@ -1050,12 +1051,9 @@ if view == "Produtos":
                     key=f"acao_{eid}"
                 )
 
-                # Editar → abre direto
                 if acao == "✏️ Editar":
-                    st.session_state["edit_prod"] = eid
-                    st.rerun()
+                    st.session_state["edit_prod"] = eid  # só marca, sem rerun
 
-                # Excluir → precisa confirmar
                 if acao == "🗑️ Excluir":
                     if col_btn.button("Confirmar exclusão", key=f"conf_del_{eid}"):
                         produtos = produtos[produtos["ID"] != str(eid)]
@@ -1119,6 +1117,7 @@ if view == "Produtos":
                         del st.session_state["edit_prod"]
                         st.success("Produto atualizado!")
                         st.rerun()
+
                 with col_cancel:
                     if st.button("Cancelar edição", key=f"cancel_{eid}"):
                         del st.session_state["edit_prod"]
