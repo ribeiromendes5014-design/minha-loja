@@ -1307,7 +1307,7 @@ if view == "Vendas":
                     """
                     components.html(pdf_display, height=750)
 
-    # --- NOVA VENDA ---
+        # --- NOVA VENDA ---
 with b2:
     if st.button("🆕 Nova Venda"):
         st.session_state["pedido_atual"] = []
