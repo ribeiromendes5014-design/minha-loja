@@ -953,77 +953,73 @@ else:
 # PRODUTOS
 # =====================================
 if view == "Produtos":
-    show_logo("main")
-    st.header("📦 Produtos")
-
-    # --- Cadastro ---
-    with st.expander("Cadastrar novo produto"):
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            nome = st.text_input("Nome")
-            marca = st.text_input("Marca")
-            categoria = st.text_input("Categoria")
-        with c2:
-            qtd = st.number_input("Quantidade", min_value=0, step=1, value=0)
-            preco_custo = st.text_input("Preço de Custo", value="0,00")
-            preco_vista = st.text_input("Preço à Vista", value="0,00")
-            preco_cartao = 0.0
-            try:
-                preco_cartao = round(float(preco_vista.replace(",", ".").strip()) / FATOR_CARTAO, 2)
-            except Exception:
-                preco_cartao = 0.0
-            st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True)
-
-        with c3:
-            validade = st.date_input("Validade (opcional)", value=date.today())
-            foto_url = st.text_input("URL da Foto (opcional)")
-            foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png", "jpg", "jpeg"])
-
-            # Campo Código de Barras com session_state
-            if "codigo_barras" not in st.session_state:
-                st.session_state["codigo_barras"] = ""
-
-            codigo_barras = st.text_input(
-                "Código de Barras",
-                value=st.session_state["codigo_barras"],
-                key="cad_cb"
-            )
-
-            # Leitura via câmera (agora dentro do with c3)
-            foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code", key="cad_cam")
-            if foto_codigo is not None:
-                imagem_bytes = foto_codigo.getvalue()
-                codigos_lidos = ler_codigo_barras_api(imagem_bytes)
-
-                if codigos_lidos:
-                    st.session_state["codigo_barras"] = codigos_lidos[0]
-                    st.success(f"Código lido: {st.session_state['codigo_barras']}")
-                    st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
-                else:
-                    st.error("❌ Não foi possível ler nenhum código.")
+show_logo("main")
+st.header("📦 Produtos")
 
 
-    # --- Botão para salvar ---
-    if st.button("💾 Salvar Produto", use_container_width=True):
-        novo_id = prox_id(produtos, "ID")
-        novo = {
-            "ID": novo_id,
-            "Nome": nome.strip(),
-            "Marca": marca.strip(),
-            "Categoria": categoria.strip(),
-            "Quantidade": int(qtd),
-            "PrecoCusto": to_float(preco_custo),
-            "PrecoVista": to_float(preco_vista),
-            "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista)>0 else 0.0,
-            "Validade": str(validade),
-            "FotoURL": foto_url.strip(),
-            "CodigoBarras": codigo_barras.strip()
-        }
-        produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
-        st.session_state["produtos"] = produtos
-        save_csv_github(produtos, ARQ_PRODUTOS, "Novo produto cadastrado")
-        st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
+# --- Cadastro ---
+with st.expander("Cadastrar novo produto"):
+c1, c2, c3 = st.columns(3)
+with c1:
+nome = st.text_input("Nome", key="cad_nome")
+marca = st.text_input("Marca", key="cad_marca")
+categoria = st.text_input("Categoria", key="cad_categoria")
+with c2:
+qtd = st.number_input("Quantidade", min_value=0, step=1, value=0, key="cad_qtd")
+preco_custo = st.text_input("Preço de Custo", value="0,00", key="cad_preco_custo")
+preco_vista = st.text_input("Preço à Vista", value="0,00", key="cad_preco_vista")
+preco_cartao = 0.0
+try:
+preco_cartao = round(float(preco_vista.replace(",", ".").strip()) / FATOR_CARTAO, 2)
+except Exception:
+preco_cartao = 0.0
+st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True, key="cad_preco_cartao")
 
+
+with c3:
+validade = st.date_input("Validade (opcional)", value=date.today(), key="cad_validade")
+foto_url = st.text_input("URL da Foto (opcional)", key="cad_foto_url")
+foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png", "jpg", "jpeg"], key="cad_foto")
+
+
+if "codigo_barras" not in st.session_state:
+st.session_state["codigo_barras"] = ""
+
+
+codigo_barras = st.text_input("Código de Barras", value=st.session_state["codigo_barras"], key="cad_cb")
+
+
+foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code", key="cad_cam")
+if foto_codigo is not None:
+imagem_bytes = foto_codigo.getvalue()
+codigos_lidos = ler_codigo_barras_api(imagem_bytes)
+if codigos_lidos:
+st.session_state["codigo_barras"] = codigos_lidos[0]
+st.success(f"Código lido: {st.session_state['codigo_barras']}")
+st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+else:
+st.error("❌ Não foi possível ler nenhum código.")
+
+
+if st.button("💾 Salvar Produto", use_container_width=True, key="cad_salvar"):
+novo_id = prox_id(produtos, "ID")
+novo = {
+"ID": novo_id,
+"Nome": nome.strip(),
+"Marca": marca.strip(),
+"Categoria": categoria.strip(),
+"Quantidade": int(qtd),
+"PrecoCusto": to_float(preco_custo),
+"PrecoVista": to_float(preco_vista),
+"PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
+"Validade": str(validade),
+"FotoURL": foto_url.strip(),
+"CodigoBarras": codigo_barras.strip()
+}
+produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
+st.session_state["produtos"] = produtos
+save_csv_github(produtos, ARQ_PRODUTOS, "Novo produto cadastrado")
+st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
 
 
     
