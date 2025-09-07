@@ -1105,18 +1105,20 @@ with tab1:
                                value=st.session_state["codigo_venda"],
                                key="venda_codigo")
 
-        foto_codigo = st.camera_input("📷 Escanear código de barras (Venda)", key="venda_cam")
-        if foto_codigo is not None:
-            imagem_bytes = foto_codigo.getvalue()
-            codigos_lidos = ler_codigo_barras_api(imagem_bytes)
+       # Botão para abrir a câmera somente quando clicar
+if st.button("📷 Tirar foto do código de barras"):
+    foto_codigo = st.camera_input("Escanear código de barras (Venda)", key="venda_cam")
+    if foto_codigo is not None:
+        imagem_bytes = foto_codigo.getvalue()
+        codigos_lidos = ler_codigo_barras_api(imagem_bytes)
 
-            if codigos_lidos:
-                st.session_state["codigo_venda"] = codigos_lidos[0]
-                st.session_state["venda_cam"] = None
-                st.success(f"Código lido: {st.session_state['codigo_venda']}")
-                st.rerun()
-            else:
-                st.error("❌ Não foi possível ler nenhum código.")
+        if codigos_lidos:
+            st.session_state["codigo_venda"] = codigos_lidos[0]
+            st.session_state["venda_cam"] = None
+            st.success(f"Código lido: {st.session_state['codigo_venda']}")
+            st.rerun()
+        else:
+            st.error("❌ Não foi possível ler nenhum código.")
 
     with c2:
         nome_filtro = st.text_input("Pesquisar por nome")
