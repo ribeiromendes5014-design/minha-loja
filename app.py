@@ -1117,13 +1117,24 @@ if view == "Vendas":
     st.subheader("Itens do pedido")
     c1, c2, c3, c4 = st.columns([2, 3, 2, 2])
     with c1:
-        codigo = st.text_input("Código / Código de Barras")
-        foto_codigo = st.camera_input("📷 Escanear código de barras")
+        # Campo sincronizado com session_state
+        if "codigo_venda" not in st.session_state:
+            st.session_state["codigo_venda"] = ""
+
+        codigo = st.text_input("Código / Código de Barras", value=st.session_state["codigo_venda"], key="venda_codigo")
+
+        foto_codigo = st.camera_input("📷 Escanear código de barras (Venda)", key="venda_cam")
         if foto_codigo is not None:
-            codigo_lido = ler_codigo_barras(foto_codigo.getbuffer())
-            if codigo_lido:
-                codigo = codigo_lido
-                st.success(f"Código lido: {codigo}")
+            imagem_bytes = foto_codigo.getvalue()
+            codigos_lidos = ler_codigo_barras_api(imagem_bytes)
+
+            if codigos_lidos:
+                st.session_state["codigo_venda"] = codigos_lidos[0]
+                st.success(f"Código lido: {st.session_state['codigo_venda']}")
+                st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+            else:
+                st.error("❌ Não foi possível ler nenhum código.")
+
     with c2:
         nome_filtro = st.text_input("Pesquisar por nome")
 
@@ -1170,6 +1181,7 @@ if view == "Vendas":
                         "PrecoVista": preco_vista,
                     })
                     st.success("Item adicionado.")
+
 
     # -- Exibe pedido
     df_pedido = desenha_pedido(forma, promocoes)
