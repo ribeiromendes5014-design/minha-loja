@@ -983,22 +983,25 @@ if view == "Produtos":
             if "codigo_barras" not in st.session_state:
                 st.session_state["codigo_barras"] = ""
 
-            codigo_barras = st.text_input("Código de Barras", value=st.session_state["codigo_barras"])
+            codigo_barras = st.text_input(
+                "Código de Barras",
+                value=st.session_state["codigo_barras"],
+                key="cad_cb"
+            )
 
-            # Leitura via câmera
-foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
-if foto_codigo is not None:
-    # Usa os bytes originais da câmera
-    imagem_bytes = foto_codigo.getvalue()
+            # Leitura via câmera (agora dentro do with c3)
+            foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code", key="cad_cam")
+            if foto_codigo is not None:
+                imagem_bytes = foto_codigo.getvalue()
+                codigos_lidos = ler_codigo_barras_api(imagem_bytes)
 
-    # Agora envia para o leitor de código de barras
-    codigos_lidos = ler_codigo_barras_api(imagem_bytes)
+                if codigos_lidos:
+                    st.session_state["codigo_barras"] = codigos_lidos[0]
+                    st.success(f"Código lido: {st.session_state['codigo_barras']}")
+                    st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+                else:
+                    st.error("❌ Não foi possível ler nenhum código.")
 
-    # Debug
-    st.write("Debug: Imagem recebida, tamanho (bytes):", len(imagem_bytes))
-
-    # Mostrar a imagem original
-    st.image(imagem_bytes, caption="Pré-visualização (imagem original)")
 
 
     
