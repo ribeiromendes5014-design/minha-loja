@@ -1563,52 +1563,6 @@ if view == "Clientes":
                 st.rerun()
 
 
-# =====================================
-# PROMOÇÕES
-# =====================================
-if view == "Promoções":
-    show_logo("main")
-    st.header("🏷️ Promoções")
-    promocoes = norm_promocoes(pd.DataFrame())
-
-    # --- CADASTRAR ---
-    with st.expander("Cadastrar promoção", expanded=True):
-        if produtos.empty:
-            st.info("Cadastre produtos primeiro para criar promoções.")
-        else:
-            opcoes_prod = (produtos["ID"].astype(str) + " - " + produtos["Nome"]).tolist()
-            sel_prod = st.selectbox("Produto", opcoes_prod)
-            pid = sel_prod.split(" - ")[0].strip()
-            pnome = sel_prod.split(" - ", 1)[1].strip()
-
-            col1, col2, col3 = st.columns([1,1,1])
-            with col1:
-                desconto_str = st.text_input("Desconto (%)", value="0")
-            with col2:
-                data_ini = st.date_input("Início", value=date.today(), key="cad_inicio")
-            with col3:
-                data_fim = st.date_input("Término", value=date.today() + timedelta(days=7), key="cad_fim")
-
-            if st.button("Adicionar promoção"):
-                desconto = to_float(desconto_str, 0.0)
-                if desconto < 0 or desconto > 100:
-                    st.error("O desconto deve estar entre 0 e 100%.")
-                elif data_fim < data_ini:
-                    st.error("A data de término deve ser maior ou igual à data de início.")
-                else:
-                    novo = {
-                        "ID": prox_id(promocoes, "ID"),
-                        "IDProduto": str(pid),
-                        "NomeProduto": pnome,
-                        "Desconto": float(desconto),
-                        "DataInicio": str(data_ini),
-                        "DataFim": str(data_fim),
-                    }
-                    promocoes = pd.concat([promocoes, pd.DataFrame([novo])], ignore_index=True)
-                    save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
-                    st.session_state["promocoes"] = promocoes
-                    st.success("Promoção cadastrada!")
-                    st.rerun()  # 🔑 atualização imediata
 
     # =====================================
 # PROMOÇÕES
