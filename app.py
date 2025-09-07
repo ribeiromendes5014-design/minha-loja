@@ -1279,7 +1279,7 @@ if view == "Vendas":
             st.info("Ainda não há vendas registradas.")
 
     # ================= TAB 3 =================
-    with tab3:
+with tab3:
     st.subheader("📄 Recibos de Vendas")
 
     if not vendas.empty:
