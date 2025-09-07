@@ -1573,11 +1573,10 @@ if view == "Promoções":
 
     # --- CADASTRAR ---
     with st.expander("Cadastrar promoção", expanded=True):
-        # Seleção de produto (ID + Nome)
         if produtos.empty:
             st.info("Cadastre produtos primeiro para criar promoções.")
         else:
-            opcoes_prod = (produtos["ID"].astype(str) + " - " + produtos["Nome"].astype(str)).tolist()
+            opcoes_prod = (produtos["ID"].astype(str) + " - " + produtos["Nome"]).tolist()
             sel_prod = st.selectbox("Produto", opcoes_prod)
             pid = sel_prod.split(" - ")[0].strip()
             pnome = sel_prod.split(" - ", 1)[1].strip()
@@ -1609,11 +1608,12 @@ if view == "Promoções":
                     save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
                     st.session_state["promocoes"] = promocoes
                     st.success("Promoção cadastrada!")
+                    st.rerun()  # 🔑 atualização imediata
+
     # --- PRODUTOS PARADOS ---
     st.subheader("📦 Produtos parados sem vendas")
     dias_sem_venda = st.number_input("Considerar parados após quantos dias?", min_value=1, max_value=365, value=30)
 
-    # calcular última venda de cada produto
     if not vendas.empty:
         vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
         ultima_venda = vendas.groupby("IDProduto")["Data"].max().reset_index()
@@ -1650,13 +1650,12 @@ if view == "Promoções":
             save_csv_github(promocoes, ARQ_PROMOCOES, "Criando promoções automáticas de produtos parados")
             st.session_state["promocoes"] = promocoes
             st.success(f"Promoções criadas para {len(produtos_parados)} produtos parados!")
+            st.rerun()  # 🔑 atualização imediata
 
-    
     st.markdown("### Lista de promoções")
     if promocoes.empty:
         st.info("Nenhuma promoção cadastrada.")
     else:
-        # Mostrar tabela
         st.dataframe(promocoes, use_container_width=True)
 
         # --- EDITAR ---
@@ -1667,8 +1666,7 @@ if view == "Promoções":
             linha = promocoes[promocoes["ID"].astype(str)==sel]
             if not linha.empty:
                 ln = linha.iloc[0]
-                # Pre-select produto
-                opcoes_prod = (produtos["ID"].astype(str) + " - " + produtos["Nome"].astype(str)).tolist()
+                opcoes_prod = (produtos["ID"].astype(str) + " - " + produtos["Nome"]).tolist()
                 pre_opcao = f"{ln['IDProduto']} - {ln['NomeProduto']}" if f"{ln['IDProduto']} - {ln['NomeProduto']}" in opcoes_prod else opcoes_prod[0]
                 sel_prod_edit = st.selectbox("Produto (editar)", opcoes_prod, index=opcoes_prod.index(pre_opcao))
                 pid_e = sel_prod_edit.split(" - ")[0].strip()
@@ -1704,6 +1702,7 @@ if view == "Promoções":
                         save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
                         st.session_state["promocoes"] = promocoes
                         st.success("Promoção atualizada!")
+                        st.rerun()  # 🔑 atualização imediata
 
         # --- EXCLUIR ---
         st.subheader("Excluir promoção")
@@ -1713,3 +1712,4 @@ if view == "Promoções":
             save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
             st.session_state["promocoes"] = promocoes
             st.warning(f"Promoção {del_id} excluída!")
+            st.rerun()  # 🔑 atualização imediata
