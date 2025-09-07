@@ -60,9 +60,7 @@ def central_crop(image_input, scale=0.8):
     cropped.save(buf, format="PNG")
     return buf.getvalue()
 
-# =====================================
-# Exemplo de uso corrigido em Produtos
-# =====================================
+
 foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
 if foto_codigo is not None:
     imagem_bytes = foto_codigo.getvalue()
@@ -80,9 +78,7 @@ if foto_codigo is not None:
         st.error("❌ Não foi possível ler nenhum código. Ajuste a iluminação ou o enquadramento.")
 
 
-# =====================================
-# Exemplo de uso corrigido em Vendas
-# =====================================
+
 foto_codigo_venda = st.camera_input("📷 Escanear código de barras")
 if foto_codigo_venda is not None:
     codigo_lido = ler_codigo_barras_api(foto_codigo_venda.getbuffer())   # ✅ corrigido
