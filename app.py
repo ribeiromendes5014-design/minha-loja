@@ -1112,13 +1112,12 @@ if view == "Produtos":
                         st.session_state["produtos"] = produtos
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
                         del st.session_state["edit_prod"]
-                        st.success("Produto atualizado!")
                         st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
                 with col_cancel:
                     if st.button("Cancelar edição", key=f"cancel_{eid}"):
                         del st.session_state["edit_prod"]
-                        st.info("Edição cancelada.")
                         st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+
 
 
 
