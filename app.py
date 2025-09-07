@@ -1127,7 +1127,7 @@ if view == "Produtos":
 
 
 # =====================================
-# VENDAS (com sub-abas: Venda, Últimas, Recibos)
+# VENDAS (com sub-abas: Venda Detalhada, Pesquisar Produto, Últimas, Recibos)
 # =====================================
 if view == "Vendas":
     show_logo("main")
@@ -1138,7 +1138,7 @@ if view == "Vendas":
     from datetime import datetime
     import pytz
 
-    WHATSAPP_TOKEN = "EAALmgS1woeIBPRcEqrb9ZCRFynrnu93cvMdOopDsYcTlJ50jH2WcNGUkoz6bp0D17xsZCSASatFATLjCeASTHtyQLqEjcTDox1knht9fOZBQBtcx0TcIrUumSV9CagwDGFkT9Jdd0IwN2kols5tVtaiBjBRlNiEZCcOwfVJDeucCgWs6nRDGyDOwl4XVuwZDZD"
+    WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"
     WHATSAPP_PHONE_ID = "823826790806739"
     WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
     NUMERO_DESTINO = "5541987876191"
@@ -1163,16 +1163,20 @@ if view == "Vendas":
         except Exception as e:
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
-    # Sub-abas
-    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+    # 🔹 Sub-abas principais
+    tab1, tab2, tab3, tab4 = st.tabs(["Venda Detalhada", "Pesquisar Produto", "Últimas Vendas", "Recibos de Vendas"])
 
-    # ================= TAB 1 =================
+    # ================= TAB 1 - VENDA DETALHADA =================
     with tab1:
-        st.subheader("Venda Detalhada")
+        st.subheader("🛒 Venda Detalhada")
 
-        # -- Forma de pagamento
+        # -- Pedido atual
+        df_pedido = desenha_pedido(forma=None, promocoes=promocoes)
+        valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
+
+        st.markdown("### Forma de Pagamento")
         forma = st.radio(
-            "Forma de pagamento",
+            "Selecione a forma de pagamento",
             ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
             horizontal=True,
             key="radio_forma_pagamento"
@@ -1185,136 +1189,24 @@ if view == "Vendas":
             st.markdown("#### Configuração do pagamento misto")
             colm1, colm2 = st.columns(2)
             with colm1:
-                forma1 = st.selectbox(
-                    "Primeira forma",
-                    ["Dinheiro", "PIX", "Cartão", "Fiado"],
-                    key="misto_forma1"
-                )
-                valor1 = st.number_input(
-                    f"Valor em {forma1}",
-                    min_value=0.0,
-                    step=1.0,
-                    key="misto_valor1"
-                )
+                forma1 = st.selectbox("Primeira forma", ["Dinheiro", "PIX", "Cartão", "Fiado"], key="misto_forma1")
+                valor1 = st.number_input(f"Valor em {forma1}", min_value=0.0, step=1.0, key="misto_valor1")
             with colm2:
-                forma2 = st.selectbox(
-                    "Segunda forma",
-                    ["Dinheiro", "PIX", "Cartão", "Fiado"],
-                    key="misto_forma2"
-                )
-
-        # -- Código ou câmera
-        c1, c2 = st.columns([2, 3])
-        with c1:
-            if "codigo_venda" not in st.session_state:
-                st.session_state["codigo_venda"] = ""
-
-            if "mostrar_camera" not in st.session_state:
-                st.session_state["mostrar_camera"] = False
-
-            codigo = st.text_input(
-                "Código / Código de Barras",
-                value=st.session_state["codigo_venda"],
-                key="codigo_manual_venda"
-            )
-
-            if st.button("📷 Tirar foto do código de barras", key="btn_foto_codigo_venda"):
-                st.session_state["mostrar_camera"] = not st.session_state["mostrar_camera"]
-
-            if st.session_state["mostrar_camera"]:
-                foto_codigo = st.camera_input("Escanear código de barras (Venda)", key="camera_codigo_venda")
-                if foto_codigo is not None:
-                    imagem_bytes = foto_codigo.getvalue()
-                    codigos_lidos = ler_codigo_barras_api(imagem_bytes)
-
-                    if codigos_lidos:
-                        st.session_state["codigo_venda"] = codigos_lidos[0]
-                        st.success(f"Código lido: {st.session_state['codigo_venda']}")
-                        st.session_state["mostrar_camera"] = False
-                        st.rerun()
-                    else:
-                        st.error("❌ Não foi possível ler nenhum código.")
-
-        with c2:
-            nome_filtro = st.text_input("Pesquisar por nome", key="nome_filtro_venda")
-
-        df_sel = produtos.copy()
-        if codigo:
-            df_sel = df_sel[
-                (df_sel["ID"].astype(str).str.contains(codigo)) |
-                (df_sel["CodigoBarras"].astype(str).str.contains(codigo))
-            ]
-        if nome_filtro:
-            df_sel = df_sel[df_sel["Nome"].astype(str).str.contains(nome_filtro, case=False, na=False)]
-
-        escolha = None
-        if not df_sel.empty:
-            escolha = st.selectbox(
-                "Selecione o produto",
-                (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(),
-                key="select_produto_venda"
-            )
-
-            col_qtd, col_preco = st.columns([1, 3])
-            with col_qtd:
-                qtd = st.number_input("Qtd", min_value=1, value=1, step=1, key="qtd_produto_venda")
-            with col_preco:
-                if escolha is not None:
-                    pid = escolha.split(" - ")[0].strip()
-                    rowp = df_sel[df_sel["ID"].astype(str) == pid]
-                    if not rowp.empty:
-                        rowp = rowp.iloc[0]
-                        preco_vista = float(rowp["PrecoVista"])
-
-                        preco_vista_aplicado, promo = preco_vista_com_promocao(
-                            pid, preco_vista, date.today(), promocoes
-                        )
-                        preco_unit = preco_por_forma(preco_vista_aplicado, forma)
-
-                        if promo:
-                            st.info(f"🏷️ Promoção ativa: -{promo['Desconto']:.0f}% até {promo['DataFim']}. "
-                                    f"Preço à vista de {brl(preco_vista)} por {brl(preco_vista_aplicado)}.")
-                        st.write("Preço do item:", brl(preco_unit))
-
-                        if st.button("Adicionar ao pedido", key="btn_add_pedido_venda"):
-                            st.session_state["pedido_atual"].append({
-                                "IDProduto": pid,
-                                "NomeProduto": rowp["Nome"],
-                                "CodigoBarras": str(rowp.get("CodigoBarras", "")).strip(),
-                                "Quantidade": int(qtd),
-                                "PrecoVista": preco_vista,
-                            })
-                            st.success("Item adicionado.")
-                            st.rerun()
-
-        # -- Pedido atual
-        df_pedido = desenha_pedido(forma, promocoes)
-        valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
-
-        # Corrige valor2 automático no pagamento misto
-        if forma == "Misto" and forma1 and forma2:
-            if forma1 == "Cartão":
-                valor1 = valor1 / 0.8872 if valor1 > 0 else 0.0
-            if forma2 == "Cartão":
-                valor2 = max((valor_total - valor1) / 0.8872, 0.0)
-            else:
-                valor2 = max(valor_total - valor1, 0.0)
-            st.info(f"💳 Pagamento dividido: {forma1} = {brl(valor1)}, {forma2} = {brl(valor2)}")
-
-        # -- Inicializa valores
-        valor_pago = st.session_state.get("valor_pago", 0.0)
-        troco = 0.0
+                forma2 = st.selectbox("Segunda forma", ["Dinheiro", "PIX", "Cartão", "Fiado"], key="misto_forma2")
 
         # -- Fiado
-        nome_cliente, data_prevista = "", None
         if forma == "Fiado" or (forma == "Misto" and ("Fiado" in [forma1, forma2])):
             st.markdown("#### Dados do fiado")
             nome_cliente = st.text_input("Nome do cliente", key="nome_cliente_venda")
-            data_prevista = st.date_input("Data prevista de pagamento",
-                                          value=date.today() + timedelta(days=7),
-                                          key="data_prevista_venda")
+            data_prevista = st.date_input(
+                "Data prevista de pagamento",
+                value=date.today() + timedelta(days=7),
+                key="data_prevista_venda"
+            )
 
         # -- Dinheiro
+        valor_pago = st.session_state.get("valor_pago", 0.0)
+        troco = 0.0
         if forma == "Dinheiro":
             valor_pago = st.number_input("Valor pago", min_value=0.0,
                                          value=float(valor_pago), step=1.0,
@@ -1338,89 +1230,15 @@ if view == "Vendas":
 
         st.markdown("---")
 
-        b1, b2, b4 = st.columns([1, 1, 1])
-
-        # --- FINALIZAR VENDA ---
-        with b1:
+        # Botões principais
+        col1, col2, col3 = st.columns([1,1,1])
+        with col1:
             if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
                 if not st.session_state["pedido_atual"]:
                     st.warning("Adicione itens ao pedido.")
                 else:
-                    novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
-
-                    tz_brasilia = pytz.timezone("America/Sao_Paulo")
-                    agora = datetime.now(tz_brasilia)
-                    data_venda = agora.strftime("%Y-%m-%d")
-                    hora_venda = agora.strftime("%H:%M:%S")
-
-                    registros = []
-                    for item in st.session_state["pedido_atual"]:
-                        preco_vista_aplicado, promo = preco_vista_com_promocao(
-                            item["IDProduto"], item["PrecoVista"], date.today(), promocoes
-                        )
-                        preco_unit = preco_por_forma(preco_vista_aplicado, forma)
-                        total = preco_unit * item["Quantidade"]
-
-                        registros.append({
-                            "IDVenda": novo_id,
-                            "Data": data_venda,
-                            "IDProduto": item["IDProduto"],
-                            "NomeProduto": item["NomeProduto"],
-                            "Quantidade": item["Quantidade"],
-                            "PrecoUnitario": preco_unit,
-                            "Total": total,
-                            "FormaPagamento": forma if forma != "Misto" else f"{forma1}+{forma2}",
-                            "ValorPago1": valor1 if forma == "Misto" else (valor_pago if forma == "Dinheiro" else 0.0),
-                            "ValorPago2": valor2 if forma == "Misto" else 0.0
-                        })
-
-                        # Atualiza estoque
-                        mask = produtos["ID"].astype(str) == str(item["IDProduto"])
-                        if mask.any():
-                            produtos.loc[mask, "Quantidade"] = (
-                                produtos.loc[mask, "Quantidade"].astype(int) - int(item["Quantidade"])
-                            ).astype(int)
-
-                    # 🔹 Adiciona no DataFrame de vendas
-                    vendas = pd.concat([vendas, pd.DataFrame(registros)], ignore_index=True)
-                    save_csv_github(vendas, ARQ_VENDAS, "Adicionando nova venda")
-                    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando estoque após venda")
-
-                    # 🔹 Monta mensagem para WhatsApp
-                    lista_produtos = []
-                    for item in st.session_state["pedido_atual"]:
-                        preco_vista_aplicado, promo = preco_vista_com_promocao(
-                            item["IDProduto"], item["PrecoVista"], date.today(), promocoes
-                        )
-                        desconto_txt = f" (🔥 -{promo['Desconto']}%)" if promo else ""
-                        lista_produtos.append(f"- {item['NomeProduto']} x{item['Quantidade']}{desconto_txt}")
-
-                    mensagem = (
-                        f"🛒 *Nova Venda Realizada!*\n\n"
-                        f"📅 Data: {data_venda}\n"
-                        f"⏰ Hora: {hora_venda}\n"
-                        f"🆔 Venda: {novo_id}\n"
-                        f"💳 Forma de Pagamento: {forma if forma != 'Misto' else f'{forma1}+{forma2}'}\n"
-                    )
-                    if forma == "Misto":
-                        mensagem += f"   - {forma1}: {brl(valor1)}\n   - {forma2}: {brl(valor2)}\n"
-                    mensagem += f"💰 Total: {brl(valor_total)}\n\n📦 Produtos:\n" + "\n".join(lista_produtos)
-
-                    enviar_whatsapp(NUMERO_DESTINO, mensagem)
-
-                    # 🔹 Atualiza session_state
-                    st.session_state["vendas"] = vendas
-                    st.session_state["produtos"] = produtos
-                    st.session_state["pedido_atual"] = []
-                    st.session_state["valor_pago"] = 0.0
-                    st.session_state["codigo_venda"] = ""
-                    st.session_state["venda_cam"] = None
-
-                    st.success(f"✅ Venda {novo_id} finalizada e registrada!")
-                    st.rerun()
-
-
-        with b2:
+                    finalizar_venda(forma, forma1, forma2, valor1, valor2)  # usa a função que já existe
+        with col2:
             if st.button("🆕 Nova Venda", key="btn_nova_venda"):
                 st.session_state["pedido_atual"] = []
                 st.session_state["valor_pago"] = 0.0
@@ -1428,15 +1246,69 @@ if view == "Vendas":
                 st.session_state["venda_cam"] = None
                 st.info("Novo pedido iniciado.")
                 st.rerun()
-
-        with b4:
+        with col3:
             if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
                 st.success("Caixa fechado!")
                 st.rerun()
 
-    # ================= TAB 2 =================
+    # ================= TAB 2 - PESQUISAR PRODUTO =================
     with tab2:
-        st.subheader("Últimas Vendas")
+        st.subheader("🔍 Pesquisar Produto")
+        sub1, sub2, sub3 = st.tabs(["Por Nome", "Por Código de Barras", "Por Foto"])
+
+        # --- POR NOME ---
+        with sub1:
+            nome_filtro = st.text_input("Digite o nome do produto", key="nome_filtro_pesquisa")
+            df_sel = produtos.copy()
+            if nome_filtro:
+                df_sel = df_sel[df_sel["Nome"].astype(str).str.contains(nome_filtro, case=False, na=False)]
+
+            if not df_sel.empty:
+                escolha = st.selectbox("Selecione o produto", (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(), key="select_nome")
+                qtd = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_nome")
+                if st.button("Adicionar ao pedido", key="btn_add_nome"):
+                    pid = escolha.split(" - ")[0].strip()
+                    rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
+                    st.session_state["pedido_atual"].append({
+                        "IDProduto": pid,
+                        "NomeProduto": rowp["Nome"],
+                        "CodigoBarras": str(rowp.get("CodigoBarras", "")),
+                        "Quantidade": int(qtd),
+                        "PrecoVista": float(rowp["PrecoVista"]),
+                    })
+                    st.success("Item adicionado ao pedido.")
+
+        # --- POR CÓDIGO DE BARRAS ---
+        with sub2:
+            codigo = st.text_input("Digite ou escaneie o código de barras", key="codigo_barras_pesquisa")
+            df_sel = produtos.copy()
+            if codigo:
+                df_sel = df_sel[(df_sel["ID"].astype(str).str.contains(codigo)) |
+                                (df_sel["CodigoBarras"].astype(str).str.contains(codigo))]
+            if not df_sel.empty:
+                escolha = st.selectbox("Selecione o produto", (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(), key="select_codigo")
+                qtd = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_codigo")
+                if st.button("Adicionar ao pedido", key="btn_add_codigo"):
+                    pid = escolha.split(" - ")[0].strip()
+                    rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
+                    st.session_state["pedido_atual"].append({
+                        "IDProduto": pid,
+                        "NomeProduto": rowp["Nome"],
+                        "CodigoBarras": str(rowp.get("CodigoBarras", "")),
+                        "Quantidade": int(qtd),
+                        "PrecoVista": float(rowp["PrecoVista"]),
+                    })
+                    st.success("Item adicionado ao pedido.")
+
+        # --- POR FOTO ---
+        with sub3:
+            foto = st.camera_input("Tirar foto do produto", key="foto_pesquisa")
+            if foto:
+                st.info("🚧 Pesquisa por foto em desenvolvimento (placeholder).")
+
+    # ================= TAB 3 - ÚLTIMAS VENDAS =================
+    with tab3:
+        st.subheader("📊 Últimas Vendas")
         if not vendas.empty:
             ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
             colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
@@ -1448,37 +1320,26 @@ if view == "Vendas":
 
             colx, coly = st.columns([3, 1])
             with colx:
-                id_excluir = st.selectbox(
-                    "Selecione a venda para excluir (devolve estoque)",
-                    ids if ids else [0],
-                    key="select_excluir_venda"
-                )
-
+                id_excluir = st.selectbox("Selecione a venda para excluir (devolve estoque)", ids if ids else [0], key="select_excluir_venda")
             with coly:
                 if st.button("Excluir venda", key="btn_excluir_venda"):
                     try:
                         id_excluir_int = int(id_excluir)
                     except:
                         id_excluir_int = None
-
                     if id_excluir_int and id_excluir_int in ids:
                         linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
-
                         for _, r in linhas.iterrows():
                             mask = produtos["ID"].astype(str) == str(r["IDProduto"])
                             if mask.any():
                                 produtos.loc[mask, "Quantidade"] = (
                                     produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
                                 ).astype(int)
-
                         vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
-
                         save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-
                         st.session_state["vendas"] = vendas
                         st.session_state["produtos"] = produtos
-
                         st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
                         st.rerun()
                     else:
@@ -1486,23 +1347,18 @@ if view == "Vendas":
         else:
             st.info("Ainda não há vendas registradas.")
 
-    # ================= TAB 3 =================
-    with tab3:
+    # ================= TAB 4 - RECIBOS =================
+    with tab4:
         st.subheader("📄 Recibos de Vendas")
-
         if not vendas.empty:
             datas = sorted(vendas["Data"].unique())
             data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
-
             vendas_dia = vendas[vendas["Data"] == data_sel]
             ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
-
             id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
-
             if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
                 caminho_pdf = f"recibo_venda_{id_sel}.pdf"
                 gerar_pdf_venda(id_sel, vendas, caminho_pdf)
-
                 with open(caminho_pdf, "rb") as f:
                     st.download_button(
                         label="⬇️ Baixar Recibo",
@@ -1511,7 +1367,6 @@ if view == "Vendas":
                         mime="application/pdf",
                         key="download_recibo"
                     )
-
                 st.image("logo.png", width=200, key="logo_recibo")
         else:
             st.info("Nenhuma venda para gerar recibo.")
