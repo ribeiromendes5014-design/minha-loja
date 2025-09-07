@@ -287,47 +287,35 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 # =====================================
 # Leitura de Código de Barras (pyzxing)
 # =====================================
-# =====================================
-# Leitura de Código de Barras (pyzxing)
-# =====================================
-def ler_codigo_barras(image_bytes):
+def ler_codigo_barras_api(image_bytes):
     try:
-        # Abre a imagem recebida em tons de cinza
-        img = Image.open(BytesIO(image_bytes)).convert("L")
+        files = {"f": ("barcode.png", image_bytes, "image/png")}
+        response = requests.post("https://zxing.org/w/decode", files=files)
 
-        # Aumenta contraste
-        enhancer = ImageEnhance.Contrast(img)
-        img = enhancer.enhance(3.0)
+        if response.status_code != 200:
+            st.error(f"Erro na API ZXing: {response.status_code}")
+            return []
 
-        # Aumenta o tamanho da imagem (duplica resolução)
-        img = img.resize((img.width * 2, img.height * 2))
-
-        # Salva temporariamente
-        temp_path = "temp_barcode.png"
-        img.save(temp_path, format="PNG")
-
-        # Cria o leitor ZXing
-        reader = BarCodeReader()
-        results = reader.decode(temp_path)
-
-        # Debug para acompanhar resultados
-        st.write("Debug ZXing:", results)
-
+        text = response.text
         codigos = []
-        if results:
-            for r in results:
-                if "parsed" in r and r["parsed"]:
-                    codigos.append(r["parsed"])
+
+        # Os códigos geralmente aparecem entre <pre>...</pre>
+        if "<pre>" in text:
+            partes = text.split("<pre>")
+            for p in partes[1:]:
+                codigo = p.split("</pre>")[0].strip()
+                if codigo:
+                    codigos.append(codigo)
+
+        st.write("Debug API ZXing:", codigos)
         return codigos
 
     except Exception as e:
-        st.error(f"Erro ao ler código de barras: {e}")
+        st.error(f"Erro ao chamar API ZXing: {e}")
         return []
 
 
-# =====================================
-# Utilidades de persistência (CSV)
-# =====================================
+
 # =====================================
 # Utilidades de persistência (CSV)
 # =====================================
