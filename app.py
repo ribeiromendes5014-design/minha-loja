@@ -923,8 +923,6 @@ if view == "Dashboard":
                         mime="application/pdf"
                     )
 
-else:
-    st.info("Nenhuma venda registrada ainda.")
 
 
     # =====================================
