@@ -94,24 +94,6 @@ def save_csv_github(df: pd.DataFrame, path="produtos.csv", mensagem="Atualizando
     except Exception as e:
         st.error(f"❌ Erro ao salvar no GitHub: {e}")
 
-# =====================================
-# Relatório PDF de Caixa
-# =====================================
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
-
-def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
-    """Gera um relatório PDF de fechamento de caixa incluindo produtos vendidos"""
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.lib import colors
-
-    doc = SimpleDocTemplate(path, pagesize=A4)
-    styles = getSampleStyleSheet()
-    story = []
 
 
 # =====================================
