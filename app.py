@@ -1120,6 +1120,8 @@ if view == "Vendas":
         # Campo sincronizado com session_state
         if "codigo_venda" not in st.session_state:
             st.session_state["codigo_venda"] = ""
+        if "venda_cam" not in st.session_state:
+            st.session_state["venda_cam"] = None
 
         codigo = st.text_input("Código / Código de Barras", value=st.session_state["codigo_venda"], key="venda_codigo")
 
@@ -1130,8 +1132,9 @@ if view == "Vendas":
 
             if codigos_lidos:
                 st.session_state["codigo_venda"] = codigos_lidos[0]
+                st.session_state["venda_cam"] = None   # ✅ limpa a foto
                 st.success(f"Código lido: {st.session_state['codigo_venda']}")
-                st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("❌ Não foi possível ler nenhum código.")
 
@@ -1182,7 +1185,7 @@ if view == "Vendas":
                     })
                     st.success("Item adicionado.")
 
-        # -- Exibe pedido
+    # -- Exibe pedido
     df_pedido = desenha_pedido(forma, promocoes)
     valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
 
@@ -1193,7 +1196,7 @@ if view == "Vendas":
         nome_cliente = st.text_input("Nome do cliente")
         data_prevista = st.date_input("Data prevista de pagamento", value=date.today() + timedelta(days=7))
 
-        # -- Dinheiro
+    # -- Dinheiro
     valor_pago = st.session_state.get("valor_pago", 0.0)
     troco = 0.0
     if forma == "Dinheiro":
@@ -1211,98 +1214,86 @@ if view == "Vendas":
 
     st.markdown("---")
 
+    b1, b2, b3, b4, b5, b6 = st.columns(6)
 
-b1, b2, b3, b4, b5, b6 = st.columns(6)
-# --- FINALIZAR VENDA ---
-with b1:
-    if st.button("✅ Finalizar Venda"):
-        if not st.session_state["pedido_atual"]:
-            st.warning("Adicione itens ao pedido.")
-        else:
-            novo_id = prox_id(vendas, "IDVenda")
-            total_venda = 0.0
-            codigos_fiado = []
+    # --- FINALIZAR VENDA ---
+    with b1:
+        if st.button("✅ Finalizar Venda"):
+            if not st.session_state["pedido_atual"]:
+                st.warning("Adicione itens ao pedido.")
+            else:
+                novo_id = prox_id(vendas, "IDVenda")
+                total_venda = 0.0
+                codigos_fiado = []
 
-            for item in st.session_state["pedido_atual"]:
-                preco_vista_aplicado, _promo = preco_vista_com_promocao(
-                    item["IDProduto"], float(item["PrecoVista"]), date.today(), promocoes
-                )
-                preco_unit = preco_por_forma(preco_vista_aplicado, forma)
-                total_item = preco_unit * int(item["Quantidade"])
-                total_venda += total_item
+                for item in st.session_state["pedido_atual"]:
+                    preco_vista_aplicado, _promo = preco_vista_com_promocao(
+                        item["IDProduto"], float(item["PrecoVista"]), date.today(), promocoes
+                    )
+                    preco_unit = preco_por_forma(preco_vista_aplicado, forma)
+                    total_item = preco_unit * int(item["Quantidade"])
+                    total_venda += total_item
 
-                nova_linha = {
-                    "IDVenda": novo_id,
-                    "Data": str(date.today()),
-                    "IDProduto": item["IDProduto"],
-                    "NomeProduto": item["NomeProduto"],
-                    "CodigoBarras": str(item.get("CodigoBarras", "")).strip(),
-                    "FormaPagamento": forma,
-                    "Quantidade": int(item["Quantidade"]),
-                    "PrecoUnitario": float(preco_unit),
-                    "Total": float(total_item),
-                }
-                vendas = pd.concat([vendas, pd.DataFrame([nova_linha])], ignore_index=True)
+                    nova_linha = {
+                        "IDVenda": novo_id,
+                        "Data": str(date.today()),
+                        "IDProduto": item["IDProduto"],
+                        "NomeProduto": item["NomeProduto"],
+                        "CodigoBarras": str(item.get("CodigoBarras", "")).strip(),
+                        "FormaPagamento": forma,
+                        "Quantidade": int(item["Quantidade"]),
+                        "PrecoUnitario": float(preco_unit),
+                        "Total": float(total_item),
+                    }
+                    vendas = pd.concat([vendas, pd.DataFrame([nova_linha])], ignore_index=True)
 
-                # baixa estoque
-                mask = produtos["ID"].astype(str) == str(item["IDProduto"])
-                if mask.any():
-                    produtos.loc[mask, "Quantidade"] = (
-                        produtos.loc[mask, "Quantidade"].astype(int) - int(item["Quantidade"])
-                    ).astype(int)
+                    # baixa estoque
+                    mask = produtos["ID"].astype(str) == str(item["IDProduto"])
+                    if mask.any():
+                        produtos.loc[mask, "Quantidade"] = (
+                            produtos.loc[mask, "Quantidade"].astype(int) - int(item["Quantidade"])
+                        ).astype(int)
 
-                if str(item.get("CodigoBarras", "")).strip():
-                    codigos_fiado.append(str(item.get("CodigoBarras")).strip())
+                    if str(item.get("CodigoBarras", "")).strip():
+                        codigos_fiado.append(str(item.get("CodigoBarras")).strip())
 
-            save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
-            save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
+                save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
 
-            # Fiado → registra também em clientes
-            if forma == "Fiado":
-                codigos_join = ";".join(sorted(set([c for c in codigos_fiado if c])))
-                novo_cli = {
-                    "ID": prox_id(clientes, "ID"),
-                    "Cliente": nome_cliente.strip(),
-                    "Produto": f"Pedido {novo_id}",
-                    "CodigoBarras": codigos_join,
-                    "Valor": round(float(total_venda), 2),
-                    "DataPagamento": str(data_prevista) if data_prevista else "",
-                    "Status": "Aberto",
-                    "FormaPagamento": ""
-                }
-                clientes = pd.concat([clientes, pd.DataFrame([novo_cli])], ignore_index=True)
-                save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
-                st.session_state["clientes"] = clientes
+                # Fiado
+                if forma == "Fiado":
+                    codigos_join = ";".join(sorted(set([c for c in codigos_fiado if c])))
+                    novo_cli = {
+                        "ID": prox_id(clientes, "ID"),
+                        "Cliente": nome_cliente.strip(),
+                        "Produto": f"Pedido {novo_id}",
+                        "CodigoBarras": codigos_join,
+                        "Valor": round(float(total_venda), 2),
+                        "DataPagamento": str(data_prevista) if data_prevista else "",
+                        "Status": "Aberto",
+                        "FormaPagamento": ""
+                    }
+                    clientes = pd.concat([clientes, pd.DataFrame([novo_cli])], ignore_index=True)
+                    save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
+                    st.session_state["clientes"] = clientes
 
-            # limpa carrinho
-            st.session_state["pedido_atual"] = []
-            st.session_state["valor_pago"] = 0.0
-            st.session_state["vendas"] = vendas
-            st.session_state["produtos"] = produtos
+                # limpa carrinho e código
+                st.session_state["pedido_atual"] = []
+                st.session_state["valor_pago"] = 0.0
+                st.session_state["vendas"] = vendas
+                st.session_state["produtos"] = produtos
+                st.session_state["codigo_venda"] = ""   # ✅ limpa CB
+                st.session_state["venda_cam"] = None    # ✅ limpa foto
 
-            st.success(f"✅ Venda {novo_id} finalizada!")
-
-            # --- RECIBO PDF ---
-            caminho_pdf = f"recibo_venda_{novo_id}.pdf"
-            gerar_pdf_venda(novo_id, vendas, caminho_pdf)
-
-            with open(caminho_pdf, "rb") as f:
-                pdf_bytes = f.read()
-                st.download_button(
-                    label="⬇️ Baixar Recibo da Venda",
-                    data=pdf_bytes,
-                    file_name=caminho_pdf,
-                    mime="application/pdf"
-                )
-
+                st.success(f"✅ Venda {novo_id} finalizada!")
 
     # --- NOVA VENDA ---
     with b2:
         if st.button("🆕 Nova Venda"):
             st.session_state["pedido_atual"] = []
             st.session_state["valor_pago"] = 0.0
-            st.session_state["codigo_venda"] = ""       # ✅ limpa código de barras
-            st.session_state["codigo_lido_venda"] = False  # ✅ limpa flag da câmera
+            st.session_state["codigo_venda"] = ""   # ✅ limpa CB
+            st.session_state["venda_cam"] = None    # ✅ limpa foto
             st.info("Novo pedido iniciado.")
 
     # --- FECHAR CAIXA ---
