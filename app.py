@@ -1127,7 +1127,7 @@ if view == "Produtos":
 
 
 # =====================================
-# VENDAS (com sub-abas: Venda Detalhada, Pesquisar Produto, Últimas, Recibos)
+# VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
 # =====================================
 if view == "Vendas":
     show_logo("main")
@@ -1164,13 +1164,79 @@ if view == "Vendas":
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
     # 🔹 Sub-abas principais
-    tab1, tab2, tab3, tab4 = st.tabs(["Venda Detalhada", "Pesquisar Produto", "Últimas Vendas", "Recibos de Vendas"])
+    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
     # ================= TAB 1 - VENDA DETALHADA =================
     with tab1:
         st.subheader("🛒 Venda Detalhada")
 
-        # -- Forma de pagamento
+        # --- PESQUISA DE PRODUTO ---
+        st.markdown("### 🔍 Pesquisar Produto")
+        sub1, sub2, sub3 = st.tabs(["Por Nome", "Por Código de Barras", "Por Foto"])
+
+        # --- POR NOME ---
+        with sub1:
+            nome_filtro = st.text_input("Digite o nome do produto", key="nome_filtro_venda")
+            df_sel = produtos.copy()
+            if nome_filtro:
+                df_sel = df_sel[df_sel["Nome"].astype(str).str.contains(nome_filtro, case=False, na=False)]
+
+            if not df_sel.empty:
+                escolha = st.selectbox(
+                    "Selecione o produto",
+                    (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(),
+                    key="select_nome_venda"
+                )
+                qtd_nome = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_nome_venda")
+                if st.button("Adicionar ao pedido (nome)", key="btn_add_nome_venda"):
+                    pid = escolha.split(" - ")[0].strip()
+                    rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
+                    st.session_state["pedido_atual"].append({
+                        "IDProduto": pid,
+                        "NomeProduto": rowp["Nome"],
+                        "CodigoBarras": str(rowp.get("CodigoBarras", "")),
+                        "Quantidade": int(qtd_nome),
+                        "PrecoVista": float(rowp["PrecoVista"]),
+                    })
+                    st.success("Item adicionado ao pedido.")
+                    st.rerun()
+
+        # --- POR CÓDIGO DE BARRAS ---
+        with sub2:
+            codigo = st.text_input("Digite ou escaneie o código de barras", key="codigo_barras_venda")
+            df_sel = produtos.copy()
+            if codigo:
+                df_sel = df_sel[(df_sel["ID"].astype(str).str.contains(codigo)) |
+                                (df_sel["CodigoBarras"].astype(str).str.contains(codigo))]
+            if not df_sel.empty:
+                escolha = st.selectbox(
+                    "Selecione o produto",
+                    (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(),
+                    key="select_codigo_venda"
+                )
+                qtd_codigo = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_codigo_venda")
+                if st.button("Adicionar ao pedido (código)", key="btn_add_codigo_venda"):
+                    pid = escolha.split(" - ")[0].strip()
+                    rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
+                    st.session_state["pedido_atual"].append({
+                        "IDProduto": pid,
+                        "NomeProduto": rowp["Nome"],
+                        "CodigoBarras": str(rowp.get("CodigoBarras", "")),
+                        "Quantidade": int(qtd_codigo),
+                        "PrecoVista": float(rowp["PrecoVista"]),
+                    })
+                    st.success("Item adicionado ao pedido.")
+                    st.rerun()
+
+        # --- POR FOTO ---
+        with sub3:
+            foto = st.camera_input("Tirar foto do produto", key="foto_venda")
+            if foto:
+                st.info("🚧 Pesquisa por foto em desenvolvimento (placeholder).")
+
+        st.markdown("---")
+
+        # --- FORMA DE PAGAMENTO ---
         st.markdown("### Forma de Pagamento")
         forma = st.radio(
             "Selecione a forma de pagamento",
@@ -1242,71 +1308,8 @@ if view == "Vendas":
             if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
                 fechar_caixa()
 
-    # ================= TAB 2 - PESQUISAR PRODUTO =================
+    # ================= TAB 2 - ÚLTIMAS VENDAS =================
     with tab2:
-        st.subheader("🔍 Pesquisar Produto")
-        sub1, sub2, sub3 = st.tabs(["Por Nome", "Por Código de Barras", "Por Foto"])
-
-        # --- POR NOME ---
-        with sub1:
-            nome_filtro = st.text_input("Digite o nome do produto", key="nome_filtro_pesquisa")
-            df_sel = produtos.copy()
-            if nome_filtro:
-                df_sel = df_sel[df_sel["Nome"].astype(str).str.contains(nome_filtro, case=False, na=False)]
-
-            if not df_sel.empty:
-                escolha = st.selectbox(
-                    "Selecione o produto",
-                    (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(),
-                    key="select_nome"
-                )
-                qtd_nome = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_nome")
-                if st.button("Adicionar ao pedido (nome)", key="btn_add_nome"):
-                    pid = escolha.split(" - ")[0].strip()
-                    rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
-                    st.session_state["pedido_atual"].append({
-                        "IDProduto": pid,
-                        "NomeProduto": rowp["Nome"],
-                        "CodigoBarras": str(rowp.get("CodigoBarras", "")),
-                        "Quantidade": int(qtd_nome),
-                        "PrecoVista": float(rowp["PrecoVista"]),
-                    })
-                    st.success("Item adicionado ao pedido.")
-
-        # --- POR CÓDIGO DE BARRAS ---
-        with sub2:
-            codigo = st.text_input("Digite ou escaneie o código de barras", key="codigo_barras_pesquisa")
-            df_sel = produtos.copy()
-            if codigo:
-                df_sel = df_sel[(df_sel["ID"].astype(str).str.contains(codigo)) |
-                                (df_sel["CodigoBarras"].astype(str).str.contains(codigo))]
-            if not df_sel.empty:
-                escolha = st.selectbox(
-                    "Selecione o produto",
-                    (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(),
-                    key="select_codigo"
-                )
-                qtd_codigo = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_codigo")
-                if st.button("Adicionar ao pedido (código)", key="btn_add_codigo"):
-                    pid = escolha.split(" - ")[0].strip()
-                    rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
-                    st.session_state["pedido_atual"].append({
-                        "IDProduto": pid,
-                        "NomeProduto": rowp["Nome"],
-                        "CodigoBarras": str(rowp.get("CodigoBarras", "")),
-                        "Quantidade": int(qtd_codigo),
-                        "PrecoVista": float(rowp["PrecoVista"]),
-                    })
-                    st.success("Item adicionado ao pedido.")
-
-        # --- POR FOTO ---
-        with sub3:
-            foto = st.camera_input("Tirar foto do produto", key="foto_pesquisa")
-            if foto:
-                st.info("🚧 Pesquisa por foto em desenvolvimento (placeholder).")
-
-    # ================= TAB 3 - ÚLTIMAS VENDAS =================
-    with tab3:
         st.subheader("📊 Últimas Vendas")
         if not vendas.empty:
             ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
@@ -1346,8 +1349,8 @@ if view == "Vendas":
         else:
             st.info("Ainda não há vendas registradas.")
 
-    # ================= TAB 4 - RECIBOS =================
-    with tab4:
+    # ================= TAB 3 - RECIBOS =================
+    with tab3:
         st.subheader("📄 Recibos de Vendas")
         if not vendas.empty:
             datas = sorted(vendas["Data"].unique())
@@ -1369,6 +1372,7 @@ if view == "Vendas":
                 st.image("logo.png", width=200, key="logo_recibo")
         else:
             st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
