@@ -1236,77 +1236,81 @@ if view == "Vendas":
 
         st.markdown("---")
 
-        # --- FORMA DE PAGAMENTO ---
-        st.markdown("### Forma de Pagamento")
-        forma = st.radio(
-            "Selecione a forma de pagamento",
-            ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
-            horizontal=True,
-            key="radio_forma_pagamento"
-        )
+        # ================= MOSTRAR PAGAMENTO SOMENTE SE HOUVER ITENS =================
+        if st.session_state.get("pedido_atual"):
+            # --- FORMA DE PAGAMENTO ---
+            st.markdown("### Forma de Pagamento")
+            forma = st.radio(
+                "Selecione a forma de pagamento",
+                ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
+                horizontal=True,
+                key="radio_forma_pagamento"
+            )
 
-        forma1 = forma2 = None
-        valor1 = valor2 = 0.0
+            forma1 = forma2 = None
+            valor1 = valor2 = 0.0
 
-        if forma == "Misto":
-            st.markdown("#### Configuração do pagamento misto")
-            colm1, colm2 = st.columns(2)
-            with colm1:
-                forma1 = st.selectbox(
-                    "Primeira forma",
-                    ["Dinheiro", "PIX", "Cartão", "Fiado"],
-                    key="misto_forma1"
-                )
-                valor1 = st.number_input(
-                    f"Valor em {forma1}",
-                    min_value=0.0,
-                    step=1.0,
-                    key="misto_valor1"
-                )
-            with colm2:
-                forma2 = st.selectbox(
-                    "Segunda forma",
-                    ["Dinheiro", "PIX", "Cartão", "Fiado"],
-                    key="misto_forma2"
-                )
+            if forma == "Misto":
+                st.markdown("#### Configuração do pagamento misto")
+                colm1, colm2 = st.columns(2)
+                with colm1:
+                    forma1 = st.selectbox(
+                        "Primeira forma",
+                        ["Dinheiro", "PIX", "Cartão", "Fiado"],
+                        key="misto_forma1"
+                    )
+                    valor1 = st.number_input(
+                        f"Valor em {forma1}",
+                        min_value=0.0,
+                        step=1.0,
+                        key="misto_valor1"
+                    )
+                with colm2:
+                    forma2 = st.selectbox(
+                        "Segunda forma",
+                        ["Dinheiro", "PIX", "Cartão", "Fiado"],
+                        key="misto_forma2"
+                    )
 
-        # -- Pedido atual
-        df_pedido = desenha_pedido(forma, promocoes)
-        valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
+            # -- Pedido atual
+            df_pedido = desenha_pedido(forma, promocoes)
+            valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
 
-        # Corrige valor2 automático no pagamento misto
-        if forma == "Misto" and forma1 and forma2:
-            if forma1 == "Cartão":
-                valor1 = valor1 / 0.8872 if valor1 > 0 else 0.0
-            if forma2 == "Cartão":
-                valor2 = max((valor_total - valor1) / 0.8872, 0.0)
+            # Corrige valor2 automático no pagamento misto
+            if forma == "Misto" and forma1 and forma2:
+                if forma1 == "Cartão":
+                    valor1 = valor1 / 0.8872 if valor1 > 0 else 0.0
+                if forma2 == "Cartão":
+                    valor2 = max((valor_total - valor1) / 0.8872, 0.0)
+                else:
+                    valor2 = max(valor_total - valor1, 0.0)
+                st.info(f"💳 Pagamento dividido: {forma1} = {brl(valor1)}, {forma2} = {brl(valor2)}")
+
+            # -- Métricas
+            colA, colB, colC = st.columns(3)
+            colA.metric("Valor Total", brl(valor_total))
+            if forma == "Misto":
+                colB.metric(f"{forma1}", brl(valor1))
+                colC.metric(f"{forma2}", brl(valor2))
             else:
-                valor2 = max(valor_total - valor1, 0.0)
-            st.info(f"💳 Pagamento dividido: {forma1} = {brl(valor1)}, {forma2} = {brl(valor2)}")
+                colB.metric("Valor Pago", "R$ 0,00")
+                colC.metric("Troco", "R$ 0,00")
 
-        # -- Métricas
-        colA, colB, colC = st.columns(3)
-        colA.metric("Valor Total", brl(valor_total))
-        if forma == "Misto":
-            colB.metric(f"{forma1}", brl(valor1))
-            colC.metric(f"{forma2}", brl(valor2))
+            st.markdown("---")
+
+            # -- Botões de ação
+            b1, b2, b4 = st.columns([1, 1, 1])
+            with b1:
+                if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
+                    finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes)
+            with b2:
+                if st.button("🆕 Nova Venda", key="btn_nova_venda"):
+                    nova_venda()
+            with b4:
+                if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
+                    fechar_caixa()
         else:
-            colB.metric("Valor Pago", "R$ 0,00")
-            colC.metric("Troco", "R$ 0,00")
-
-        st.markdown("---")
-
-        # -- Botões de ação
-        b1, b2, b4 = st.columns([1, 1, 1])
-        with b1:
-            if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
-                finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes)
-        with b2:
-            if st.button("🆕 Nova Venda", key="btn_nova_venda"):
-                nova_venda()
-        with b4:
-            if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
-                fechar_caixa()
+            st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
     # ================= TAB 2 - ÚLTIMAS VENDAS =================
     with tab2:
@@ -1372,6 +1376,7 @@ if view == "Vendas":
                 st.image("logo.png", width=200, key="logo_recibo")
         else:
             st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
