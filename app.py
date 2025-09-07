@@ -1624,19 +1624,19 @@ if view == "Promoções":
             st.info("Cadastre produtos primeiro para criar promoções.")
         else:
             opcoes_prod = (produtos["ID"].astype(str) + " - " + produtos["Nome"]).tolist()
-            sel_prod = st.selectbox("Produto", opcoes_prod, key="cad_produto")
+            sel_prod = st.selectbox("Produto", opcoes_prod, key="promo_cad_produto")
             pid = sel_prod.split(" - ")[0].strip()
             pnome = sel_prod.split(" - ", 1)[1].strip()
 
             col1, col2, col3 = st.columns([1, 1, 1])
             with col1:
-                desconto_str = st.text_input("Desconto (%)", value="0", key="cad_desc")
+                desconto_str = st.text_input("Desconto (%)", value="0", key="promo_cad_desc")
             with col2:
-                data_ini = st.date_input("Início", value=date.today(), key="cad_inicio")
+                data_ini = st.date_input("Início", value=date.today(), key="promo_cad_inicio")
             with col3:
-                data_fim = st.date_input("Término", value=date.today() + timedelta(days=7), key="cad_fim")
+                data_fim = st.date_input("Término", value=date.today() + timedelta(days=7), key="promo_cad_fim")
 
-            if st.button("Adicionar promoção", key="btn_add_promo"):
+            if st.button("Adicionar promoção", key="promo_btn_add"):
                 desconto = to_float(desconto_str, 0.0)
                 if desconto < 0 or desconto > 100:
                     st.error("O desconto deve estar entre 0 e 100%.")
@@ -1661,7 +1661,7 @@ if view == "Promoções":
     st.subheader("📦 Produtos parados sem vendas")
     dias_sem_venda = st.number_input(
         "Considerar parados após quantos dias?",
-        min_value=1, max_value=365, value=30, key="dias_sem_venda"
+        min_value=1, max_value=365, value=30, key="promo_dias_sem_venda"
     )
 
     if not vendas.empty:
@@ -1683,13 +1683,13 @@ if view == "Promoções":
         st.dataframe(produtos_parados[["ID", "Nome", "Quantidade", "UltimaVenda"]])
 
         desconto_auto = st.number_input(
-            "Desconto automático (%)", min_value=1, max_value=100, value=20, key="desc_auto"
+            "Desconto automático (%)", min_value=1, max_value=100, value=20, key="promo_desc_auto"
         )
         dias_validade = st.number_input(
-            "Duração da promoção (dias)", min_value=1, max_value=90, value=7, key="dias_validade_auto"
+            "Duração da promoção (dias)", min_value=1, max_value=90, value=7, key="promo_dias_validade_auto"
         )
 
-        if st.button("🔥 Criar promoção automática para produtos parados", key="btn_auto_promo"):
+        if st.button("🔥 Criar promoção automática para produtos parados", key="promo_btn_auto"):
             for _, row in produtos_parados.iterrows():
                 novo = {
                     "ID": prox_id(promocoes, "ID"),
@@ -1715,7 +1715,7 @@ if view == "Promoções":
         # --- EDITAR ---
         with st.expander("✏️ Editar promoção", expanded=False):
             ids = promocoes["ID"].astype(str).tolist()
-            sel = st.selectbox("Selecione a promoção", ids, key="edit_id") if ids else None
+            sel = st.selectbox("Selecione a promoção", ids, key="promo_edit_id") if ids else None
             if sel:
                 linha = promocoes[promocoes["ID"].astype(str) == sel]
                 if not linha.empty:
@@ -1729,28 +1729,28 @@ if view == "Promoções":
                     sel_prod_edit = st.selectbox(
                         "Produto (editar)", opcoes_prod,
                         index=opcoes_prod.index(pre_opcao),
-                        key=f"edit_prod_{sel}"
+                        key=f"promo_edit_prod_{sel}"
                     )
                     pid_e = sel_prod_edit.split(" - ")[0].strip()
                     pnome_e = sel_prod_edit.split(" - ", 1)[1].strip()
 
                     col1, col2, col3 = st.columns([1, 1, 1])
                     with col1:
-                        desc_e = st.text_input("Desconto (%)", value=str(ln["Desconto"]), key=f"edit_desc_{sel}")
+                        desc_e = st.text_input("Desconto (%)", value=str(ln["Desconto"]), key=f"promo_edit_desc_{sel}")
                     with col2:
                         try:
                             di = parse_date_yyyy_mm_dd(ln["DataInicio"]) or date.today()
                         except Exception:
                             di = date.today()
-                        data_ini_e = st.date_input("Início", value=di, key=f"edit_inicio_{sel}")
+                        data_ini_e = st.date_input("Início", value=di, key=f"promo_edit_inicio_{sel}")
                     with col3:
                         try:
                             df = parse_date_yyyy_mm_dd(ln["DataFim"]) or (date.today() + timedelta(days=7))
                         except Exception:
                             df = date.today() + timedelta(days=7)
-                        data_fim_e = st.date_input("Término", value=df, key=f"edit_fim_{sel}")
+                        data_fim_e = st.date_input("Término", value=df, key=f"promo_edit_fim_{sel}")
 
-                    if st.button("Salvar edição", key=f"btn_edit_{sel}"):
+                    if st.button("Salvar edição", key=f"promo_btn_edit_{sel}"):
                         dnum = to_float(desc_e, 0.0)
                         if dnum < 0 or dnum > 100:
                             st.error("O desconto deve estar entre 0 e 100%.")
@@ -1769,13 +1769,14 @@ if view == "Promoções":
         # --- EXCLUIR ---
         with st.expander("🗑️ Excluir promoção", expanded=False):
             del_id = st.selectbox(
-                "Selecione ID para excluir", promocoes["ID"].astype(str).tolist(), key="del_id"
+                "Selecione ID para excluir", promocoes["ID"].astype(str).tolist(), key="promo_del_id"
             )
-            if st.button("Excluir promoção", key="btn_del_promo"):
+            if st.button("Excluir promoção", key="promo_btn_del"):
                 promocoes = promocoes[promocoes["ID"].astype(str) != del_id]
                 save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
                 st.session_state["promocoes"] = promocoes
                 st.warning(f"Promoção {del_id} excluída!")
                 st.rerun()  # 🔑 atualização imediata
+
 
 
