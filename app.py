@@ -1003,6 +1003,28 @@ if view == "Produtos":
                     st.error("❌ Não foi possível ler nenhum código.")
 
 
+    # --- Botão para salvar ---
+    if st.button("💾 Salvar Produto", use_container_width=True):
+        novo_id = prox_id(produtos, "ID")
+        novo = {
+            "ID": novo_id,
+            "Nome": nome.strip(),
+            "Marca": marca.strip(),
+            "Categoria": categoria.strip(),
+            "Quantidade": int(qtd),
+            "PrecoCusto": to_float(preco_custo),
+            "PrecoVista": to_float(preco_vista),
+            "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista)>0 else 0.0,
+            "Validade": str(validade),
+            "FotoURL": foto_url.strip(),
+            "CodigoBarras": codigo_barras.strip()
+        }
+        produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
+        st.session_state["produtos"] = produtos
+        save_csv_github(produtos, ARQ_PRODUTOS, "Novo produto cadastrado")
+        st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
+
+
 
     
 
