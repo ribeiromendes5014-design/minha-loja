@@ -1423,7 +1423,7 @@ if view == "Vendas":
 
 
 # =====================================
-# CLIENTES (Fiado) com busca por CB
+# CLIENTES (Fiado) com busca minimalista
 # =====================================
 if view == "Clientes":
     show_logo("main")
@@ -1433,51 +1433,78 @@ if view == "Clientes":
         st.info("Nenhum fiado lançado.")
     else:
         st.subheader("Pesquisar registros")
-        c1, c2 = st.columns([2,2])
-        with c1:
-            nome_cliente_filtro = st.text_input("Filtrar por nome do cliente")
-            codigo_barras_filtro = st.text_input("Filtrar por código de barras")
-        with c2:
-            foto_codigo_cliente = st.camera_input("📷 Escanear código de barras para buscar")
-            if foto_codigo_cliente is not None:
-                codigo_cliente_lido = ler_codigo_barras(foto_codigo_cliente.getbuffer())
-                if codigo_cliente_lido:
-                    st.session_state["codigo_cliente_filtro"] = codigo_cliente_lido
-                    st.success(f"Código lido: {codigo_cliente_lido}")
-                    st.rerun()  # 🔑 atualização imediata
 
-        # usa session_state se existir
-        codigo_barras_filtro = st.session_state.get("codigo_cliente_filtro", codigo_barras_filtro)
+        # --- Menu de pesquisa minimalista ---
+        opcoes_busca = ["Nome do Cliente", "Produto", "Data", "Valor", "Código de Barras"]
+        criterio = st.selectbox("Pesquisar por:", opcoes_busca)
+        valor_busca = None
 
+        if criterio == "Nome do Cliente":
+            valor_busca = st.text_input("Digite o nome do cliente")
+        elif criterio == "Produto":
+            valor_busca = st.text_input("Digite o nome do produto")
+        elif criterio == "Data":
+            valor_busca = st.date_input("Selecione a data")
+        elif criterio == "Valor":
+            valor_busca = st.number_input("Digite o valor", min_value=0.0, step=0.01)
+        elif criterio == "Código de Barras":
+            col1, col2 = st.columns([2, 2])
+            with col1:
+                valor_busca = st.text_input("Digite o código de barras")
+            with col2:
+                foto_codigo_cliente = st.camera_input("📷 Escanear código de barras")
+                if foto_codigo_cliente is not None:
+                    codigo_cliente_lido = ler_codigo_barras(foto_codigo_cliente.getbuffer())
+                    if codigo_cliente_lido:
+                        st.session_state["codigo_cliente_filtro"] = codigo_cliente_lido
+                        st.success(f"Código lido: {codigo_cliente_lido}")
+                        st.rerun()
+            valor_busca = st.session_state.get("codigo_cliente_filtro", valor_busca)
+
+        # --- Aplicar filtro ---
         clientes_filtrados = clientes.copy()
-        if nome_cliente_filtro:
+        if criterio == "Nome do Cliente" and valor_busca:
             clientes_filtrados = clientes_filtrados[
-                clientes_filtrados["Cliente"].astype(str).str.contains(nome_cliente_filtro, case=False, na=False)
+                clientes_filtrados["Cliente"].astype(str).str.contains(valor_busca, case=False, na=False)
             ]
-        if codigo_barras_filtro:
+        elif criterio == "Produto" and valor_busca:
             clientes_filtrados = clientes_filtrados[
-                clientes_filtrados["CodigoBarras"].astype(str).str.contains(str(codigo_barras_filtro), case=False, na=False)
+                clientes_filtrados["Produto"].astype(str).str.contains(valor_busca, case=False, na=False)
+            ]
+        elif criterio == "Data" and valor_busca:
+            clientes_filtrados = clientes_filtrados[
+                clientes_filtrados["Data"].astype(str) == str(valor_busca)
+            ]
+        elif criterio == "Valor" and valor_busca:
+            clientes_filtrados = clientes_filtrados[
+                clientes_filtrados["Valor"].astype(float) == float(valor_busca)
+            ]
+        elif criterio == "Código de Barras" and valor_busca:
+            clientes_filtrados = clientes_filtrados[
+                clientes_filtrados["CodigoBarras"].astype(str).str.contains(str(valor_busca), case=False, na=False)
             ]
 
+        # --- Exibir resultados ---
         if clientes_filtrados.empty:
             st.info("Nenhum registro encontrado com os filtros aplicados.")
         else:
             st.dataframe(clientes_filtrados, use_container_width=True)
 
+        # --- Atualizar status ---
         st.markdown("#### Atualizar status")
         ids = clientes_filtrados["ID"].astype(str).tolist()
         sel = st.selectbox("Selecione o registro", ids) if ids else None
-        novo_status = st.selectbox("Status", ["Aberto","Pago"])
+        novo_status = st.selectbox("Status", ["Aberto", "Pago"])
 
         forma_pag = None
         if novo_status == "Pago":
-            forma_pag = st.selectbox("Forma de pagamento (finalização)", ["Dinheiro","PIX","Cartão"])
+            forma_pag = st.selectbox("Forma de pagamento (finalização)", ["Dinheiro", "PIX", "Cartão"])
 
         if st.button("Salvar status"):
             if sel is None:
                 st.warning("Selecione um registro válido.")
             else:
-                idx = clientes["ID"].astype(str)==str(sel)
+                idx = clientes["ID"].astype(str) == str(sel)
                 clientes.loc[idx, "Status"] = novo_status
 
                 if forma_pag:
@@ -1510,18 +1537,19 @@ if view == "Clientes":
                 st.session_state["clientes"] = clientes
                 save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
                 st.success("Status atualizado!")
-                st.rerun()  # 🔑 atualização imediata
+                st.rerun()
 
+        # --- Excluir registro ---
         st.markdown("#### Excluir registro de fiado")
         if st.button("Excluir registro selecionado"):
             if sel is None:
                 st.warning("Selecione um registro válido.")
             else:
-                clientes = clientes[clientes["ID"].astype(str)!=str(sel)]
+                clientes = clientes[clientes["ID"].astype(str) != str(sel)]
                 st.session_state["clientes"] = clientes
                 save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
                 st.warning(f"Registro {sel} excluído!")
-                st.rerun()  # 🔑 atualização imediata
+                st.rerun()
 
 
 # =====================================
