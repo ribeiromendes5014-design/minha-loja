@@ -1260,8 +1260,7 @@ with tab1:
     # ================= TAB 3 =================
 with tab3:
     st.subheader("📄 Recibos de Vendas")
-
-    if not vendas.empty:
+if not vendas.empty:
         datas = sorted(vendas["Data"].unique())
         data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
 
