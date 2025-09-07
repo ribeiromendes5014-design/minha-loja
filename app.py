@@ -1091,54 +1091,55 @@ if view == "Vendas":
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
     # ================= TAB 1 =================
-    with tab1:
-        st.subheader("Venda Detalhada")
+with tab1:
+    st.subheader("Venda Detalhada")
 
-        # -- Forma de pagamento
-        forma = st.radio("Forma de pagamento", ["Dinheiro", "PIX", "Cartão", "Fiado"], horizontal=True)
+    # -- Forma de pagamento
+    forma = st.radio("Forma de pagamento", ["Dinheiro", "PIX", "Cartão", "Fiado"], horizontal=True)
 
-        # -- Código ou câmera
-        c1, c2 = st.columns([2, 3])
-        with c1:
-            if "codigo_venda" not in st.session_state:
-                st.session_state["codigo_venda"] = ""
+    # -- Código ou câmera
+    c1, c2 = st.columns([2, 3])
+    with c1:
+        if "codigo_venda" not in st.session_state:
+            st.session_state["codigo_venda"] = ""
 
-            codigo = st.text_input("Código / Código de Barras",
-                                   value=st.session_state["codigo_venda"],
-                                   key="venda_codigo")
+        codigo = st.text_input("Código / Código de Barras",
+                               value=st.session_state["codigo_venda"],
+                               key="venda_codigo")
 
-            foto_codigo = st.camera_input("📷 Escanear código de barras (Venda)", key="venda_cam")
-            if foto_codigo is not None:
-                imagem_bytes = foto_codigo.getvalue()
-                codigos_lidos = ler_codigo_barras_api(imagem_bytes)
+        foto_codigo = st.camera_input("📷 Escanear código de barras (Venda)", key="venda_cam")
+        if foto_codigo is not None:
+            imagem_bytes = foto_codigo.getvalue()
+            codigos_lidos = ler_codigo_barras_api(imagem_bytes)
 
-                if codigos_lidos:
-                    st.session_state["codigo_venda"] = codigos_lidos[0]
-                    st.session_state["venda_cam"] = None
-                    st.success(f"Código lido: {st.session_state['codigo_venda']}")
-                    st.rerun()
-                else:
-                    st.error("❌ Não foi possível ler nenhum código.")
+            if codigos_lidos:
+                st.session_state["codigo_venda"] = codigos_lidos[0]
+                st.session_state["venda_cam"] = None
+                st.success(f"Código lido: {st.session_state['codigo_venda']}")
+                st.rerun()
+            else:
+                st.error("❌ Não foi possível ler nenhum código.")
 
-        with c2:
-            nome_filtro = st.text_input("Pesquisar por nome")
+    with c2:
+        nome_filtro = st.text_input("Pesquisar por nome")
 
-        # Filtro de produtos (NÃO mostrar tabela completa)
-        df_sel = produtos.copy()
-        if codigo:
-            df_sel = df_sel[
-                (df_sel["ID"].astype(str).str.contains(codigo)) |
-                (df_sel["CodigoBarras"].astype(str).str.contains(codigo))
-            ]
-        if nome_filtro:
-            df_sel = df_sel[df_sel["Nome"].astype(str).str.contains(nome_filtro, case=False, na=False)]
+    # Filtro de produtos (NÃO mostrar tabela completa)
+    df_sel = produtos.copy()
+    if codigo:
+        df_sel = df_sel[
+            (df_sel["ID"].astype(str).str.contains(codigo)) |
+            (df_sel["CodigoBarras"].astype(str).str.contains(codigo))
+        ]
+    if nome_filtro:
+        df_sel = df_sel[df_sel["Nome"].astype(str).str.contains(nome_filtro, case=False, na=False)]
 
-        escolha = None
-        if not df_sel.empty:
-            escolha = st.selectbox(
-                "Selecione o produto",
-                (df_sel["ID"].astype(str) + " - " + df_sel["Nome"].astype(str)).tolist()
-            )
+    escolha = None
+    if not df_sel.empty:
+        escolha = st.selectbox(
+            "Selecione o produto",
+            (df_sel["ID"].astype(str) + " - " + df_sel["Nome"].astype(str)).tolist()
+        )
+
 
         # -- Qtd e Preço
         col_qtd, col_preco = st.columns([1, 3])
