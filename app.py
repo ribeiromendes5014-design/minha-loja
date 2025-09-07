@@ -781,7 +781,10 @@ if view == "Dashboard":
     st.title("📊 Dashboard")
 
     # 🔹 Sub-abas
-    tab1, tab2, tab3, tab4 = st.tabs(["Faturamento", "Alertas", "Promoções Ativas", "Relatório de Caixa"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "Faturamento", "Alertas", "Promoções Ativas",
+        "Relatório de Caixa", "Produtos Mais Vendidos"
+    ])
 
     # ================= TAB 1 - FATURAMENTO =================
     with tab1:
@@ -862,7 +865,6 @@ if view == "Dashboard":
         if caixas.empty:
             st.info("Nenhum fechamento de caixa registrado ainda.")
         else:
-            # --- FILTRO POR DATA ---
             st.subheader("🔍 Filtro de Caixa por Data")
             datas_disp = sorted(caixas["Data"].unique(), reverse=True)
             data_sel = st.selectbox("Selecione a data do caixa", ["Todas"] + datas_disp)
@@ -873,7 +875,6 @@ if view == "Dashboard":
 
             st.dataframe(caixas_filtrados.sort_values("Data", ascending=False), use_container_width=True)
 
-            # --- PRODUTOS DO DIA ---
             if data_sel != "Todas":
                 vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
                 vendas_dia = vendas[vendas["Data"].dt.strftime("%Y-%m-%d") == data_sel]
@@ -887,9 +888,8 @@ if view == "Dashboard":
                         use_container_width=True
                     )
             else:
-                vendas_dia = pd.DataFrame()  # vazio para não dar erro no PDF
+                vendas_dia = pd.DataFrame()
 
-            # --- EXCLUSÃO DE RELATÓRIO ---
             st.subheader("🗑️ Excluir Relatório de Caixa")
             if not caixas_filtrados.empty:
                 ids = caixas_filtrados["Data"].tolist()
@@ -899,9 +899,8 @@ if view == "Dashboard":
                     st.session_state["caixas"] = caixas
                     save_csv_github(caixas, ARQ_CAIXAS, f"Excluindo relatório de caixa {del_data}")
                     st.warning(f"Relatório de caixa de {del_data} excluído!")
-                    st.rerun()  # 🔄 Atualiza a aba automaticamente
+                    st.rerun()
 
-            # --- GERAR PDF ---
             if data_sel != "Todas" and not caixas_filtrados.empty:
                 caixa_sel = caixas_filtrados.iloc[0].to_dict()
                 if st.button("📄 Gerar PDF do Caixa Selecionado"):
@@ -914,9 +913,9 @@ if view == "Dashboard":
                             file_name=caminho_pdf,
                             mime="application/pdf"
                         )
-                    st.rerun()  # 🔄 Atualiza após gerar PDF
+                    st.rerun()
 
-# ================= TAB 5 - RELATÓRIO DE PRODUTOS MAIS VENDIDOS =================
+    # ================= TAB 5 - RELATÓRIO DE PRODUTOS MAIS VENDIDOS =================
     with tab5:
         st.subheader("📊 Produtos Mais Vendidos")
         if vendas.empty:
@@ -954,6 +953,7 @@ if view == "Dashboard":
                             file_name=caminho_pdf,
                             mime="application/pdf"
                         )
+
 
 
     
