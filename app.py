@@ -1296,6 +1296,7 @@ if view == "Vendas":
     def nova_venda():
         st.session_state["pedido_atual"] = []
         st.info("🆕 Nova venda iniciada.")
+        st.rerun()   # 🔄 atualiza tela
 
     def fechar_caixa():
         caixas = norm_caixas(pd.DataFrame())
@@ -1308,6 +1309,7 @@ if view == "Vendas":
         save_csv_github(caixas, ARQ_CAIXAS, f"Fechando caixa {hoje_data}")
         st.session_state["caixas"] = caixas
         st.success(f"📦 Caixa do dia {hoje_data} fechado!")
+        st.rerun()   # 🔄 atualiza tela
 
     # 🔹 Sub-abas principais
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
