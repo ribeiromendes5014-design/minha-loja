@@ -1135,10 +1135,12 @@ if view == "Vendas":
 
     # 🔹 Configuração WhatsApp
     import requests
-    WHATSAPP_TOKEN = "EAALmgS1woeIBPTZC405wVZCNF5cLZCWgrxy6B7k4asAQ0c6oXqZAI8nvejJFIlrTn2g2qYBvZBdBcVFN3JQCKjXXAZBqrOBzYJUKIKK2qZAFXMlyyFSn1vPlXRTNWZClLgVMZAIemXUtewmJJf3ZBsbZC7CcdF5DCSVAPxIVD9PUnnkETX95ZAuQGNedeMdu7Dzh4P8VzjF84vgVW2oEFbCaomDhNgDxZCkle3y55hZACAOBmjlAZDZD"  # coloque seu token aqui
-    WHATSAPP_PHONE_ID = "823826790806739"  # ID do número de teste que apareceu no painel
+    from datetime import datetime
+
+    WHATSAPP_TOKEN = "EAALmgS1woeIBPTZC405wVZCNF5cLZCWgrxy6B7k4asAQ0c6oXqZAI8nvejJFIlrTn2g2qYBvZBdBcVFN3JQCKjXXAZBqrOBzYJUKIKK2qZAFXMlyyFSn1vPlXRTNWZClLgVMZAIemXUtewmJJf3ZBsbZC7CcdF5DCSVAPxIVD9PUnnkETX95ZAuQGNedeMdu7Dzh4P8VzjF84vgVW2oEFbCaomDhNgDxZCkle3y55hZACAOBmjlAZDZD"  # coloque seu token
+    WHATSAPP_PHONE_ID = "823826790806739"
     WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
-    NUMERO_DESTINO = "5541987876191"  # seu número com DDI + DDD + número
+    NUMERO_DESTINO = "5541987876191"  # número com DDI + DDD + número
 
     def enviar_whatsapp(destinatario, mensagem):
         headers = {
@@ -1152,7 +1154,8 @@ if view == "Vendas":
             "text": {"body": mensagem}
         }
         try:
-            requests.post(WHATSAPP_API_URL, headers=headers, json=data)
+            r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
+            print("DEBUG WHATSAPP:", r.json())
         except Exception as e:
             print("Erro ao enviar WhatsApp:", e)
 
@@ -1287,6 +1290,7 @@ if view == "Vendas":
                 else:
                     novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
                     data_venda = date.today().strftime("%Y-%m-%d")
+                    hora_venda = datetime.now().strftime("%H:%M:%S")
 
                     registros = []
                     for item in st.session_state["pedido_atual"]:
@@ -1338,8 +1342,27 @@ if view == "Vendas":
                         st.session_state["clientes"] = clientes
                         save_csv_github(clientes, ARQ_CLIENTES, "Novo registro fiado")
 
-                    # 🔹 Envia notificação automática no WhatsApp
-                    mensagem = f"💰 Nova venda realizada!\n\nID: {novo_id}\nTotal: R$ {valor_total:.2f}\nForma: {forma}"
+                    # 🔹 Monta mensagem para WhatsApp
+                    lista_produtos = "\n".join(
+                        [f"- {i['NomeProduto']} x{i['Quantidade']}" for i in st.session_state["pedido_atual"]]
+                    )
+                    mensagem = (
+                        f"🛒 *Nova Venda Realizada!*\n\n"
+                        f"📅 Data: {data_venda}\n"
+                        f"⏰ Hora: {hora_venda}\n"
+                        f"🆔 Venda: {novo_id}\n"
+                        f"💳 Forma de Pagamento: {forma}\n"
+                        f"💰 Total: {brl(valor_total)}\n\n"
+                        f"📦 Produtos:\n{lista_produtos}"
+                    )
+
+                    if forma == "Fiado":
+                        mensagem += (
+                            f"\n\n👤 Cliente: {nome_cliente}\n"
+                            f"📆 Data prevista pagamento: {data_prevista}"
+                        )
+
+                    # 🔹 Envia mensagem para WhatsApp
                     enviar_whatsapp(NUMERO_DESTINO, mensagem)
 
                     # Atualiza session_state
@@ -1352,100 +1375,6 @@ if view == "Vendas":
 
                     st.success(f"✅ Venda {novo_id} finalizada e registrada!")
                     st.rerun()
-
-        with b2:
-            if st.button("🆕 Nova Venda"):
-                st.session_state["pedido_atual"] = []
-                st.session_state["valor_pago"] = 0.0
-                st.session_state["codigo_venda"] = ""
-                st.session_state["venda_cam"] = None
-                st.info("Novo pedido iniciado.")
-                st.rerun()
-
-        with b4:
-            if st.button("📦 Fechar Caixa"):
-                st.success("Caixa fechado!")
-                st.rerun()
-
-    # ================= TAB 2 =================
-    with tab2:
-        st.subheader("Últimas Vendas")
-        if not vendas.empty:
-            ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
-            colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario", "Total", "FormaPagamento"]
-            colunas = [c for c in colunas if c in ult.columns]
-            st.dataframe(ult[colunas], use_container_width=True)
-
-            ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
-
-            colx, coly = st.columns([3, 1])
-            with colx:
-                id_excluir = st.selectbox(
-                    "Selecione a venda para excluir (devolve estoque)",
-                    ids if ids else [0]
-                )
-
-            with coly:
-                if st.button("Excluir venda"):
-                    try:
-                        id_excluir_int = int(id_excluir)
-                    except:
-                        id_excluir_int = None
-
-                    if id_excluir_int and id_excluir_int in ids:
-                        linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
-
-                        for _, r in linhas.iterrows():
-                            mask = produtos["ID"].astype(str) == str(r["IDProduto"])
-                            if mask.any():
-                                produtos.loc[mask, "Quantidade"] = (
-                                    produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
-                                ).astype(int)
-
-                        vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
-
-                        save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
-                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-
-                        st.session_state["vendas"] = vendas
-                        st.session_state["produtos"] = produtos
-
-                        st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
-                        st.rerun()
-                    else:
-                        st.warning("Venda não encontrada.")
-        else:
-            st.info("Ainda não há vendas registradas.")
-
-    # ================= TAB 3 =================
-    with tab3:
-        st.subheader("📄 Recibos de Vendas")
-
-        if not vendas.empty:
-            datas = sorted(vendas["Data"].unique())
-            data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
-
-            vendas_dia = vendas[vendas["Data"] == data_sel]
-            ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
-
-            id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
-
-            if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
-                caminho_pdf = f"recibo_venda_{id_sel}.pdf"
-                gerar_pdf_venda(id_sel, vendas, caminho_pdf)
-
-                with open(caminho_pdf, "rb") as f:
-                    st.download_button(
-                        label="⬇️ Baixar Recibo",
-                        data=f,
-                        file_name=caminho_pdf,
-                        mime="application/pdf",
-                        key="download_recibo"
-                    )
-
-                st.image("logo.png", width=200)
-        else:
-            st.info("Nenhuma venda para gerar recibo.")
 
 
 
