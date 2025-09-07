@@ -1283,7 +1283,6 @@ if view == "Vendas":
                                 "CodigoBarras": str(rowp.get("CodigoBarras", "")).strip(),
                                 "Quantidade": int(qtd),
                                 "PrecoVista": preco_vista,
-                                "Promo": promo['Desconto'] if promo else 0
                             })
                             st.success("Item adicionado.")
                             st.rerun()
@@ -1294,21 +1293,12 @@ if view == "Vendas":
 
         # Corrige valor2 automático no pagamento misto
         if forma == "Misto" and forma1 and forma2:
-            # Ajusta valor1 se for Cartão
             if forma1 == "Cartão":
-                valor1_real = valor1 / 0.8872 if valor1 > 0 else 0.0
-            else:
-                valor1_real = valor1
-
-            restante = max(valor_total - valor1_real, 0.0)
-
-            # Ajusta valor2 se for Cartão
+                valor1 = valor1 / 0.8872 if valor1 > 0 else 0.0
             if forma2 == "Cartão":
-                valor2 = restante / 0.8872 if restante > 0 else 0.0
+                valor2 = max((valor_total - valor1) / 0.8872, 0.0)
             else:
-                valor2 = restante
-
-            valor1 = valor1_real
+                valor2 = max(valor_total - valor1, 0.0)
             st.info(f"💳 Pagamento dividido: {forma1} = {brl(valor1)}, {forma2} = {brl(valor2)}")
 
         # -- Inicializa valores
@@ -1397,13 +1387,14 @@ if view == "Vendas":
                     save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando estoque após venda")
 
                     # 🔹 Monta mensagem para WhatsApp
-                    lista_produtos = "\n".join(
-                        [
-                            f"- {i['NomeProduto']} x{i['Quantidade']}"
-                            + (f" (🔥 -{i['Promo']}%)" if i.get("Promo", 0) > 0 else "")
-                            for i in st.session_state["pedido_atual"]
-                        ]
-                    )
+                    lista_produtos = []
+                    for item in st.session_state["pedido_atual"]:
+                        preco_vista_aplicado, promo = preco_vista_com_promocao(
+                            item["IDProduto"], item["PrecoVista"], date.today(), promocoes
+                        )
+                        desconto_txt = f" (🔥 -{promo['Desconto']}%)" if promo else ""
+                        lista_produtos.append(f"- {item['NomeProduto']} x{item['Quantidade']}{desconto_txt}")
+
                     mensagem = (
                         f"🛒 *Nova Venda Realizada!*\n\n"
                         f"📅 Data: {data_venda}\n"
@@ -1413,7 +1404,7 @@ if view == "Vendas":
                     )
                     if forma == "Misto":
                         mensagem += f"   - {forma1}: {brl(valor1)}\n   - {forma2}: {brl(valor2)}\n"
-                    mensagem += f"💰 Total: {brl(valor_total)}\n\n📦 Produtos:\n{lista_produtos}"
+                    mensagem += f"💰 Total: {brl(valor_total)}\n\n📦 Produtos:\n" + "\n".join(lista_produtos)
 
                     enviar_whatsapp(NUMERO_DESTINO, mensagem)
 
@@ -1427,6 +1418,7 @@ if view == "Vendas":
 
                     st.success(f"✅ Venda {novo_id} finalizada e registrada!")
                     st.rerun()
+
 
         with b2:
             if st.button("🆕 Nova Venda", key="btn_nova_venda"):
