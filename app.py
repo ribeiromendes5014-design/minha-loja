@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import date, datetime, timedelta
-from PIL import Image
+from PIL import Image, ImageEnhance
 from io import BytesIO
 from pyzxing import BarCodeReader  
 
