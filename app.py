@@ -1156,9 +1156,12 @@ if view == "Vendas":
         }
         try:
             r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
-            print("DEBUG WHATSAPP:", r.json())
+            resp = r.json()
+            print("DEBUG WHATSAPP:", resp)
+            if "messages" not in resp:
+                st.error(f"Erro WhatsApp: {resp}")
         except Exception as e:
-            print("Erro ao enviar WhatsApp:", e)
+            st.error(f"Erro ao enviar WhatsApp: {e}")
 
     # Sub-abas
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
@@ -1377,25 +1380,6 @@ if view == "Vendas":
                     vendas = pd.concat([vendas, pd.DataFrame(registros)], ignore_index=True)
                     save_csv_github(vendas, ARQ_VENDAS, "Adicionando nova venda")
                     save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando estoque após venda")
-
-                    # 🔹 Se for FIADO → também adiciona em clientes
-                    if forma == "Fiado" or (forma == "Misto" and ("Fiado" in [forma1, forma2])):
-                        novo_cliente_id = prox_id(clientes, "ID") if not clientes.empty else 1
-                        produtos_nomes = ", ".join([i["NomeProduto"] for i in st.session_state["pedido_atual"]])
-                        registro_fiado = {
-                            "ID": novo_cliente_id,
-                            "Cliente": nome_cliente.strip() if nome_cliente else "Sem nome",
-                            "Produto": produtos_nomes,
-                            "Valor": valor_total,
-                            "Data": data_venda,
-                            "DataPrevista": str(data_prevista) if data_prevista else "",
-                            "Status": "Aberto",
-                            "CodigoBarras": st.session_state["codigo_venda"],
-                            "FormaPagamento": forma if forma != "Misto" else f"{forma1}+{forma2}"
-                        }
-                        clientes = pd.concat([clientes, pd.DataFrame([registro_fiado])], ignore_index=True)
-                        st.session_state["clientes"] = clientes
-                        save_csv_github(clientes, ARQ_CLIENTES, "Novo registro fiado")
 
                     # 🔹 Monta mensagem para WhatsApp
                     lista_produtos = "\n".join(
