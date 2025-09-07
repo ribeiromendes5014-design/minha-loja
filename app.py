@@ -1264,35 +1264,63 @@ if view == "Vendas":
             colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario", "Total", "FormaPagamento"]
             colunas = [c for c in colunas if c in ult.columns]
             st.dataframe(ult[colunas], use_container_width=True)
+
+            # --- Excluir venda ---
+            ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
+            colx, coly = st.columns([3,1])
+            with colx:
+                id_excluir = st.selectbox("Selecione a venda para excluir (devolve estoque)", ids if ids else [0])
+            with coly:
+                if st.button("Excluir venda"):
+                    if id_excluir in ids:
+                        linhas = vendas[vendas["IDVenda"] == id_excluir]
+                        # devolve estoque
+                        for _, r in linhas.iterrows():
+                            mask = produtos["ID"].astype(str) == str(r["IDProduto"])
+                            if mask.any():
+                                produtos.loc[mask, "Quantidade"] = (
+                                    produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
+                                ).astype(int)
+
+                        # remove da planilha
+                        vendas = vendas[vendas["IDVenda"] != id_excluir]
+                        save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
+                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+
+                        st.session_state["vendas"] = vendas
+                        st.session_state["produtos"] = produtos
+                        st.success(f"Venda {id_excluir} excluída e estoque ajustado.")
+                    else:
+                        st.warning("Venda não encontrada.")
         else:
             st.info("Ainda não há vendas registradas.")
 
-   # ================= TAB 3 =================
-with tab3:
-    st.subheader("📄 Recibos de Vendas")
+    # ================= TAB 3 =================
+    with tab3:
+        st.subheader("📄 Recibos de Vendas")
 
-    datas = sorted(vendas["Data"].unique()) if not vendas.empty else []
-    if datas:
-        data_sel = st.selectbox("Selecione a data da venda", datas)
-        vendas_dia = vendas[vendas["Data"] == data_sel]
-        ids_dia = vendas_dia["IDVenda"].unique().tolist()
-        id_sel = st.selectbox("Selecione o ID da venda", ids_dia)
+        datas = sorted(vendas["Data"].unique()) if not vendas.empty else []
+        if datas:
+            data_sel = st.selectbox("Selecione a data da venda", datas)
+            vendas_dia = vendas[vendas["Data"] == data_sel]
+            ids_dia = vendas_dia["IDVenda"].unique().tolist()
+            id_sel = st.selectbox("Selecione o ID da venda", ids_dia)
 
-        if st.button("Gerar Recibo (PDF)"):
-            caminho_pdf = f"recibo_venda_{id_sel}.pdf"
-            gerar_pdf_venda(id_sel, vendas, caminho_pdf)
-            with open(caminho_pdf, "rb") as f:
-                st.download_button(
-                    label="⬇️ Baixar Recibo",
-                    data=f,
-                    file_name=caminho_pdf,
-                    mime="application/pdf"
-                )
+            if st.button("Gerar Recibo (PDF)"):
+                caminho_pdf = f"recibo_venda_{id_sel}.pdf"
+                gerar_pdf_venda(id_sel, vendas, caminho_pdf)
+                with open(caminho_pdf, "rb") as f:
+                    st.download_button(
+                        label="⬇️ Baixar Recibo",
+                        data=f,
+                        file_name=caminho_pdf,
+                        mime="application/pdf"
+                    )
 
-            # opcional: mostrar logo/imagem abaixo do recibo
-            st.image("logo.png", width=200)
-    else:
-        st.info("Nenhuma venda para gerar recibo.")
+                st.image("logo.png", width=200)
+        else:
+            st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
