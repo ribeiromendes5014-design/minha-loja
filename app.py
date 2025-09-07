@@ -1121,7 +1121,7 @@ if view == "Vendas":
 
         # -- Seleção de produto
         st.subheader("Itens do pedido")
-        c1, c2, c3, c4 = st.columns([2, 3, 2, 2])
+        c1, c2 = st.columns([2, 3])
         with c1:
             if "codigo_venda" not in st.session_state:
                 st.session_state["codigo_venda"] = ""
@@ -1137,6 +1137,7 @@ if view == "Vendas":
 
                 if codigos_lidos:
                     st.session_state["codigo_venda"] = codigos_lidos[0]
+                    st.session_state["venda_cam"] = None   # limpa foto após ler
                     st.success(f"Código lido: {st.session_state['codigo_venda']}")
                     st.rerun()
                 else:
@@ -1145,6 +1146,7 @@ if view == "Vendas":
         with c2:
             nome_filtro = st.text_input("Pesquisar por nome")
 
+        # Filtro de produtos
         df_sel = produtos.copy()
         if codigo:
             df_sel = df_sel[
@@ -1227,22 +1229,32 @@ if view == "Vendas":
         # --- FINALIZAR VENDA ---
         with b1:
             if st.button("✅ Finalizar Venda"):
-                # (sua lógica atual de finalizar venda aqui)
-                pass
+                if not st.session_state["pedido_atual"]:
+                    st.warning("Adicione itens ao pedido.")
+                else:
+                    # 🔹 aqui entra a lógica completa que você já tinha de finalizar venda
+                    st.success("✅ Venda finalizada!")
+
+                    # limpa estado
+                    st.session_state["pedido_atual"] = []
+                    st.session_state["valor_pago"] = 0.0
+                    st.session_state["codigo_venda"] = ""
+                    st.session_state["venda_cam"] = None
 
         # --- NOVA VENDA ---
         with b2:
             if st.button("🆕 Nova Venda"):
                 st.session_state["pedido_atual"] = []
                 st.session_state["valor_pago"] = 0.0
-                st.session_state["codigo_venda"] = ""   # limpa CB
+                st.session_state["codigo_venda"] = ""
+                st.session_state["venda_cam"] = None
                 st.info("Novo pedido iniciado.")
 
         # --- FECHAR CAIXA ---
         with b4:
             if st.button("📦 Fechar Caixa"):
-                # (sua lógica de fechamento de caixa aqui)
-                pass
+                # 🔹 sua lógica de fechamento de caixa
+                st.success("Caixa fechado!")
 
     # ================= TAB 2 =================
     with tab2:
@@ -1258,7 +1270,26 @@ if view == "Vendas":
     # ================= TAB 3 =================
     with tab3:
         st.subheader("📄 Recibos de Vendas")
-        st.info("Aqui você pode listar recibos já gerados para baixar novamente.")
+        datas = sorted(vendas["Data"].unique()) if not vendas.empty else []
+        if datas:
+            data_sel = st.selectbox("Selecione a data da venda", datas)
+            vendas_dia = vendas[vendas["Data"] == data_sel]
+            ids_dia = vendas_dia["IDVenda"].unique().tolist()
+            id_sel = st.selectbox("Selecione o ID da venda", ids_dia)
+
+            if st.button("Gerar Recibo (PDF)"):
+                caminho_pdf = f"recibo_venda_{id_sel}.pdf"
+                gerar_pdf_venda(id_sel, vendas, caminho_pdf)
+                with open(caminho_pdf, "rb") as f:
+                    st.download_button(
+                        label="⬇️ Baixar Recibo",
+                        data=f,
+                        file_name=caminho_pdf,
+                        mime="application/pdf"
+                    )
+        else:
+            st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
