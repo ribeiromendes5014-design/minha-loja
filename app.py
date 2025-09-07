@@ -916,7 +916,44 @@ if view == "Dashboard":
                         )
                     st.rerun()  # 🔄 Atualiza após gerar PDF
 
+# ================= TAB 5 - RELATÓRIO DE PRODUTOS MAIS VENDIDOS =================
+    with tab5:
+        st.subheader("📊 Produtos Mais Vendidos")
+        if vendas.empty:
+            st.info("Nenhuma venda registrada ainda.")
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                data_inicio = st.date_input("Data de início", value=date.today().replace(day=1))
+            with col2:
+                data_fim = st.date_input("Data de fim", value=date.today())
 
+            vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
+            filtro = (vendas["Data"] >= pd.to_datetime(data_inicio)) & (vendas["Data"] <= pd.to_datetime(data_fim))
+            vendas_filtradas = vendas[filtro]
+
+            if vendas_filtradas.empty:
+                st.warning("Nenhum produto vendido neste período.")
+            else:
+                ranking = (
+                    vendas_filtradas.groupby(["IDProduto", "NomeProduto"])["Quantidade"]
+                    .sum()
+                    .reset_index()
+                    .sort_values("Quantidade", ascending=False)
+                )
+
+                st.dataframe(ranking, use_container_width=True)
+
+                if st.button("📄 Gerar PDF do Relatório"):
+                    caminho_pdf = f"relatorio_produtos_{data_inicio}_a_{data_fim}.pdf"
+                    gerar_pdf_produtos_vendidos(ranking, caminho_pdf, data_inicio, data_fim)
+                    with open(caminho_pdf, "rb") as f:
+                        st.download_button(
+                            label=f"⬇️ Baixar Relatório de Produtos ({data_inicio} a {data_fim})",
+                            data=f,
+                            file_name=caminho_pdf,
+                            mime="application/pdf"
+                        )
 
 
     
