@@ -1207,8 +1207,8 @@ if view == "Vendas":
     colC.metric("Troco", brl(troco if forma == "Dinheiro" else 0.0))
 
     st.markdown("---")
+    
     b1, b2, b3, b4, b5, b6 = st.columns(6)
-
     # --- FINALIZAR VENDA ---
 with b1:
     if st.button("✅ Finalizar Venda"):
