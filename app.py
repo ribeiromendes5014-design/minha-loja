@@ -1189,7 +1189,6 @@ if view == "Vendas":
                 valor1 = st.number_input(
                     f"Valor em {forma1}",
                     min_value=0.0,
-                    max_value=0.0,  # valor_total ainda não está calculado
                     step=1.0,
                     key="misto_valor1"
                 )
@@ -1199,8 +1198,7 @@ if view == "Vendas":
                     ["Dinheiro", "PIX", "Cartão", "Fiado"],
                     key="misto_forma2"
                 )
-                # valor2 é calculado automaticamente depois que temos valor_total
-                st.write("Valor em segunda forma aparecerá após calcular total.")
+                valor2 = 0.0  # será calculado após definir valor_total
 
         # -- Código ou câmera
         c1, c2 = st.columns([2, 3])
@@ -1337,9 +1335,99 @@ if view == "Vendas":
         # --- FINALIZAR VENDA ---
         with b1:
             if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
-                # aqui entra a lógica de salvar venda (igual já tínhamos),
-                # mas agora usando valor1 e valor2 quando forma == "Misto"
-                ...
+                if not st.session_state["pedido_atual"]:
+                    st.warning("Adicione itens ao pedido.")
+                else:
+                    novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
+                    data_venda = date.today().strftime("%Y-%m-%d")
+                    hora_venda = datetime.now().strftime("%H:%M:%S")
+
+                    registros = []
+                    for item in st.session_state["pedido_atual"]:
+                        preco_vista_aplicado, promo = preco_vista_com_promocao(
+                            item["IDProduto"], item["PrecoVista"], date.today(), promocoes
+                        )
+                        preco_unit = preco_por_forma(preco_vista_aplicado, forma)
+                        total = preco_unit * item["Quantidade"]
+
+                        registros.append({
+                            "IDVenda": novo_id,
+                            "Data": data_venda,
+                            "IDProduto": item["IDProduto"],
+                            "NomeProduto": item["NomeProduto"],
+                            "Quantidade": item["Quantidade"],
+                            "PrecoUnitario": preco_unit,
+                            "Total": total,
+                            "FormaPagamento": forma if forma != "Misto" else f"{forma1}+{forma2}",
+                            "ValorPago1": valor1 if forma == "Misto" else (valor_pago if forma == "Dinheiro" else 0.0),
+                            "ValorPago2": valor2 if forma == "Misto" else 0.0
+                        })
+
+                        # Atualiza estoque
+                        mask = produtos["ID"].astype(str) == str(item["IDProduto"])
+                        if mask.any():
+                            produtos.loc[mask, "Quantidade"] = (
+                                produtos.loc[mask, "Quantidade"].astype(int) - int(item["Quantidade"])
+                            ).astype(int)
+
+                    # 🔹 Adiciona no DataFrame de vendas
+                    vendas = pd.concat([vendas, pd.DataFrame(registros)], ignore_index=True)
+                    save_csv_github(vendas, ARQ_VENDAS, "Adicionando nova venda")
+                    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando estoque após venda")
+
+                    # 🔹 Se for FIADO → também adiciona em clientes
+                    if forma == "Fiado" or (forma == "Misto" and ("Fiado" in [forma1, forma2])):
+                        novo_cliente_id = prox_id(clientes, "ID") if not clientes.empty else 1
+                        produtos_nomes = ", ".join([i["NomeProduto"] for i in st.session_state["pedido_atual"]])
+                        registro_fiado = {
+                            "ID": novo_cliente_id,
+                            "Cliente": nome_cliente.strip() if nome_cliente else "Sem nome",
+                            "Produto": produtos_nomes,
+                            "Valor": valor_total,
+                            "Data": data_venda,
+                            "DataPrevista": str(data_prevista) if data_prevista else "",
+                            "Status": "Aberto",
+                            "CodigoBarras": st.session_state["codigo_venda"],
+                            "FormaPagamento": forma if forma != "Misto" else f"{forma1}+{forma2}"
+                        }
+                        clientes = pd.concat([clientes, pd.DataFrame([registro_fiado])], ignore_index=True)
+                        st.session_state["clientes"] = clientes
+                        save_csv_github(clientes, ARQ_CLIENTES, "Novo registro fiado")
+
+                    # 🔹 Monta mensagem para WhatsApp
+                    lista_produtos = "\n".join(
+                        [f"- {i['NomeProduto']} x{i['Quantidade']}" for i in st.session_state["pedido_atual"]]
+                    )
+                    mensagem = (
+                        f"🛒 *Nova Venda Realizada!*\n\n"
+                        f"📅 Data: {data_venda}\n"
+                        f"⏰ Hora: {hora_venda}\n"
+                        f"🆔 Venda: {novo_id}\n"
+                        f"💳 Forma de Pagamento: {forma if forma != 'Misto' else f'{forma1}+{forma2}'}\n"
+                    )
+                    if forma == "Misto":
+                        mensagem += f"   - {forma1}: {brl(valor1)}\n   - {forma2}: {brl(valor2)}\n"
+                    mensagem += f"💰 Total: {brl(valor_total)}\n\n📦 Produtos:\n{lista_produtos}"
+
+                    if forma == "Fiado" or (forma == "Misto" and ("Fiado" in [forma1, forma2])):
+                        mensagem += (
+                            f"\n\n👤 Cliente: {nome_cliente}\n"
+                            f"📆 Data prevista pagamento: {data_prevista}"
+                        )
+
+                    # 🔹 Envia mensagem para WhatsApp
+                    enviar_whatsapp(NUMERO_DESTINO, mensagem)
+
+                    # Atualiza session_state
+                    st.session_state["vendas"] = vendas
+                    st.session_state["produtos"] = produtos
+                    st.session_state["pedido_atual"] = []
+                    st.session_state["valor_pago"] = 0.0
+                    st.session_state["codigo_venda"] = ""
+                    st.session_state["venda_cam"] = None
+
+                    st.success(f"✅ Venda {novo_id} finalizada e registrada!")
+                    st.rerun()
 
         with b2:
             if st.button("🆕 Nova Venda", key="btn_nova_venda"):
@@ -1377,9 +1465,29 @@ if view == "Vendas":
 
             with coly:
                 if st.button("Excluir venda", key="btn_excluir_venda"):
-                    # lógica de exclusão permanece
-                    ...
+                    id_excluir_int = int(id_excluir) if id_excluir else None
+                    if id_excluir_int and id_excluir_int in ids:
+                        linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
 
+                        for _, r in linhas.iterrows():
+                            mask = produtos["ID"].astype(str) == str(r["IDProduto"])
+                            if mask.any():
+                                produtos.loc[mask, "Quantidade"] = (
+                                    produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
+                                ).astype(int)
+
+                        vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
+
+                        save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
+                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+
+                        st.session_state["vendas"] = vendas
+                        st.session_state["produtos"] = produtos
+
+                        st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
+                        st.rerun()
+                    else:
+                        st.warning("Venda não encontrada.")
         else:
             st.info("Ainda não há vendas registradas.")
 
