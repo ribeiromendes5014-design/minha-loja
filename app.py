@@ -286,8 +286,6 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 # =====================================
 # Leitura de Código de Barras (pyzxing)
 # =====================================
-from PIL import ImageEnhance  # <-- adicione esse import junto dos outros no topo
-
 def ler_codigo_barras(image_bytes):
     try:
         # Abre a imagem recebida e converte para escala de cinza
