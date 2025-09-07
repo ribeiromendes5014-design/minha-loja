@@ -1132,6 +1132,30 @@ if view == "Produtos":
 if view == "Vendas":
     show_logo("main")
     st.header("🧾 Vendas")
+
+    # 🔹 Configuração WhatsApp
+    import requests
+    WHATSAPP_TOKEN = "EAALmgS1woeIBPTZC405wVZCNF5cLZCWgrxy6B7k4asAQ0c6oXqZAI8nvejJFIlrTn2g2qYBvZBdBcVFN3JQCKjXXAZBqrOBzYJUKIKK2qZAFXMlyyFSn1vPlXRTNWZClLgVMZAIemXUtewmJJf3ZBsbZC7CcdF5DCSVAPxIVD9PUnnkETX95ZAuQGNedeMdu7Dzh4P8VzjF84vgVW2oEFbCaomDhNgDxZCkle3y55hZACAOBmjlAZDZD"  # coloque seu token aqui
+    WHATSAPP_PHONE_ID = "823826790806739"  # ID do número de teste que apareceu no painel
+    WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
+    NUMERO_DESTINO = "5541987876191"  # seu número com DDI + DDD + número
+
+    def enviar_whatsapp(destinatario, mensagem):
+        headers = {
+            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "messaging_product": "whatsapp",
+            "to": destinatario,
+            "type": "text",
+            "text": {"body": mensagem}
+        }
+        try:
+            requests.post(WHATSAPP_API_URL, headers=headers, json=data)
+        except Exception as e:
+            print("Erro ao enviar WhatsApp:", e)
+
     # Sub-abas
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
@@ -1313,6 +1337,10 @@ if view == "Vendas":
                         clientes = pd.concat([clientes, pd.DataFrame([registro_fiado])], ignore_index=True)
                         st.session_state["clientes"] = clientes
                         save_csv_github(clientes, ARQ_CLIENTES, "Novo registro fiado")
+
+                    # 🔹 Envia notificação automática no WhatsApp
+                    mensagem = f"💰 Nova venda realizada!\n\nID: {novo_id}\nTotal: R$ {valor_total:.2f}\nForma: {forma}"
+                    enviar_whatsapp(NUMERO_DESTINO, mensagem)
 
                     # Atualiza session_state
                     st.session_state["vendas"] = vendas
