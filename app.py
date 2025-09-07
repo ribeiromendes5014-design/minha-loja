@@ -992,9 +992,6 @@ if view == "Produtos":
             save_csv_github(produtos, ARQ_PRODUTOS, "Novo produto cadastrado")
             st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
 
-
-    
-
     # --- Lista de produtos (fora do expander) ---
     st.markdown("### Lista de produtos")
     if produtos.empty:
@@ -1019,14 +1016,22 @@ if view == "Produtos":
                     eid = int(row["ID"])
                 except Exception:
                     continue
-                if col_btn.button("✏️ Editar", key=f"edit_{eid}"):
-                    st.session_state["edit_prod"] = eid
-                if col_btn.button("🗑️ Excluir", key=f"del_{eid}"):
-                    produtos = produtos[produtos["ID"] != str(eid)]
-                    st.session_state["produtos"] = produtos
-                    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-                    st.warning(f"Produto {row['Nome']} excluído!")
 
+                # 🔽 Novo seletor de ação
+                acao = col_btn.selectbox(
+                    "Ação",
+                    ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
+                    key=f"acao_{eid}"
+                )
+
+                if col_btn.button("Confirmar", key=f"conf_{eid}"):
+                    if acao == "✏️ Editar":
+                        st.session_state["edit_prod"] = eid
+                    elif acao == "🗑️ Excluir":
+                        produtos = produtos[produtos["ID"] != str(eid)]
+                        st.session_state["produtos"] = produtos
+                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                        st.warning(f"Produto {row['Nome']} excluído!")
 
         # Editor inline
         if "edit_prod" in st.session_state:
@@ -1054,7 +1059,7 @@ if view == "Produtos":
                     novo_cb = st.text_input("Código de Barras", value=str(row.get("CodigoBarras","")), key=f"edit_cb_{eid}")
                     foto_codigo_edit = st.camera_input("📷 Atualizar código de barras", key=f"edit_cam_{eid}")
                     if foto_codigo_edit is not None:
-                        codigo_lido = ler_codigo_barras_api(foto_codigo_venda.getbuffer())
+                        codigo_lido = ler_codigo_barras_api(foto_codigo_edit.getbuffer())
                         if codigo_lido:
                             novo_cb = codigo_lido
                             st.success(f"Código lido: {novo_cb}")
