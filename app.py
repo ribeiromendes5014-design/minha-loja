@@ -1432,6 +1432,9 @@ if view == "Clientes":
     if clientes.empty:
         st.info("Nenhum fiado lançado.")
     else:
+        # 🔑 Normaliza colunas para evitar KeyError
+        clientes.columns = clientes.columns.str.strip().str.capitalize()
+
         st.subheader("Pesquisar registros")
 
         # --- Menu de pesquisa minimalista ---
@@ -1472,16 +1475,20 @@ if view == "Clientes":
                 clientes_filtrados["Produto"].astype(str).str.contains(valor_busca, case=False, na=False)
             ]
         elif criterio == "Data" and valor_busca:
-            clientes_filtrados = clientes_filtrados[
-                clientes_filtrados["Data"].astype(str) == str(valor_busca)
-            ]
+            if "Data" in clientes_filtrados.columns:
+                clientes_filtrados = clientes_filtrados[
+                    clientes_filtrados["Data"].astype(str) == str(valor_busca)
+                ]
+            else:
+                st.warning("⚠️ A coluna 'Data' não existe no CSV de clientes.")
         elif criterio == "Valor" and valor_busca:
             clientes_filtrados = clientes_filtrados[
                 clientes_filtrados["Valor"].astype(float) == float(valor_busca)
             ]
         elif criterio == "Código de Barras" and valor_busca:
+            col_name = "Codigobarras" if "Codigobarras" in clientes_filtrados.columns else "CodigoBarras"
             clientes_filtrados = clientes_filtrados[
-                clientes_filtrados["CodigoBarras"].astype(str).str.contains(str(valor_busca), case=False, na=False)
+                clientes_filtrados[col_name].astype(str).str.contains(str(valor_busca), case=False, na=False)
             ]
 
         # --- Exibir resultados ---
@@ -1492,7 +1499,7 @@ if view == "Clientes":
 
         # --- Atualizar status ---
         st.markdown("#### Atualizar status")
-        ids = clientes_filtrados["ID"].astype(str).tolist()
+        ids = clientes_filtrados["Id"].astype(str).tolist() if "Id" in clientes_filtrados.columns else []
         sel = st.selectbox("Selecione o registro", ids) if ids else None
         novo_status = st.selectbox("Status", ["Aberto", "Pago"])
 
@@ -1504,11 +1511,11 @@ if view == "Clientes":
             if sel is None:
                 st.warning("Selecione um registro válido.")
             else:
-                idx = clientes["ID"].astype(str) == str(sel)
+                idx = clientes["Id"].astype(str) == str(sel)
                 clientes.loc[idx, "Status"] = novo_status
 
                 if forma_pag:
-                    clientes.loc[idx, "FormaPagamento"] = forma_pag
+                    clientes.loc[idx, "Formapagamento"] = forma_pag
 
                     if forma_pag == "Cartão":
                         valor_vista = clientes.loc[idx, "Valor"].astype(float)
@@ -1524,8 +1531,12 @@ if view == "Clientes":
                         )
                         if venda_idx.any():
                             vendas.loc[venda_idx, "FormaPagamento"] = "Cartão"
-                            vendas.loc[venda_idx, "PrecoUnitario"] = (vendas.loc[venda_idx, "PrecoUnitario"].astype(float) / FATOR_CARTAO).round(2)
-                            vendas.loc[venda_idx, "Total"] = (vendas.loc[venda_idx, "Total"].astype(float) / FATOR_CARTAO).round(2)
+                            vendas.loc[venda_idx, "PrecoUnitario"] = (
+                                vendas.loc[venda_idx, "PrecoUnitario"].astype(float) / FATOR_CARTAO
+                            ).round(2)
+                            vendas.loc[venda_idx, "Total"] = (
+                                vendas.loc[venda_idx, "Total"].astype(float) / FATOR_CARTAO
+                            ).round(2)
                             save_csv(vendas, ARQ_VENDAS)
 
                         try:
@@ -1545,7 +1556,7 @@ if view == "Clientes":
             if sel is None:
                 st.warning("Selecione um registro válido.")
             else:
-                clientes = clientes[clientes["ID"].astype(str) != str(sel)]
+                clientes = clientes[clientes["Id"].astype(str) != str(sel)]
                 st.session_state["clientes"] = clientes
                 save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
                 st.warning(f"Registro {sel} excluído!")
