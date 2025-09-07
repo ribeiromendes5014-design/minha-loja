@@ -1138,10 +1138,10 @@ if view == "Vendas":
     from datetime import datetime
     import pytz
 
-    WHATSAPP_TOKEN = "EAALmgS1woeIBPQBIqCMSpiCG6IiLLpBdZBrJWi0JdFIcwP6ceZBXy8ZCdmholGk1ZBJSRP9ILzlUKVZAMC0TJMpb8BzxFCBaf7TWVdqI7MxG3TUZBZBQnsWojr7QNrivdVjZBhaMOSPTEWnx7LqjZAJTPU0ZCWRPGijYZBjTmeMJrGEC2Y0VxyZBKEJeM4DxZAEZCcy9lJiYfYi6LMnPyt4PRJQyvTK0IIZApiMvDyGEXae5iEznV0ZD"  # coloque seu token
+    WHATSAPP_TOKEN = "EAALmgS1woeIBPSOcIL9qkEFomE7hVRHK4nxjwHjvCSOQX8hw3bw0gKkxXa3CLbSkZBzOeIbPdMYsZCCgD8ogmoV1sOsh0EPvS5hZCVfZCzPcvtwk5or0qXWwRrsg7z9k8bGEZCA7vBlZACgNWEI2W4jLUOSsY9AxOGsaTnZCSZAEtetq0lKTDwz8TMBVGrYU61olmTkVrZB6hvf3gWPWRcuagsNoddDINPkwJ"
     WHATSAPP_PHONE_ID = "823826790806739"
     WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
-    NUMERO_DESTINO = "5541987876191"  # número com DDI + DDD + número
+    NUMERO_DESTINO = "5541987876191"
 
     def enviar_whatsapp(destinatario, mensagem):
         headers = {
@@ -1283,6 +1283,7 @@ if view == "Vendas":
                                 "CodigoBarras": str(rowp.get("CodigoBarras", "")).strip(),
                                 "Quantidade": int(qtd),
                                 "PrecoVista": preco_vista,
+                                "Promo": promo['Desconto'] if promo else 0
                             })
                             st.success("Item adicionado.")
                             st.rerun()
@@ -1293,7 +1294,21 @@ if view == "Vendas":
 
         # Corrige valor2 automático no pagamento misto
         if forma == "Misto" and forma1 and forma2:
-            valor2 = max(valor_total - valor1, 0.0)
+            # Ajusta valor1 se for Cartão
+            if forma1 == "Cartão":
+                valor1_real = valor1 / 0.8872 if valor1 > 0 else 0.0
+            else:
+                valor1_real = valor1
+
+            restante = max(valor_total - valor1_real, 0.0)
+
+            # Ajusta valor2 se for Cartão
+            if forma2 == "Cartão":
+                valor2 = restante / 0.8872 if restante > 0 else 0.0
+            else:
+                valor2 = restante
+
+            valor1 = valor1_real
             st.info(f"💳 Pagamento dividido: {forma1} = {brl(valor1)}, {forma2} = {brl(valor2)}")
 
         # -- Inicializa valores
@@ -1335,7 +1350,7 @@ if view == "Vendas":
 
         b1, b2, b4 = st.columns([1, 1, 1])
 
-                # --- FINALIZAR VENDA ---
+        # --- FINALIZAR VENDA ---
         with b1:
             if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
                 if not st.session_state["pedido_atual"]:
@@ -1343,7 +1358,6 @@ if view == "Vendas":
                 else:
                     novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
 
-                    # horário Brasil
                     tz_brasilia = pytz.timezone("America/Sao_Paulo")
                     agora = datetime.now(tz_brasilia)
                     data_venda = agora.strftime("%Y-%m-%d")
@@ -1384,7 +1398,11 @@ if view == "Vendas":
 
                     # 🔹 Monta mensagem para WhatsApp
                     lista_produtos = "\n".join(
-                        [f"- {i['NomeProduto']} x{i['Quantidade']}" for i in st.session_state["pedido_atual"]]
+                        [
+                            f"- {i['NomeProduto']} x{i['Quantidade']}"
+                            + (f" (🔥 -{i['Promo']}%)" if i.get("Promo", 0) > 0 else "")
+                            for i in st.session_state["pedido_atual"]
+                        ]
                     )
                     mensagem = (
                         f"🛒 *Nova Venda Realizada!*\n\n"
@@ -1397,8 +1415,6 @@ if view == "Vendas":
                         mensagem += f"   - {forma1}: {brl(valor1)}\n   - {forma2}: {brl(valor2)}\n"
                     mensagem += f"💰 Total: {brl(valor_total)}\n\n📦 Produtos:\n{lista_produtos}"
 
-                    # 🔹 Enviar mensagem WhatsApp
-                    print("DEBUG: tentando enviar WhatsApp...")
                     enviar_whatsapp(NUMERO_DESTINO, mensagem)
 
                     # 🔹 Atualiza session_state
@@ -1411,6 +1427,7 @@ if view == "Vendas":
 
                     st.success(f"✅ Venda {novo_id} finalizada e registrada!")
                     st.rerun()
+
         with b2:
             if st.button("🆕 Nova Venda", key="btn_nova_venda"):
                 st.session_state["pedido_atual"] = []
