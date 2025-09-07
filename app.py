@@ -1136,6 +1136,7 @@ if view == "Vendas":
     # 🔹 Configuração WhatsApp
     import requests
     from datetime import datetime
+    import pytz
 
     WHATSAPP_TOKEN = "EAALmgS1woeIBPTZC405wVZCNF5cLZCWgrxy6B7k4asAQ0c6oXqZAI8nvejJFIlrTn2g2qYBvZBdBcVFN3JQCKjXXAZBqrOBzYJUKIKK2qZAFXMlyyFSn1vPlXRTNWZClLgVMZAIemXUtewmJJf3ZBsbZC7CcdF5DCSVAPxIVD9PUnnkETX95ZAuQGNedeMdu7Dzh4P8VzjF84vgVW2oEFbCaomDhNgDxZCkle3y55hZACAOBmjlAZDZD"  # coloque seu token
     WHATSAPP_PHONE_ID = "823826790806739"
@@ -1198,7 +1199,6 @@ if view == "Vendas":
                     ["Dinheiro", "PIX", "Cartão", "Fiado"],
                     key="misto_forma2"
                 )
-                valor2 = 0.0  # será calculado após definir valor_total
 
         # -- Código ou câmera
         c1, c2 = st.columns([2, 3])
@@ -1337,18 +1337,13 @@ if view == "Vendas":
             if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
                 if not st.session_state["pedido_atual"]:
                     st.warning("Adicione itens ao pedido.")
-else:
-    novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
-    
-    import pytz
-    tz_brasilia = pytz.timezone("America/Sao_Paulo")
-    agora = datetime.now(tz_brasilia)
-    data_venda = agora.strftime("%Y-%m-%d")
-    hora_venda = agora.strftime("%H:%M:%S")
+                else:
+                    novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
 
-    registros = []
-    for item in st.session_state["pedido_atual"]:
-        ...
+                    tz_brasilia = pytz.timezone("America/Sao_Paulo")
+                    agora = datetime.now(tz_brasilia)
+                    data_venda = agora.strftime("%Y-%m-%d")
+                    hora_venda = agora.strftime("%H:%M:%S")
 
                     registros = []
                     for item in st.session_state["pedido_atual"]:
@@ -1417,16 +1412,9 @@ else:
                         mensagem += f"   - {forma1}: {brl(valor1)}\n   - {forma2}: {brl(valor2)}\n"
                     mensagem += f"💰 Total: {brl(valor_total)}\n\n📦 Produtos:\n{lista_produtos}"
 
-                    if forma == "Fiado" or (forma == "Misto" and ("Fiado" in [forma1, forma2])):
-                        mensagem += (
-                            f"\n\n👤 Cliente: {nome_cliente}\n"
-                            f"📆 Data prevista pagamento: {data_prevista}"
-                        )
-
-                    # 🔹 Envia mensagem para WhatsApp
                     enviar_whatsapp(NUMERO_DESTINO, mensagem)
 
-                    # Atualiza session_state
+                    # 🔹 Atualiza session_state
                     st.session_state["vendas"] = vendas
                     st.session_state["produtos"] = produtos
                     st.session_state["pedido_atual"] = []
@@ -1473,7 +1461,11 @@ else:
 
             with coly:
                 if st.button("Excluir venda", key="btn_excluir_venda"):
-                    id_excluir_int = int(id_excluir) if id_excluir else None
+                    try:
+                        id_excluir_int = int(id_excluir)
+                    except:
+                        id_excluir_int = None
+
                     if id_excluir_int and id_excluir_int in ids:
                         linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
 
@@ -1528,6 +1520,7 @@ else:
                 st.image("logo.png", width=200, key="logo_recibo")
         else:
             st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
