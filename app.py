@@ -991,6 +991,7 @@ if view == "Produtos":
             st.session_state["produtos"] = produtos
             save_csv_github(produtos, ARQ_PRODUTOS, "Novo produto cadastrado")
             st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
+            st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
     # --- Busca minimalista ---
     with st.expander("🔍 Pesquisar produto"):
@@ -1060,6 +1061,7 @@ if view == "Produtos":
                         st.session_state["produtos"] = produtos
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
                         st.warning(f"Produto {row['Nome']} excluído!")
+                        st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
         # Editor inline
         if "edit_prod" in st.session_state:
@@ -1111,10 +1113,13 @@ if view == "Produtos":
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
                         del st.session_state["edit_prod"]
                         st.success("Produto atualizado!")
+                        st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
                 with col_cancel:
                     if st.button("Cancelar edição", key=f"cancel_{eid}"):
                         del st.session_state["edit_prod"]
                         st.info("Edição cancelada.")
+                        st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+
 
 
 
