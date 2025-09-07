@@ -1062,7 +1062,7 @@ if foto_codigo is not None:
                     novo_cb = st.text_input("Código de Barras", value=str(row.get("CodigoBarras","")), key=f"edit_cb_{eid}")
                     foto_codigo_edit = st.camera_input("📷 Atualizar código de barras", key=f"edit_cam_{eid}")
                     if foto_codigo_edit is not None:
-                        codigo_lido = ler_codigo_barras(foto_codigo_edit.getbuffer())
+                        codigo_lido = ler_codigo_barras_api(foto_codigo_venda.getbuffer())
                         if codigo_lido:
                             novo_cb = codigo_lido
                             st.success(f"Código lido: {novo_cb}")
