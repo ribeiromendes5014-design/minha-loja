@@ -1551,18 +1551,24 @@ if view == "Vendas":
         else:
             st.info("Ainda não há vendas registradas.")
 
-           # ================= TAB 3 - RECIBOS =================
+              # ================= TAB 3 - RECIBOS =================
     with tab3:
+        import os
+        from PIL import Image, UnidentifiedImageError
+
         st.subheader("📄 Recibos de Vendas")
+
         if not vendas.empty:
             datas = sorted(vendas["Data"].unique())
             data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
             vendas_dia = vendas[vendas["Data"] == data_sel]
             ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
             id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
+
             if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
                 caminho_pdf = f"recibo_venda_{id_sel}.pdf"
                 gerar_pdf_venda(id_sel, vendas, caminho_pdf)
+
                 with open(caminho_pdf, "rb") as f:
                     st.download_button(
                         label="⬇️ Baixar Recibo",
@@ -1571,11 +1577,26 @@ if view == "Vendas":
                         mime="application/pdf",
                         key="download_recibo"
                     )
-                # Mostra o logo da Doce Bella se existir
-                if os.path.exists("logo_docebella.png"):
-                    st.image("logo_docebella.png", width=200, key="logo_recibo")
+
+                # 🔒 Logo fixo do recibo: logo_docebella.png
+                # Tenta em caminhos comuns para evitar erro de arquivo não encontrado.
+                logo_candidates = [
+                    "logo_docebella.png",
+                    "assets/logo_docebella.png",
+                    "static/logo_docebella.png",
+                    "images/logo_docebella.png",
+                ]
+                logo_path = next((p for p in logo_candidates if os.path.exists(p)), None)
+
+                if logo_path:
+                    try:
+                        img = Image.open(logo_path)
+                        st.image(img, width=200, caption="Doce Bella", use_container_width=False, clamp=False, channels="RGB")
+                    except (UnidentifiedImageError, OSError) as e:
+                        st.warning(f"⚠️ Não foi possível abrir a imagem do logo em '{logo_path}': {e}")
                 else:
-                    st.warning("⚠️ O arquivo 'logo_docebella.png' não foi encontrado.")
+                    st.warning("⚠️ Arquivo 'logo_docebella.png' não foi encontrado. Coloque o arquivo na pasta do app ou em assets/static/images.")
+
         else:
             st.info("Nenhuma venda para gerar recibo.")
 
