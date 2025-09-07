@@ -1308,11 +1308,14 @@ if view == "Vendas":
                     components.html(pdf_display, height=750)
 
     # --- NOVA VENDA ---
-    with b2:
-        if st.button("🆕 Nova Venda"):
-            st.session_state["pedido_atual"] = []
-            st.session_state["valor_pago"] = 0.0
-            st.info("Novo pedido iniciado.")
+with b2:
+    if st.button("🆕 Nova Venda"):
+        st.session_state["pedido_atual"] = []
+        st.session_state["valor_pago"] = 0.0
+        st.session_state["codigo_venda"] = ""       # ✅ limpa código de barras
+        st.session_state["codigo_lido_venda"] = False  # ✅ limpa flag da câmera
+        st.info("Novo pedido iniciado.")
+
 
         # --- FECHAR CAIXA ---
     with b4:
