@@ -1194,17 +1194,20 @@ if view == "Vendas":
         data_prevista = st.date_input("Data prevista de pagamento", value=date.today() + timedelta(days=7))
 
     # -- Dinheiro
-    valor_pago = st.session_state.get("valor_pago", 0.0)
-    troco = 0.0
-    if forma == "Dinheiro":
-        valor_pago = st.number_input("Valor pago", min_value=0.0, value=float(valor_pago), step=1.0)
-        st.session_state["valor_pago"] = valor_pago
-        troco = max(valor_pago - valor_total, 0.0)
+valor_pago = st.session_state.get("valor_pago", 0.0)
+troco = 0.0
+if forma == "Dinheiro":
+    valor_pago = st.number_input("Valor pago", min_value=0.0, value=float(valor_pago), step=1.0)
+    st.session_state["valor_pago"] = valor_pago
+    troco = max(valor_pago - valor_total, 0.0)
 
-    colA, colB, colC = st.columns(3)
-colA.metric("Valor Total", brl(valor_total))
-colB.metric("Valor Pago", brl(valor_pago if forma == "Dinheiro" else 0.0))
-colC.metric("Troco", brl(troco if forma == "Dinheiro" else 0.0))
+colA, colB, colC = st.columns(3)
+with colA:
+    st.metric("Valor Total", brl(valor_total))
+with colB:
+    st.metric("Valor Pago", brl(valor_pago if forma == "Dinheiro" else 0.0))
+with colC:
+    st.metric("Troco", brl(troco if forma == "Dinheiro" else 0.0))
 
 st.markdown("---")
 
