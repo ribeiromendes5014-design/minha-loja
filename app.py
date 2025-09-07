@@ -953,43 +953,71 @@ if view == "Dashboard":
                     st.rerun()
 
     # ================= TAB 5 - RELATÓRIO DE PRODUTOS MAIS VENDIDOS =================
-    with tab5:
-        st.subheader("📊 Produtos Mais Vendidos")
-        if vendas.empty:
-            st.info("Nenhuma venda registrada ainda.")
+with tab5:
+    st.subheader("📊 Produtos Mais Vendidos")
+    if vendas.empty:
+        st.info("Nenhuma venda registrada ainda.")
+    else:
+        col1, col2 = st.columns(2)
+        with col1:
+            data_inicio = st.date_input("Data de início", value=date.today().replace(day=1))
+        with col2:
+            data_fim = st.date_input("Data de fim", value=date.today())
+
+        # 🔹 Filtros extras
+        marcas_disp = ["Todas"] + sorted(produtos["Marca"].dropna().unique().tolist())
+        categorias_disp = ["Todas"] + sorted(produtos["Categoria"].dropna().unique().tolist())
+
+        col3, col4 = st.columns(2)
+        with col3:
+            marca_sel = st.selectbox("Marca", marcas_disp)
+        with col4:
+            categoria_sel = st.selectbox("Categoria", categorias_disp)
+
+        # Converte datas de vendas
+        vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
+
+        # 🔹 Aplica filtro de datas
+        filtro = (vendas["Data"] >= pd.to_datetime(data_inicio)) & (vendas["Data"] <= pd.to_datetime(data_fim))
+        vendas_filtradas = vendas[filtro]
+
+        # 🔹 Junta com tabela de produtos (para filtrar marca e categoria)
+        vendas_filtradas = vendas_filtradas.merge(
+            produtos[["ID", "Marca", "Categoria"]],
+            left_on="IDProduto",
+            right_on="ID",
+            how="left"
+        )
+
+        # 🔹 Filtros de marca e categoria
+        if marca_sel != "Todas":
+            vendas_filtradas = vendas_filtradas[vendas_filtradas["Marca"] == marca_sel]
+        if categoria_sel != "Todas":
+            vendas_filtradas = vendas_filtradas[vendas_filtradas["Categoria"] == categoria_sel]
+
+        if vendas_filtradas.empty:
+            st.warning("Nenhum produto vendido neste período com os filtros aplicados.")
         else:
-            col1, col2 = st.columns(2)
-            with col1:
-                data_inicio = st.date_input("Data de início", value=date.today().replace(day=1))
-            with col2:
-                data_fim = st.date_input("Data de fim", value=date.today())
+            ranking = (
+                vendas_filtradas.groupby(["IDProduto", "NomeProduto", "Marca", "Categoria"])["Quantidade"]
+                .sum()
+                .reset_index()
+                .sort_values("Quantidade", ascending=False)
+            )
 
-            vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
-            filtro = (vendas["Data"] >= pd.to_datetime(data_inicio)) & (vendas["Data"] <= pd.to_datetime(data_fim))
-            vendas_filtradas = vendas[filtro]
+            st.dataframe(ranking, use_container_width=True)
 
-            if vendas_filtradas.empty:
-                st.warning("Nenhum produto vendido neste período.")
-            else:
-                ranking = (
-                    vendas_filtradas.groupby(["IDProduto", "NomeProduto"])["Quantidade"]
-                    .sum()
-                    .reset_index()
-                    .sort_values("Quantidade", ascending=False)
-                )
+            if st.button("📄 Gerar PDF do Relatório"):
+                caminho_pdf = f"relatorio_produtos_{data_inicio}_a_{data_fim}.pdf"
+                gerar_pdf_produtos_vendidos(ranking, caminho_pdf, data_inicio, data_fim)
+                with open(caminho_pdf, "rb") as f:
+                    st.download_button(
+                        label=f"⬇️ Baixar Relatório de Produtos ({data_inicio} a {data_fim})",
+                        data=f,
+                        file_name=caminho_pdf,
+                        mime="application/pdf"
+                    )
 
-                st.dataframe(ranking, use_container_width=True)
-
-                if st.button("📄 Gerar PDF do Relatório"):
-                    caminho_pdf = f"relatorio_produtos_{data_inicio}_a_{data_fim}.pdf"
-                    gerar_pdf_produtos_vendidos(ranking, caminho_pdf, data_inicio, data_fim)
-                    with open(caminho_pdf, "rb") as f:
-                        st.download_button(
-                            label=f"⬇️ Baixar Relatório de Produtos ({data_inicio} a {data_fim})",
-                            data=f,
-                            file_name=caminho_pdf,
-                            mime="application/pdf"
-                        )
 
 
 
