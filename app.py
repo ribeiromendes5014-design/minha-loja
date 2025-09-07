@@ -1551,7 +1551,7 @@ if view == "Vendas":
         else:
             st.info("Ainda não há vendas registradas.")
 
-    # ================= TAB 3 - RECIBOS =================
+       # ================= TAB 3 - RECIBOS =================
     with tab3:
         st.subheader("📄 Recibos de Vendas")
         if not vendas.empty:
@@ -1571,11 +1571,16 @@ if view == "Vendas":
                         mime="application/pdf",
                         key="download_recibo"
                     )
-                st.image("logo.png", width=200, key="logo_recibo")
+                # Mostra logo se existir
+                if LOGO_URL:
+                    st.image(LOGO_URL, width=200, key="logo_recibo")
+                else:
+                    for path in LOGO_CANDIDATES:
+                        if os.path.exists(path):
+                            st.image(path, width=200, key="logo_recibo")
+                            break
         else:
             st.info("Nenhuma venda para gerar recibo.")
-
-
 
 
 
