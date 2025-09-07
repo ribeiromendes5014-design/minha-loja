@@ -5,12 +5,12 @@ import os
 from datetime import date, datetime, timedelta
 from PIL import Image, ImageEnhance
 from io import BytesIO
-import requests  
+import requests   # 👈 AQUI entra o requests
+from pyzxing import BarCodeReader  # (se ainda estiver usando)
 
 # =====================================
-# Funções auxiliares
+# Funções de leitura de código de barras
 # =====================================
-
 def ler_codigo_barras_api(image_bytes):
     try:
         files = {"f": ("barcode.png", image_bytes, "image/png")}
@@ -20,11 +20,8 @@ def ler_codigo_barras_api(image_bytes):
             st.error(f"Erro na API ZXing: {response.status_code}")
             return []
 
-        # A resposta é HTML, então fazemos um parse simples
         text = response.text
         codigos = []
-
-        # Os códigos geralmente aparecem entre <pre>...</pre>
         if "<pre>" in text:
             partes = text.split("<pre>")
             for p in partes[1:]:
@@ -33,11 +30,14 @@ def ler_codigo_barras_api(image_bytes):
 
         st.write("Debug API ZXing:", codigos)
         return codigos
-
     except Exception as e:
         st.error(f"Erro ao chamar API ZXing: {e}")
         return []
 
+# =====================================
+# Funções auxiliares
+# =====================================
+def central_crop(image_input, scale=0.8):
 
 
 
