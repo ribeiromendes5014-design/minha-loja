@@ -1208,10 +1208,10 @@ with tab1:
 
     st.markdown("---")
 
-    b1, b2, b4 = st.columns([1,1,1])
-    with b1:
-        with b1:
-    with b1:
+    b1, b2, b4 = st.columns([1, 1, 1])
+
+# --- FINALIZAR VENDA ---
+with b1:
     if st.button("✅ Finalizar Venda"):
         if not st.session_state["pedido_atual"]:
             st.warning("Adicione itens ao pedido.")
