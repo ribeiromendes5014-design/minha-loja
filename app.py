@@ -1281,21 +1281,18 @@ if view == "Vendas":
             )
 
         # WhatsApp detalhado
-        try:
-            import pytz
-from datetime import datetime
+try:
+    fuso_brasilia = pytz.timezone("America/Sao_Paulo")
+    agora = datetime.now(fuso_brasilia).strftime("%Y-%m-%d %H:%M:%S")
 
-fuso_brasilia = pytz.timezone("America/Sao_Paulo")
-agora = datetime.now(fuso_brasilia).strftime("%Y-%m-%d %H:%M:%S")
+    resumo = (
+        "🛒 Nova Venda Realizada!\n\n"
+        f"📅 Data: {agora.split()[0]}\n"
+        f"⏰ Hora: {agora.split()[1]}\n"
+        f"🆔 Venda: {novo_id}\n"
+    )
 
-resumo = (
-    "🛒 Nova Venda Realizada!\n\n"
-    f"📅 Data: {agora.split()[0]}\n"
-    f"⏰ Hora: {agora.split()[1]}\n"
-    f"🆔 Venda: {novo_id}\n"
-)
-
-            if forma == "Misto":
+    if forma == "Misto":
                 resumo += f"💳 Pagamento: {forma1} ({brl(valor1)}) + {forma2} ({brl(valor2)})\n"
             elif forma == "Fiado":
                 resumo += f"💳 Pagamento: Fiado\n"
