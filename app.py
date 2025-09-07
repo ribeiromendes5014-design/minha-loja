@@ -1134,6 +1134,11 @@ if view == "Vendas":
                 st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
             else:
                 st.error("❌ Não foi possível ler nenhum código.")
+                # Botão para limpar leitura e poder escanear de novo
+    if st.session_state.get("codigo_lido_venda", False):
+        if st.button("📷 Escanear outro código"):
+            st.session_state["codigo_lido_venda"] = False
+            st.session_state["codigo_venda"] = ""
 
     with c2:
         nome_filtro = st.text_input("Pesquisar por nome")
