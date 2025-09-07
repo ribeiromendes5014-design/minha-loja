@@ -60,45 +60,6 @@ def central_crop(image_input, scale=0.8):
     cropped.save(buf, format="PNG")
     return buf.getvalue()
 
-# =====================================
-# Exemplo de uso corrigido em Produtos
-# =====================================
-foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
-if foto_codigo is not None:
-    imagem_bytes = foto_codigo.getvalue()
-    codigos_lidos = ler_codigo_barras_api(imagem_bytes)   # ✅ corrigido
-
-    st.write("Debug: Imagem recebida, tamanho (bytes):", len(imagem_bytes))
-    st.image(imagem_bytes, caption="Pré-visualização (imagem original)")
-
-    if codigos_lidos:
-        st.session_state["codigo_barras"] = codigos_lidos[0]
-        st.success(f"Código lido: {st.session_state['codigo_barras']}")
-        if len(codigos_lidos) > 1:
-            st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
-    else:
-        st.error("❌ Não foi possível ler nenhum código. Ajuste a iluminação ou o enquadramento.")
-
-# =====================================
-# Exemplo de uso corrigido em Clientes
-# =====================================
-foto_codigo_cliente = st.camera_input("📷 Escanear código de barras para buscar")
-if foto_codigo_cliente is not None:
-    codigo_cliente_lido = ler_codigo_barras_api(foto_codigo_cliente.getbuffer())   # ✅ corrigido
-    if codigo_cliente_lido:
-        codigo_barras_filtro = codigo_cliente_lido
-        st.success(f"Código lido: {codigo_barras_filtro}")
-
-# =====================================
-# Exemplo de uso corrigido em Vendas
-# =====================================
-foto_codigo_venda = st.camera_input("📷 Escanear código de barras")
-if foto_codigo_venda is not None:
-    codigo_lido = ler_codigo_barras_api(foto_codigo_venda.getbuffer())   # ✅ corrigido
-    if codigo_lido:
-        codigo = codigo_lido
-        st.success(f"Código lido: {codigo}")
-
 
 
 
