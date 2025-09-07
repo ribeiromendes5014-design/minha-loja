@@ -5,12 +5,11 @@ import os
 from datetime import date, datetime, timedelta
 from PIL import Image, ImageEnhance
 from io import BytesIO
-import requests  
+import requests
 
 # =====================================
-# Funções auxiliares
+# Funções de leitura de código de barras via API ZXing
 # =====================================
-
 def ler_codigo_barras_api(image_bytes):
     try:
         files = {"f": ("barcode.png", image_bytes, "image/png")}
@@ -20,11 +19,8 @@ def ler_codigo_barras_api(image_bytes):
             st.error(f"Erro na API ZXing: {response.status_code}")
             return []
 
-        # A resposta é HTML, então fazemos um parse simples
         text = response.text
         codigos = []
-
-        # Os códigos geralmente aparecem entre <pre>...</pre>
         if "<pre>" in text:
             partes = text.split("<pre>")
             for p in partes[1:]:
@@ -33,10 +29,76 @@ def ler_codigo_barras_api(image_bytes):
 
         st.write("Debug API ZXing:", codigos)
         return codigos
-
     except Exception as e:
         st.error(f"Erro ao chamar API ZXing: {e}")
         return []
+
+# =====================================
+# Funções auxiliares
+# =====================================
+def central_crop(image_input, scale=0.8):
+    if hasattr(image_input, "getvalue"):
+        image_bytes = image_input.getvalue()
+    else:
+        image_bytes = image_input
+
+    if hasattr(image_bytes, "tobytes"):
+        image_bytes = image_bytes.tobytes()
+    elif isinstance(image_bytes, memoryview):
+        image_bytes = bytes(image_bytes)
+
+    img = Image.open(BytesIO(image_bytes)).convert("RGB")
+    w, h = img.size
+    new_w, new_h = int(w * scale), int(h * scale)
+    left = (w - new_w) // 2
+    top = (h - new_h) // 2
+    right = left + new_w
+    bottom = top + new_h
+    cropped = img.crop((left, top, right, bottom))
+
+    buf = BytesIO()
+    cropped.save(buf, format="PNG")
+    return buf.getvalue()
+
+# =====================================
+# Exemplo de uso corrigido em Produtos
+# =====================================
+foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code")
+if foto_codigo is not None:
+    imagem_bytes = foto_codigo.getvalue()
+    codigos_lidos = ler_codigo_barras_api(imagem_bytes)   # ✅ corrigido
+
+    st.write("Debug: Imagem recebida, tamanho (bytes):", len(imagem_bytes))
+    st.image(imagem_bytes, caption="Pré-visualização (imagem original)")
+
+    if codigos_lidos:
+        st.session_state["codigo_barras"] = codigos_lidos[0]
+        st.success(f"Código lido: {st.session_state['codigo_barras']}")
+        if len(codigos_lidos) > 1:
+            st.info(f"Outros detectados: {', '.join(codigos_lidos[1:])}")
+    else:
+        st.error("❌ Não foi possível ler nenhum código. Ajuste a iluminação ou o enquadramento.")
+
+# =====================================
+# Exemplo de uso corrigido em Clientes
+# =====================================
+foto_codigo_cliente = st.camera_input("📷 Escanear código de barras para buscar")
+if foto_codigo_cliente is not None:
+    codigo_cliente_lido = ler_codigo_barras_api(foto_codigo_cliente.getbuffer())   # ✅ corrigido
+    if codigo_cliente_lido:
+        codigo_barras_filtro = codigo_cliente_lido
+        st.success(f"Código lido: {codigo_barras_filtro}")
+
+# =====================================
+# Exemplo de uso corrigido em Vendas
+# =====================================
+foto_codigo_venda = st.camera_input("📷 Escanear código de barras")
+if foto_codigo_venda is not None:
+    codigo_lido = ler_codigo_barras_api(foto_codigo_venda.getbuffer())   # ✅ corrigido
+    if codigo_lido:
+        codigo = codigo_lido
+        st.success(f"Código lido: {codigo}")
+
 
 
 
