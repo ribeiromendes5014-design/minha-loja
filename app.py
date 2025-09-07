@@ -1182,24 +1182,24 @@ if view == "Vendas":
                     })
                     st.success("Item adicionado.")
 
-    # -- Exibe pedido
+        # -- Exibe pedido
     df_pedido = desenha_pedido(forma, promocoes)
     valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
 
     # -- Fiado
-nome_cliente, data_prevista = "", None
-if forma == "Fiado":
-    st.markdown("#### Dados do fiado")
-    nome_cliente = st.text_input("Nome do cliente")
-    data_prevista = st.date_input("Data prevista de pagamento", value=date.today() + timedelta(days=7))
+    nome_cliente, data_prevista = "", None
+    if forma == "Fiado":
+        st.markdown("#### Dados do fiado")
+        nome_cliente = st.text_input("Nome do cliente")
+        data_prevista = st.date_input("Data prevista de pagamento", value=date.today() + timedelta(days=7))
 
-# -- Dinheiro
-valor_pago = st.session_state.get("valor_pago", 0.0)
-troco = 0.0
-if forma == "Dinheiro":
-    valor_pago = st.number_input("Valor pago", min_value=0.0, value=float(valor_pago), step=1.0)
-    st.session_state["valor_pago"] = valor_pago
-    troco = max(valor_pago - valor_total, 0.0)
+    # -- Dinheiro
+    valor_pago = st.session_state.get("valor_pago", 0.0)
+    troco = 0.0
+    if forma == "Dinheiro":
+        valor_pago = st.number_input("Valor pago", min_value=0.0, value=float(valor_pago), step=1.0)
+        st.session_state["valor_pago"] = valor_pago
+        troco = max(valor_pago - valor_total, 0.0)
 
 colA, colB, colC = st.columns(3)
 with colA:
