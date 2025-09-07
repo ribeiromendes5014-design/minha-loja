@@ -1138,7 +1138,7 @@ if view == "Vendas":
     from datetime import datetime
     import pytz
 
-    WHATSAPP_TOKEN = "EAALmgS1woeIBPRcEqrb9ZCRFynrnu93cvMdOopDsYcTlJ50jH2WcNGUkoz6bp0D17xsZCSASatFATLjCeASTHtyQLqEjcTDox1knht9fOZBQBtcx0TcIrUumSV9CagwDGFkT9Jdd0IwN2kols5tVtaiBjBRlNiEZCcOwfVJDeucCgWs6nRDGyDOwl4XVuwZDZD"
+    WHATSAPP_TOKEN = "EAALmgS1woeIBPRcEqrb9ZCRFynrnu93cvMdOopDsYcTlJ50jH2WcNGUkoz6bp0D17xsZCSASatFATLjCeASTHtyQLqEjcTDox1knht9fOZBQBtcx0TcIrUumSV9CagwDGFkT9Jdd0IwN2kols5tVtaiBjBRlNiEZCcOwfVJDeucCgWs6nRDGyDOwl4XVuwZDZD"  # coloque aqui o token válido da API do WhatsApp Cloud
     WHATSAPP_PHONE_ID = "823826790806739"
     WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
     NUMERO_DESTINO = "5541987876191"
@@ -1181,7 +1181,9 @@ if view == "Vendas":
 
         for item in pedido:
             qtd = int(item["Quantidade"])
-            preco_vista, promo = preco_vista_com_promocao(item["IDProduto"], float(item["PrecoVista"]), date.today(), promocoes)
+            preco_vista, promo = preco_vista_com_promocao(
+                item["IDProduto"], float(item["PrecoVista"]), date.today(), promocoes
+            )
             preco_unit = preco_por_forma(preco_vista, forma)
             total = qtd * preco_unit
 
@@ -1260,8 +1262,18 @@ if view == "Vendas":
                 key=f"download_{novo_id}"
             )
 
-        # Mensagem de sucesso
+        # WhatsApp
+        try:
+            resumo = f"✅ Venda {novo_id} finalizada!\n" \
+                     f"Total: R$ {total_venda:,.2f}\n" \
+                     f"Forma: {forma}"
+            enviar_whatsapp(NUMERO_DESTINO, resumo)
+        except Exception as e:
+            st.error(f"Erro WhatsApp: {e}")
+
+        # Mensagem de sucesso e recarrega para atualizar abas
         st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
+        st.rerun()
 
     def nova_venda():
         st.session_state["pedido_atual"] = []
@@ -1281,12 +1293,6 @@ if view == "Vendas":
 
     # 🔹 Sub-abas principais
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
-
-    # ================= TAB 1 - VENDA DETALHADA =================
-    with tab1:
-        ...
-        # (resto do seu código de pesquisa de produto e pedido permanece igual)
-
 
     # ================= TAB 1 - VENDA DETALHADA =================
     with tab1:
@@ -1498,8 +1504,6 @@ if view == "Vendas":
                 st.image("logo.png", width=200, key="logo_recibo")
         else:
             st.info("Nenhuma venda para gerar recibo.")
-
-
 
 
 
