@@ -1,2 +1,3 @@
 IDVenda,Data,IDProduto,NomeProduto,CodigoBarras,FormaPagamento,Quantidade,PrecoUnitario,Total,ValorPago1,ValorPago2
-1,2025-09-07,2,Body Splash,nan,Misto,1,30.0,30.0,10.0,22.54283137962128
+1,2025-09-07,2,Body Splash,,Misto,1,30.0,30.0,,
+2,2025-09-07,4,Kit Shampoo babasoul,722713013411,PIX,1,29.45,29.45,29.45,0.0
