@@ -1139,7 +1139,7 @@ if view == "Vendas":
     import pytz
 
     WHATSAPP_TOKEN = "EAALmgS1woeIBPQfGQxOsGaiUsdZBVZBLL7lXnT29GeAF5hcbwBkSXXXe9CMz0LKPMb4dCkH54A738V3OIZBTJxdNuLhWCWCjIHtgtDvTzAYxgRYwdftHsSY7MVBEndXv0tgOKl4sl5ZCGxojh7PktqhbPIAEen5HtIBzmByPLnK28D7XEBxE3OHASB5afwZDZD"  # coloque aqui o token válido da API do WhatsApp Cloud
-    WHATSAPP_PHONE_ID = "61580296238641"
+    WHATSAPP_PHONE_ID = "823826790806739"
     WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
     NUMERO_DESTINO = "5541987876191"
 
