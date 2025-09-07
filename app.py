@@ -5,7 +5,7 @@ import os
 from datetime import date, datetime, timedelta
 from PIL import Image, ImageEnhance
 from io import BytesIO
-from pyzxing import BarCodeReader  
+import requests  
 
 # =====================================
 # Funções auxiliares
