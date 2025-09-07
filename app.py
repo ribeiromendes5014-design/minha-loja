@@ -1610,6 +1610,53 @@ if view == "Promoções":
                     st.success("Promoção cadastrada!")
                     st.rerun()  # 🔑 atualização imediata
 
+    # =====================================
+# PROMOÇÕES
+# =====================================
+if view == "Promoções":
+    show_logo("main")
+    st.header("🏷️ Promoções")
+    promocoes = norm_promocoes(pd.DataFrame())
+
+    # --- CADASTRAR ---
+    with st.expander("➕ Cadastrar promoção", expanded=False):  # 🔑 fechado por padrão
+        if produtos.empty:
+            st.info("Cadastre produtos primeiro para criar promoções.")
+        else:
+            opcoes_prod = (produtos["ID"].astype(str) + " - " + produtos["Nome"]).tolist()
+            sel_prod = st.selectbox("Produto", opcoes_prod)
+            pid = sel_prod.split(" - ")[0].strip()
+            pnome = sel_prod.split(" - ", 1)[1].strip()
+
+            col1, col2, col3 = st.columns([1,1,1])
+            with col1:
+                desconto_str = st.text_input("Desconto (%)", value="0")
+            with col2:
+                data_ini = st.date_input("Início", value=date.today(), key="cad_inicio")
+            with col3:
+                data_fim = st.date_input("Término", value=date.today() + timedelta(days=7), key="cad_fim")
+
+            if st.button("Adicionar promoção"):
+                desconto = to_float(desconto_str, 0.0)
+                if desconto < 0 or desconto > 100:
+                    st.error("O desconto deve estar entre 0 e 100%.")
+                elif data_fim < data_ini:
+                    st.error("A data de término deve ser maior ou igual à data de início.")
+                else:
+                    novo = {
+                        "ID": prox_id(promocoes, "ID"),
+                        "IDProduto": str(pid),
+                        "NomeProduto": pnome,
+                        "Desconto": float(desconto),
+                        "DataInicio": str(data_ini),
+                        "DataFim": str(data_fim),
+                    }
+                    promocoes = pd.concat([promocoes, pd.DataFrame([novo])], ignore_index=True)
+                    save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
+                    st.session_state["promocoes"] = promocoes
+                    st.success("Promoção cadastrada!")
+                    st.rerun()  # 🔑 atualização imediata
+
     # --- PRODUTOS PARADOS ---
     st.subheader("📦 Produtos parados sem vendas")
     dias_sem_venda = st.number_input("Considerar parados após quantos dias?", min_value=1, max_value=365, value=30)
@@ -1652,6 +1699,7 @@ if view == "Promoções":
             st.success(f"Promoções criadas para {len(produtos_parados)} produtos parados!")
             st.rerun()  # 🔑 atualização imediata
 
+    # --- LISTA ---
     st.markdown("### Lista de promoções")
     if promocoes.empty:
         st.info("Nenhuma promoção cadastrada.")
@@ -1659,57 +1707,58 @@ if view == "Promoções":
         st.dataframe(promocoes, use_container_width=True)
 
         # --- EDITAR ---
-        st.subheader("Editar promoção")
-        ids = promocoes["ID"].astype(str).tolist()
-        sel = st.selectbox("Selecione a promoção", ids) if ids else None
-        if sel:
-            linha = promocoes[promocoes["ID"].astype(str)==sel]
-            if not linha.empty:
-                ln = linha.iloc[0]
-                opcoes_prod = (produtos["ID"].astype(str) + " - " + produtos["Nome"]).tolist()
-                pre_opcao = f"{ln['IDProduto']} - {ln['NomeProduto']}" if f"{ln['IDProduto']} - {ln['NomeProduto']}" in opcoes_prod else opcoes_prod[0]
-                sel_prod_edit = st.selectbox("Produto (editar)", opcoes_prod, index=opcoes_prod.index(pre_opcao))
-                pid_e = sel_prod_edit.split(" - ")[0].strip()
-                pnome_e = sel_prod_edit.split(" - ", 1)[1].strip()
+        with st.expander("✏️ Editar promoção", expanded=False):  # 🔑 fechado por padrão
+            ids = promocoes["ID"].astype(str).tolist()
+            sel = st.selectbox("Selecione a promoção", ids) if ids else None
+            if sel:
+                linha = promocoes[promocoes["ID"].astype(str)==sel]
+                if not linha.empty:
+                    ln = linha.iloc[0]
+                    opcoes_prod = (produtos["ID"].astype(str) + " - " + produtos["Nome"]).tolist()
+                    pre_opcao = f"{ln['IDProduto']} - {ln['NomeProduto']}" if f"{ln['IDProduto']} - {ln['NomeProduto']}" in opcoes_prod else opcoes_prod[0]
+                    sel_prod_edit = st.selectbox("Produto (editar)", opcoes_prod, index=opcoes_prod.index(pre_opcao))
+                    pid_e = sel_prod_edit.split(" - ")[0].strip()
+                    pnome_e = sel_prod_edit.split(" - ", 1)[1].strip()
 
-                col1, col2, col3 = st.columns([1,1,1])
-                with col1:
-                    desc_e = st.text_input("Desconto (%)", value=str(ln["Desconto"]))
-                with col2:
-                    try:
-                        di = parse_date_yyyy_mm_dd(ln["DataInicio"]) or date.today()
-                    except Exception:
-                        di = date.today()
-                    data_ini_e = st.date_input("Início", value=di, key=f"edit_inicio_{sel}")
-                with col3:
-                    try:
-                        df = parse_date_yyyy_mm_dd(ln["DataFim"]) or (date.today()+timedelta(days=7))
-                    except Exception:
-                        df = date.today()+timedelta(days=7)
-                    data_fim_e = st.date_input("Término", value=df, key=f"edit_fim_{sel}")
+                    col1, col2, col3 = st.columns([1,1,1])
+                    with col1:
+                        desc_e = st.text_input("Desconto (%)", value=str(ln["Desconto"]))
+                    with col2:
+                        try:
+                            di = parse_date_yyyy_mm_dd(ln["DataInicio"]) or date.today()
+                        except Exception:
+                            di = date.today()
+                        data_ini_e = st.date_input("Início", value=di, key=f"edit_inicio_{sel}")
+                    with col3:
+                        try:
+                            df = parse_date_yyyy_mm_dd(ln["DataFim"]) or (date.today()+timedelta(days=7))
+                        except Exception:
+                            df = date.today()+timedelta(days=7)
+                        data_fim_e = st.date_input("Término", value=df, key=f"edit_fim_{sel}")
 
-                if st.button("Salvar edição"):
-                    dnum = to_float(desc_e, 0.0)
-                    if dnum < 0 or dnum > 100:
-                        st.error("O desconto deve estar entre 0 e 100%.")
-                    elif data_fim_e < data_ini_e:
-                        st.error("A data de término deve ser maior ou igual à data de início.")
-                    else:
-                        idx = promocoes["ID"].astype(str)==sel
-                        promocoes.loc[idx, ["IDProduto","NomeProduto","Desconto","DataInicio","DataFim"]] = [
-                            str(pid_e), pnome_e, float(dnum), str(data_ini_e), str(data_fim_e)
-                        ]
-                        save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
-                        st.session_state["promocoes"] = promocoes
-                        st.success("Promoção atualizada!")
-                        st.rerun()  # 🔑 atualização imediata
+                    if st.button("Salvar edição"):
+                        dnum = to_float(desc_e, 0.0)
+                        if dnum < 0 or dnum > 100:
+                            st.error("O desconto deve estar entre 0 e 100%.")
+                        elif data_fim_e < data_ini_e:
+                            st.error("A data de término deve ser maior ou igual à data de início.")
+                        else:
+                            idx = promocoes["ID"].astype(str)==sel
+                            promocoes.loc[idx, ["IDProduto","NomeProduto","Desconto","DataInicio","DataFim"]] = [
+                                str(pid_e), pnome_e, float(dnum), str(data_ini_e), str(data_fim_e)
+                            ]
+                            save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
+                            st.session_state["promocoes"] = promocoes
+                            st.success("Promoção atualizada!")
+                            st.rerun()  # 🔑 atualização imediata
 
         # --- EXCLUIR ---
-        st.subheader("Excluir promoção")
-        del_id = st.selectbox("Selecione ID para excluir", promocoes["ID"].astype(str).tolist())
-        if st.button("Excluir promoção"):
-            promocoes = promocoes[promocoes["ID"].astype(str)!=del_id]
-            save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
-            st.session_state["promocoes"] = promocoes
-            st.warning(f"Promoção {del_id} excluída!")
-            st.rerun()  # 🔑 atualização imediata
+        with st.expander("🗑️ Excluir promoção", expanded=False):  # 🔑 fechado por padrão
+            del_id = st.selectbox("Selecione ID para excluir", promocoes["ID"].astype(str).tolist())
+            if st.button("Excluir promoção"):
+                promocoes = promocoes[promocoes["ID"].astype(str)!=del_id]
+                save_csv_github(promocoes, ARQ_PROMOCOES, "Atualizando promoções")
+                st.session_state["promocoes"] = promocoes
+                st.warning(f"Promoção {del_id} excluída!")
+                st.rerun()  # 🔑 atualização imediata
+
