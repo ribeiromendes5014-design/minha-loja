@@ -1310,43 +1310,47 @@ with b1:
             pass
 
     # --- HISTÓRICO DE VENDAS ---
-    st.markdown("### Últimas vendas")
-    if not vendas.empty:
-        ult = vendas.sort_values(by=["Data","IDVenda"], ascending=False).head(100)
-        st.dataframe(ult, use_container_width=True)
+st.markdown("### Últimas vendas")
+if not vendas.empty:
+    ult = vendas.sort_values(by=["Data","IDVenda"], ascending=False).head(100)
 
-        # Conversão robusta para IDs de venda
-        ids_series = pd.to_numeric(vendas["IDVenda"], errors="coerce").dropna().astype(int)
-        ids = sorted(ids_series.unique().tolist(), reverse=True)
+    # Mostra apenas colunas úteis no histórico
+    colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario", "Total", "FormaPagamento"]
+    colunas = [c for c in colunas if c in ult.columns]  # garante que só usa colunas existentes
+    st.dataframe(ult[colunas], use_container_width=True)
 
-        colx, coly = st.columns([3,1])
-        with colx:
-            id_excluir = st.selectbox("Selecione a venda para excluir (devolve estoque)", ids if ids else [0])
+    # Conversão robusta para IDs de venda
+    ids_series = pd.to_numeric(vendas["IDVenda"], errors="coerce").dropna().astype(int)
+    ids = sorted(ids_series.unique().tolist(), reverse=True)
 
-        with coly:
-            if st.button("Excluir venda"):
-                if id_excluir in ids:
-                    linhas = vendas[pd.to_numeric(vendas["IDVenda"], errors="coerce").astype(int)==int(id_excluir)]
-                    # devolve estoque
-                    for _, r in linhas.iterrows():
-                        mask = produtos["ID"].astype(str) == str(r["IDProduto"])
-                        if mask.any():
-                            produtos.loc[mask, "Quantidade"] = (
-                                produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
-                            ).astype(int)
+    colx, coly = st.columns([3,1])
+    with colx:
+        id_excluir = st.selectbox("Selecione a venda para excluir (devolve estoque)", ids if ids else [0])
 
-                    # remove da planilha
-                    vendas = vendas[pd.to_numeric(vendas["IDVenda"], errors="coerce").astype(int)!=int(id_excluir)]
-                    save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
-                    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+    with coly:
+        if st.button("Excluir venda"):
+            if id_excluir in ids:
+                linhas = vendas[pd.to_numeric(vendas["IDVenda"], errors="coerce").astype(int)==int(id_excluir)]
+                # devolve estoque
+                for _, r in linhas.iterrows():
+                    mask = produtos["ID"].astype(str) == str(r["IDProduto"])
+                    if mask.any():
+                        produtos.loc[mask, "Quantidade"] = (
+                            produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
+                        ).astype(int)
 
-                    st.session_state["vendas"] = vendas
-                    st.session_state["produtos"] = produtos
-                    st.success(f"Venda {id_excluir} excluída e estoque ajustado.")
-                else:
-                    st.warning("Venda não encontrada.")
-    else:
-        st.info("Ainda não há vendas registradas.")
+                # remove da planilha
+                vendas = vendas[pd.to_numeric(vendas["IDVenda"], errors="coerce").astype(int)!=int(id_excluir)]
+                save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
+                save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+
+                st.session_state["vendas"] = vendas
+                st.session_state["produtos"] = produtos
+                st.success(f"Venda {id_excluir} excluída e estoque ajustado.")
+            else:
+                st.warning("Venda não encontrada.")
+else:
+    st.info("Ainda não há vendas registradas.")
 
 
 
