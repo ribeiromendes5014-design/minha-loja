@@ -1151,18 +1151,15 @@ if view == "Vendas":
             if "mostrar_camera" not in st.session_state:
                 st.session_state["mostrar_camera"] = False
 
-            # Campo para digitar código manual
             codigo = st.text_input(
                 "Código / Código de Barras",
                 value=st.session_state["codigo_venda"],
                 key="codigo_manual"
             )
 
-            # Botão que alterna câmera
             if st.button("📷 Tirar foto do código de barras"):
                 st.session_state["mostrar_camera"] = not st.session_state["mostrar_camera"]
 
-            # Só mostra a câmera se a flag estiver ativa
             if st.session_state["mostrar_camera"]:
                 foto_codigo = st.camera_input("Escanear código de barras (Venda)", key="codigo_camera")
                 if foto_codigo is not None:
@@ -1172,15 +1169,14 @@ if view == "Vendas":
                     if codigos_lidos:
                         st.session_state["codigo_venda"] = codigos_lidos[0]
                         st.success(f"Código lido: {st.session_state['codigo_venda']}")
-                        st.session_state["mostrar_camera"] = False  # esconde após capturar
-                        st.rerun()
+                        st.session_state["mostrar_camera"] = False
+                        st.rerun()  # 🔑 atualização imediata
                     else:
                         st.error("❌ Não foi possível ler nenhum código.")
 
         with c2:
             nome_filtro = st.text_input("Pesquisar por nome")
 
-        # Filtro de produtos (NÃO mostrar tabela completa)
         df_sel = produtos.copy()
         if codigo:
             df_sel = df_sel[
@@ -1194,10 +1190,9 @@ if view == "Vendas":
         if not df_sel.empty:
             escolha = st.selectbox(
                 "Selecione o produto",
-                (df_sel["ID"].astype(str) + " - " + df_sel["Nome"].astype(str)).tolist()
+                (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist()
             )
 
-            # -- Qtd e Preço
             col_qtd, col_preco = st.columns([1, 3])
             with col_qtd:
                 qtd = st.number_input("Qtd", min_value=1, value=1, step=1)
@@ -1228,6 +1223,7 @@ if view == "Vendas":
                                 "PrecoVista": preco_vista,
                             })
                             st.success("Item adicionado.")
+                            st.rerun()  # 🔑 atualização imediata
 
         # -- Pedido atual
         df_pedido = desenha_pedido(forma, promocoes)
@@ -1259,26 +1255,18 @@ if view == "Vendas":
 
         b1, b2, b4 = st.columns([1, 1, 1])
 
-        # --- FINALIZAR VENDA ---
         with b1:
             if st.button("✅ Finalizar Venda"):
                 if not st.session_state["pedido_atual"]:
                     st.warning("Adicione itens ao pedido.")
                 else:
-                    # Gera novo ID de venda
                     novo_id = int(vendas["IDVenda"].max()) + 1 if not vendas.empty else 1
-
-                    # Data da venda
                     data_venda = date.today().strftime("%Y-%m-%d")
 
-                    # Cria registros da venda
                     registros = []
                     for item in st.session_state["pedido_atual"]:
                         preco_vista_aplicado, promo = preco_vista_com_promocao(
-                            item["IDProduto"],
-                            item["PrecoVista"],
-                            date.today(),
-                            promocoes
+                            item["IDProduto"], item["PrecoVista"], date.today(), promocoes
                         )
                         preco_unit = preco_por_forma(preco_vista_aplicado, forma)
                         total = preco_unit * item["Quantidade"]
@@ -1294,31 +1282,26 @@ if view == "Vendas":
                             "FormaPagamento": forma
                         })
 
-                        # Atualiza estoque
                         mask = produtos["ID"].astype(str) == str(item["IDProduto"])
                         if mask.any():
                             produtos.loc[mask, "Quantidade"] = (
                                 produtos.loc[mask, "Quantidade"].astype(int) - int(item["Quantidade"])
                             ).astype(int)
 
-                    # Adiciona ao DataFrame de vendas
                     vendas = pd.concat([vendas, pd.DataFrame(registros)], ignore_index=True)
 
-                    # Salva nos CSVs
                     save_csv_github(vendas, ARQ_VENDAS, "Adicionando nova venda")
                     save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando estoque após venda")
 
-                    # Atualiza session_state
                     st.session_state["vendas"] = vendas
                     st.session_state["produtos"] = produtos
-
-                    # Limpa carrinho
                     st.session_state["pedido_atual"] = []
                     st.session_state["valor_pago"] = 0.0
                     st.session_state["codigo_venda"] = ""
                     st.session_state["venda_cam"] = None
 
                     st.success(f"✅ Venda {novo_id} finalizada e registrada!")
+                    st.rerun()  # 🔑 atualização imediata
 
         with b2:
             if st.button("🆕 Nova Venda"):
@@ -1327,10 +1310,12 @@ if view == "Vendas":
                 st.session_state["codigo_venda"] = ""
                 st.session_state["venda_cam"] = None
                 st.info("Novo pedido iniciado.")
+                st.rerun()  # 🔑 atualização imediata
 
         with b4:
             if st.button("📦 Fechar Caixa"):
                 st.success("Caixa fechado!")
+                st.rerun()  # 🔑 atualização imediata
 
     # ================= TAB 2 =================
     with tab2:
@@ -1341,7 +1326,6 @@ if view == "Vendas":
             colunas = [c for c in colunas if c in ult.columns]
             st.dataframe(ult[colunas], use_container_width=True)
 
-            # lista de IDs como inteiros
             ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
 
             colx, coly = st.columns([3, 1])
@@ -1361,7 +1345,6 @@ if view == "Vendas":
                     if id_excluir_int and id_excluir_int in ids:
                         linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
 
-                        # devolve estoque
                         for _, r in linhas.iterrows():
                             mask = produtos["ID"].astype(str) == str(r["IDProduto"])
                             if mask.any():
@@ -1369,7 +1352,6 @@ if view == "Vendas":
                                     produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
                                 ).astype(int)
 
-                        # remove da planilha
                         vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
 
                         save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
@@ -1379,6 +1361,7 @@ if view == "Vendas":
                         st.session_state["produtos"] = produtos
 
                         st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
+                        st.rerun()  # 🔑 atualização imediata
                     else:
                         st.warning("Venda não encontrada.")
         else:
