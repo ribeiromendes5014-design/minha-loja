@@ -284,9 +284,12 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 
 
 
+
 # =====================================
-# Leitura de Código de Barras (pyzxing)
+# Leitura de Código de Barras (API ZXing)
 # =====================================
+import requests
+
 def ler_codigo_barras_api(image_bytes):
     try:
         files = {"f": ("barcode.png", image_bytes, "image/png")}
@@ -298,14 +301,11 @@ def ler_codigo_barras_api(image_bytes):
 
         text = response.text
         codigos = []
-
-        # Os códigos geralmente aparecem entre <pre>...</pre>
         if "<pre>" in text:
             partes = text.split("<pre>")
             for p in partes[1:]:
                 codigo = p.split("</pre>")[0].strip()
-                if codigo:
-                    codigos.append(codigo)
+                codigos.append(codigo)
 
         st.write("Debug API ZXing:", codigos)
         return codigos
