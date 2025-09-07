@@ -10,33 +10,33 @@ import requests
 # =====================================
 # Funções auxiliares
 # =====================================
-def central_crop(image_input, scale=0.8):
-    """
-    Recorta o centro da imagem para simular zoom digital.
-    """
-    # Se vier um UploadedFile do Streamlit
-    if hasattr(image_input, "getvalue"):
-        image_bytes = image_input.getvalue()
-    else:
-        image_bytes = image_input
 
-    if hasattr(image_bytes, "tobytes"):
-        image_bytes = image_bytes.tobytes()
-    elif isinstance(image_bytes, memoryview):
-        image_bytes = bytes(image_bytes)
+def ler_codigo_barras_api(image_bytes):
+    try:
+        files = {"f": ("barcode.png", image_bytes, "image/png")}
+        response = requests.post("https://zxing.org/w/decode", files=files)
 
-    Img = Image.open(BytesIO(image_bytes)).convert("RGB")
-    w, h = img.size
-    new_w, new_h = int(w * scale), int(h * scale)
-    left = (w - new_w) // 2
-    top = (h - new_h) // 2
-    right = left + new_w
-    bottom = top + new_h
-    cropped = img.crop((left, top, right, bottom))
+        if response.status_code != 200:
+            st.error(f"Erro na API ZXing: {response.status_code}")
+            return []
 
-    buf = BytesIO()
-    cropped.save(buf, format="PNG")
-    return buf.getvalue()
+        # A resposta é HTML, então fazemos um parse simples
+        text = response.text
+        codigos = []
+
+        # Os códigos geralmente aparecem entre <pre>...</pre>
+        if "<pre>" in text:
+            partes = text.split("<pre>")
+            for p in partes[1:]:
+                codigo = p.split("</pre>")[0].strip()
+                codigos.append(codigo)
+
+        st.write("Debug API ZXing:", codigos)
+        return codigos
+
+    except Exception as e:
+        st.error(f"Erro ao chamar API ZXing: {e}")
+        return []
 
 
 
