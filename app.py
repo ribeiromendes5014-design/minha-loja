@@ -1119,8 +1119,7 @@ if view == "Vendas":
         # -- Forma de pagamento
         forma = st.radio("Forma de pagamento", ["Dinheiro", "PIX", "Cartão", "Fiado"], horizontal=True)
 
-        # -- Seleção de produto
-        st.subheader("Itens do pedido")
+        # -- Código ou câmera
         c1, c2 = st.columns([2, 3])
         with c1:
             if "codigo_venda" not in st.session_state:
@@ -1137,7 +1136,7 @@ if view == "Vendas":
 
                 if codigos_lidos:
                     st.session_state["codigo_venda"] = codigos_lidos[0]
-                    st.session_state["venda_cam"] = None  # limpa foto após ler
+                    st.session_state["venda_cam"] = None
                     st.success(f"Código lido: {st.session_state['codigo_venda']}")
                     st.rerun()
                 else:
@@ -1146,7 +1145,7 @@ if view == "Vendas":
         with c2:
             nome_filtro = st.text_input("Pesquisar por nome")
 
-        # Filtro de produtos
+        # Filtro de produtos (NÃO mostrar tabela completa)
         df_sel = produtos.copy()
         if codigo:
             df_sel = df_sel[
@@ -1158,13 +1157,12 @@ if view == "Vendas":
 
         escolha = None
         if not df_sel.empty:
-            st.dataframe(df_sel[["ID", "Nome", "CodigoBarras", "Quantidade", "PrecoVista"]],
-                         use_container_width=True)
             escolha = st.selectbox(
                 "Selecione o produto",
                 (df_sel["ID"].astype(str) + " - " + df_sel["Nome"].astype(str)).tolist()
             )
 
+        # -- Qtd e Preço
         col_qtd, col_preco = st.columns([1, 3])
         with col_qtd:
             qtd = st.number_input("Qtd", min_value=1, value=1, step=1)
@@ -1196,7 +1194,7 @@ if view == "Vendas":
                         })
                         st.success("Item adicionado.")
 
-        # -- Exibe pedido
+        # -- Pedido atual
         df_pedido = desenha_pedido(forma, promocoes)
         valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
 
@@ -1225,21 +1223,16 @@ if view == "Vendas":
         st.markdown("---")
 
         b1, b2, b4 = st.columns([1,1,1])
-
-        # --- FINALIZAR VENDA ---
         with b1:
             if st.button("✅ Finalizar Venda"):
                 if not st.session_state["pedido_atual"]:
                     st.warning("Adicione itens ao pedido.")
                 else:
                     st.success("✅ Venda finalizada!")
-                    # limpa estado
                     st.session_state["pedido_atual"] = []
                     st.session_state["valor_pago"] = 0.0
                     st.session_state["codigo_venda"] = ""
                     st.session_state["venda_cam"] = None
-
-        # --- NOVA VENDA ---
         with b2:
             if st.button("🆕 Nova Venda"):
                 st.session_state["pedido_atual"] = []
@@ -1247,8 +1240,6 @@ if view == "Vendas":
                 st.session_state["codigo_venda"] = ""
                 st.session_state["venda_cam"] = None
                 st.info("Novo pedido iniciado.")
-
-        # --- FECHAR CAIXA ---
         with b4:
             if st.button("📦 Fechar Caixa"):
                 st.success("Caixa fechado!")
@@ -1256,14 +1247,12 @@ if view == "Vendas":
     # ================= TAB 2 =================
     with tab2:
         st.subheader("Últimas Vendas")
-
         if not vendas.empty:
             ult = vendas.sort_values(by=["Data","IDVenda"], ascending=False).head(100)
             colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario", "Total", "FormaPagamento"]
             colunas = [c for c in colunas if c in ult.columns]
             st.dataframe(ult[colunas], use_container_width=True)
 
-            # --- Excluir venda ---
             ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
             colx, coly = st.columns([3,1])
             with colx:
@@ -1278,11 +1267,9 @@ if view == "Vendas":
                                 produtos.loc[mask, "Quantidade"] = (
                                     produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
                                 ).astype(int)
-
                         vendas = vendas[vendas["IDVenda"] != id_excluir]
                         save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-
                         st.session_state["vendas"] = vendas
                         st.session_state["produtos"] = produtos
                         st.success(f"Venda {id_excluir} excluída e estoque ajustado.")
@@ -1294,7 +1281,6 @@ if view == "Vendas":
     # ================= TAB 3 =================
     with tab3:
         st.subheader("📄 Recibos de Vendas")
-
         datas = sorted(vendas["Data"].unique()) if not vendas.empty else []
         if datas:
             data_sel = st.selectbox("Selecione a data da venda", datas)
