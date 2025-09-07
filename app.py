@@ -1077,6 +1077,14 @@ if view == "Produtos":
                     del st.session_state["edit_prod"]
                     st.success("Produto atualizado!")
 
+# =====================================
+# VENDAS (com sub-abas: Venda, Últimas, Recibos)
+# =====================================
+if view == "Vendas":
+    show_logo("main")
+    st.header("🧾 Vendas")
+    # Sub-abas
+    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
 # ================= TAB 1 =================
 with tab1:
