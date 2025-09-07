@@ -1125,7 +1125,6 @@ if view == "Produtos":
                         st.rerun()
 
 
-
 # =====================================
 # VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
 # =====================================
@@ -1162,6 +1161,75 @@ if view == "Vendas":
                 st.error(f"Erro WhatsApp: {resp}")
         except Exception as e:
             st.error(f"Erro ao enviar WhatsApp: {e}")
+
+    # 🔹 Função para finalizar venda
+    def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes):
+        pedido = st.session_state.get("pedido_atual", [])
+        if not pedido:
+            st.warning("Nenhum item no pedido.")
+            return
+
+        vendas = st.session_state["vendas"]
+        produtos = st.session_state["produtos"]
+
+        novo_id = prox_id(vendas, "IDVenda")
+        hoje_str = str(date.today())
+
+        linhas = []
+        for item in pedido:
+            preco_vista, promo = preco_vista_com_promocao(
+                item["IDProduto"], float(item["PrecoVista"]), date.today(), promocoes
+            )
+            preco_unit = preco_por_forma(preco_vista, forma)
+            subtotal = preco_unit * item["Quantidade"]
+
+            linhas.append({
+                "IDVenda": novo_id,
+                "Data": hoje_str,
+                "IDProduto": item["IDProduto"],
+                "NomeProduto": item["NomeProduto"],
+                "CodigoBarras": item.get("CodigoBarras", ""),
+                "FormaPagamento": forma if forma != "Misto" else f"{forma1}+{forma2}",
+                "Quantidade": item["Quantidade"],
+                "PrecoUnitario": preco_unit,
+                "Total": subtotal,
+                "ValorPago1": valor1 if forma == "Misto" else subtotal,
+                "ValorPago2": valor2 if forma == "Misto" else 0.0,
+            })
+
+            # Atualiza estoque
+            mask = produtos["ID"].astype(str) == str(item["IDProduto"])
+            if mask.any():
+                produtos.loc[mask, "Quantidade"] = (
+                    produtos.loc[mask, "Quantidade"].astype(int) - int(item["Quantidade"])
+                ).astype(int)
+
+        vendas = pd.concat([vendas, pd.DataFrame(linhas)], ignore_index=True)
+
+        # Salva CSVs
+        save_csv_github(vendas, ARQ_VENDAS, "Nova venda")
+        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando estoque")
+
+        st.session_state["vendas"] = vendas
+        st.session_state["produtos"] = produtos
+        st.session_state["pedido_atual"] = []
+
+        st.success(f"Venda {novo_id} finalizada com sucesso!")
+
+        # Gera recibo PDF
+        try:
+            caminho_pdf = f"recibo_{novo_id}.pdf"
+            gerar_pdf_venda(novo_id, vendas, caminho_pdf)
+            with open(caminho_pdf, "rb") as f:
+                st.download_button(
+                    label="⬇️ Baixar Recibo",
+                    data=f,
+                    file_name=caminho_pdf,
+                    mime="application/pdf",
+                    key=f"download_{novo_id}"
+                )
+        except Exception as e:
+            st.error(f"Erro ao gerar recibo: {e}")
 
     # 🔹 Sub-abas principais
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
@@ -1376,6 +1444,7 @@ if view == "Vendas":
                 st.image("logo.png", width=200, key="logo_recibo")
         else:
             st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
