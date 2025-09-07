@@ -1376,148 +1376,99 @@ if view == "Vendas":
                     st.success(f"✅ Venda {novo_id} finalizada e registrada!")
                     st.rerun()
 
+        with b2:
+            if st.button("🆕 Nova Venda"):
+                st.session_state["pedido_atual"] = []
+                st.session_state["valor_pago"] = 0.0
+                st.session_state["codigo_venda"] = ""
+                st.session_state["venda_cam"] = None
+                st.info("Novo pedido iniciado.")
+                st.rerun()
 
+        with b4:
+            if st.button("📦 Fechar Caixa"):
+                st.success("Caixa fechado!")
+                st.rerun()
 
+    # ================= TAB 2 =================
+    with tab2:
+        st.subheader("Últimas Vendas")
+        if not vendas.empty:
+            ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
+            colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario", "Total", "FormaPagamento"]
+            colunas = [c for c in colunas if c in ult.columns]
+            st.dataframe(ult[colunas], use_container_width=True)
 
-# =====================================
-# CLIENTES (Fiado) com busca minimalista
-# =====================================
-if view == "Clientes":
-    show_logo("main")
-    st.header("👥 Clientes (Fiado)")
+            ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
 
-    if clientes.empty:
-        st.info("Nenhum fiado lançado.")
-    else:
-        # 🔑 Normaliza colunas para evitar KeyError
-        clientes.columns = clientes.columns.str.strip().str.capitalize()
+            colx, coly = st.columns([3, 1])
+            with colx:
+                id_excluir = st.selectbox(
+                    "Selecione a venda para excluir (devolve estoque)",
+                    ids if ids else [0]
+                )
 
-        st.subheader("Pesquisar registros")
+            with coly:
+                if st.button("Excluir venda"):
+                    try:
+                        id_excluir_int = int(id_excluir)
+                    except:
+                        id_excluir_int = None
 
-        # --- Menu de pesquisa minimalista ---
-        opcoes_busca = ["Nome do Cliente", "Produto", "Data", "Valor", "Código de Barras"]
-        criterio = st.selectbox("Pesquisar por:", opcoes_busca)
-        valor_busca = None
+                    if id_excluir_int and id_excluir_int in ids:
+                        linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
 
-        if criterio == "Nome do Cliente":
-            valor_busca = st.text_input("Digite o nome do cliente")
-        elif criterio == "Produto":
-            valor_busca = st.text_input("Digite o nome do produto")
-        elif criterio == "Data":
-            valor_busca = st.date_input("Selecione a data")
-        elif criterio == "Valor":
-            valor_busca = st.number_input("Digite o valor", min_value=0.0, step=0.01)
-        elif criterio == "Código de Barras":
-            col1, col2 = st.columns([2, 2])
-            with col1:
-                valor_busca = st.text_input("Digite o código de barras")
-            with col2:
-                foto_codigo_cliente = st.camera_input("📷 Escanear código de barras")
-                if foto_codigo_cliente is not None:
-                    codigo_cliente_lido = ler_codigo_barras(foto_codigo_cliente.getbuffer())
-                    if codigo_cliente_lido:
-                        st.session_state["codigo_cliente_filtro"] = codigo_cliente_lido
-                        st.success(f"Código lido: {codigo_cliente_lido}")
+                        for _, r in linhas.iterrows():
+                            mask = produtos["ID"].astype(str) == str(r["IDProduto"])
+                            if mask.any():
+                                produtos.loc[mask, "Quantidade"] = (
+                                    produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
+                                ).astype(int)
+
+                        vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
+
+                        save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
+                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+
+                        st.session_state["vendas"] = vendas
+                        st.session_state["produtos"] = produtos
+
+                        st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
                         st.rerun()
-            valor_busca = st.session_state.get("codigo_cliente_filtro", valor_busca)
-
-        # --- Aplicar filtro ---
-        clientes_filtrados = clientes.copy()
-        if criterio == "Nome do Cliente" and valor_busca:
-            clientes_filtrados = clientes_filtrados[
-                clientes_filtrados["Cliente"].astype(str).str.contains(valor_busca, case=False, na=False)
-            ]
-        elif criterio == "Produto" and valor_busca:
-            clientes_filtrados = clientes_filtrados[
-                clientes_filtrados["Produto"].astype(str).str.contains(valor_busca, case=False, na=False)
-            ]
-        elif criterio == "Data" and valor_busca:
-            if "Data" in clientes_filtrados.columns:
-                clientes_filtrados = clientes_filtrados[
-                    clientes_filtrados["Data"].astype(str) == str(valor_busca)
-                ]
-            else:
-                st.warning("⚠️ A coluna 'Data' não existe no CSV de clientes.")
-        elif criterio == "Valor" and valor_busca:
-            clientes_filtrados = clientes_filtrados[
-                clientes_filtrados["Valor"].astype(float) == float(valor_busca)
-            ]
-        elif criterio == "Código de Barras" and valor_busca:
-            col_name = "Codigobarras" if "Codigobarras" in clientes_filtrados.columns else "CodigoBarras"
-            clientes_filtrados = clientes_filtrados[
-                clientes_filtrados[col_name].astype(str).str.contains(str(valor_busca), case=False, na=False)
-            ]
-
-        # --- Exibir resultados ---
-        if clientes_filtrados.empty:
-            st.info("Nenhum registro encontrado com os filtros aplicados.")
+                    else:
+                        st.warning("Venda não encontrada.")
         else:
-            st.dataframe(clientes_filtrados, use_container_width=True)
+            st.info("Ainda não há vendas registradas.")
 
-        # --- Atualizar status ---
-        st.markdown("#### Atualizar status")
-        ids = clientes_filtrados["Id"].astype(str).tolist() if "Id" in clientes_filtrados.columns else []
-        sel = st.selectbox("Selecione o registro", ids) if ids else None
-        novo_status = st.selectbox("Status", ["Aberto", "Pago"])
+    # ================= TAB 3 =================
+    with tab3:
+        st.subheader("📄 Recibos de Vendas")
 
-        forma_pag = None
-        if novo_status == "Pago":
-            forma_pag = st.selectbox("Forma de pagamento (finalização)", ["Dinheiro", "PIX", "Cartão"])
+        if not vendas.empty:
+            datas = sorted(vendas["Data"].unique())
+            data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
 
-        if st.button("Salvar status"):
-            if sel is None:
-                st.warning("Selecione um registro válido.")
-            else:
-                idx = clientes["Id"].astype(str) == str(sel)
-                clientes.loc[idx, "Status"] = novo_status
+            vendas_dia = vendas[vendas["Data"] == data_sel]
+            ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
 
-                if forma_pag:
-                    clientes.loc[idx, "Formapagamento"] = forma_pag
+            id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
 
-                    if forma_pag == "Cartão":
-                        valor_vista = clientes.loc[idx, "Valor"].astype(float)
-                        novo_valor = (valor_vista / FATOR_CARTAO).round(2)
-                        clientes.loc[idx, "Valor"] = novo_valor
+            if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
+                caminho_pdf = f"recibo_venda_{id_sel}.pdf"
+                gerar_pdf_venda(id_sel, vendas, caminho_pdf)
 
-                        produto_nome = clientes.loc[idx, "Produto"].values[0]
-                        valor_original = float(valor_vista.iloc[0]) if hasattr(valor_vista, "iloc") else float(valor_vista)
-                        venda_idx = (
-                            (vendas["NomeProduto"] == produto_nome) &
-                            (vendas["FormaPagamento"] == "Fiado") &
-                            (vendas["Total"].astype(float) == valor_original)
-                        )
-                        if venda_idx.any():
-                            vendas.loc[venda_idx, "FormaPagamento"] = "Cartão"
-                            vendas.loc[venda_idx, "PrecoUnitario"] = (
-                                vendas.loc[venda_idx, "PrecoUnitario"].astype(float) / FATOR_CARTAO
-                            ).round(2)
-                            vendas.loc[venda_idx, "Total"] = (
-                                vendas.loc[venda_idx, "Total"].astype(float) / FATOR_CARTAO
-                            ).round(2)
-                            save_csv(vendas, ARQ_VENDAS)
+                with open(caminho_pdf, "rb") as f:
+                    st.download_button(
+                        label="⬇️ Baixar Recibo",
+                        data=f,
+                        file_name=caminho_pdf,
+                        mime="application/pdf",
+                        key="download_recibo"
+                    )
 
-                        try:
-                            val_num = float(novo_valor.iloc[0])
-                        except Exception:
-                            val_num = float(novo_valor)
-                        st.info(f"Valor atualizado para pagamento no cartão: {brl(val_num)}")
-
-                st.session_state["clientes"] = clientes
-                save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
-                st.success("Status atualizado!")
-                st.rerun()
-
-        # --- Excluir registro ---
-        st.markdown("#### Excluir registro de fiado")
-        if st.button("Excluir registro selecionado"):
-            if sel is None:
-                st.warning("Selecione um registro válido.")
-            else:
-                clientes = clientes[clientes["Id"].astype(str) != str(sel)]
-                st.session_state["clientes"] = clientes
-                save_csv_github(clientes, ARQ_CLIENTES, "Atualizando clientes")
-                st.warning(f"Registro {sel} excluído!")
-                st.rerun()
+                st.image("logo.png", width=200)
+        else:
+            st.info("Nenhuma venda para gerar recibo.")
 
 
 
