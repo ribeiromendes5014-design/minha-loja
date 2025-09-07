@@ -292,19 +292,19 @@ def ler_codigo_barras(image_bytes):
         # Abre a imagem recebida e converte para escala de cinza
         img = Image.open(BytesIO(image_bytes)).convert("L")
 
-        # Aumenta contraste para destacar melhor os códigos
+        # Aumenta contraste para destacar o código de barras
         enhancer = ImageEnhance.Contrast(img)
         img = enhancer.enhance(2.0)
 
-        # Salva imagem temporária
+        # Salva como arquivo temporário
         temp_path = "temp_barcode.png"
-        img.save(temp_path)
+        img.save(temp_path, format="PNG")
 
         # Cria o leitor ZXing
         reader = BarCodeReader()
         results = reader.decode(temp_path)
 
-        # Debug - mostra resultado cru do ZXing
+        # Debug - mostrar resultado cru
         st.write("Debug ZXing:", results)
 
         codigos = []
@@ -317,7 +317,6 @@ def ler_codigo_barras(image_bytes):
     except Exception as e:
         st.error(f"Erro ao ler código de barras: {e}")
         return []
-
 
 # =====================================
 # Utilidades de persistência (CSV)
