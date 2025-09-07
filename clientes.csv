@@ -1,3 +1,2 @@
-ID,Cliente,Produto,CodigoBarras,Valor,DataPagamento,Status,FormaPagamento,Data,DataPrevista
-1,Renan,Body Splash,,30.0,,Aberto,Fiado,,
-2,Renan,"Body Splash, Kit Shampoo babasoul",,61.0,,Aberto,Fiado,2025-09-07,2025-09-17
+ID,Cliente,Produto,CodigoBarras,Valor,DataPagamento,Status,FormaPagamento
+2,Renan,"Body Splash, Kit Shampoo babasoul",,61.0,,Aberto,Fiado
