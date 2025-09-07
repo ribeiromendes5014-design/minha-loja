@@ -1187,13 +1187,13 @@ if view == "Vendas":
     valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
 
     # -- Fiado
-    nome_cliente, data_prevista = "", None
-    if forma == "Fiado":
-        st.markdown("#### Dados do fiado")
-        nome_cliente = st.text_input("Nome do cliente")
-        data_prevista = st.date_input("Data prevista de pagamento", value=date.today() + timedelta(days=7))
+nome_cliente, data_prevista = "", None
+if forma == "Fiado":
+    st.markdown("#### Dados do fiado")
+    nome_cliente = st.text_input("Nome do cliente")
+    data_prevista = st.date_input("Data prevista de pagamento", value=date.today() + timedelta(days=7))
 
-    # -- Dinheiro
+# -- Dinheiro
 valor_pago = st.session_state.get("valor_pago", 0.0)
 troco = 0.0
 if forma == "Dinheiro":
@@ -1212,7 +1212,6 @@ with colC:
 st.markdown("---")
 
 b1, b2, b3, b4, b5, b6 = st.columns(6)
-
 # --- FINALIZAR VENDA ---
 with b1:
     if st.button("✅ Finalizar Venda"):
