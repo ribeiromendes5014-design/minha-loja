@@ -1170,7 +1170,7 @@ if view == "Vendas":
                         st.session_state["codigo_venda"] = codigos_lidos[0]
                         st.success(f"Código lido: {st.session_state['codigo_venda']}")
                         st.session_state["mostrar_camera"] = False
-                        st.rerun()  # 🔑 atualização imediata
+                        st.rerun()
                     else:
                         st.error("❌ Não foi possível ler nenhum código.")
 
@@ -1223,7 +1223,7 @@ if view == "Vendas":
                                 "PrecoVista": preco_vista,
                             })
                             st.success("Item adicionado.")
-                            st.rerun()  # 🔑 atualização imediata
+                            st.rerun()
 
         # -- Pedido atual
         df_pedido = desenha_pedido(forma, promocoes)
@@ -1255,6 +1255,7 @@ if view == "Vendas":
 
         b1, b2, b4 = st.columns([1, 1, 1])
 
+        # --- FINALIZAR VENDA ---
         with b1:
             if st.button("✅ Finalizar Venda"):
                 if not st.session_state["pedido_atual"]:
@@ -1282,17 +1283,38 @@ if view == "Vendas":
                             "FormaPagamento": forma
                         })
 
+                        # Atualiza estoque
                         mask = produtos["ID"].astype(str) == str(item["IDProduto"])
                         if mask.any():
                             produtos.loc[mask, "Quantidade"] = (
                                 produtos.loc[mask, "Quantidade"].astype(int) - int(item["Quantidade"])
                             ).astype(int)
 
+                    # 🔹 Adiciona no DataFrame de vendas
                     vendas = pd.concat([vendas, pd.DataFrame(registros)], ignore_index=True)
-
                     save_csv_github(vendas, ARQ_VENDAS, "Adicionando nova venda")
                     save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando estoque após venda")
 
+                    # 🔹 Se for FIADO → também adiciona em clientes
+                    if forma == "Fiado":
+                        novo_cliente_id = prox_id(clientes, "ID") if not clientes.empty else 1
+                        produtos_nomes = ", ".join([i["NomeProduto"] for i in st.session_state["pedido_atual"]])
+                        registro_fiado = {
+                            "ID": novo_cliente_id,
+                            "Cliente": nome_cliente.strip() if nome_cliente else "Sem nome",
+                            "Produto": produtos_nomes,
+                            "Valor": valor_total,
+                            "Data": data_venda,
+                            "DataPrevista": str(data_prevista) if data_prevista else "",
+                            "Status": "Aberto",
+                            "CodigoBarras": st.session_state["codigo_venda"],
+                            "FormaPagamento": "Fiado"
+                        }
+                        clientes = pd.concat([clientes, pd.DataFrame([registro_fiado])], ignore_index=True)
+                        st.session_state["clientes"] = clientes
+                        save_csv_github(clientes, ARQ_CLIENTES, "Novo registro fiado")
+
+                    # Atualiza session_state
                     st.session_state["vendas"] = vendas
                     st.session_state["produtos"] = produtos
                     st.session_state["pedido_atual"] = []
@@ -1301,7 +1323,7 @@ if view == "Vendas":
                     st.session_state["venda_cam"] = None
 
                     st.success(f"✅ Venda {novo_id} finalizada e registrada!")
-                    st.rerun()  # 🔑 atualização imediata
+                    st.rerun()
 
         with b2:
             if st.button("🆕 Nova Venda"):
@@ -1310,12 +1332,12 @@ if view == "Vendas":
                 st.session_state["codigo_venda"] = ""
                 st.session_state["venda_cam"] = None
                 st.info("Novo pedido iniciado.")
-                st.rerun()  # 🔑 atualização imediata
+                st.rerun()
 
         with b4:
             if st.button("📦 Fechar Caixa"):
                 st.success("Caixa fechado!")
-                st.rerun()  # 🔑 atualização imediata
+                st.rerun()
 
     # ================= TAB 2 =================
     with tab2:
@@ -1361,7 +1383,7 @@ if view == "Vendas":
                         st.session_state["produtos"] = produtos
 
                         st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
-                        st.rerun()  # 🔑 atualização imediata
+                        st.rerun()
                     else:
                         st.warning("Venda não encontrada.")
         else:
