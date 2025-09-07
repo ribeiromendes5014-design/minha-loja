@@ -1138,7 +1138,7 @@ if view == "Vendas":
     from datetime import datetime
     import pytz
 
-    WHATSAPP_TOKEN = "EAALmgS1woeIBPSOcIL9qkEFomE7hVRHK4nxjwHjvCSOQX8hw3bw0gKkxXa3CLbSkZBzOeIbPdMYsZCCgD8ogmoV1sOsh0EPvS5hZCVfZCzPcvtwk5or0qXWwRrsg7z9k8bGEZCA7vBlZACgNWEI2W4jLUOSsY9AxOGsaTnZCSZAEtetq0lKTDwz8TMBVGrYU61olmTkVrZB6hvf3gWPWRcuagsNoddDINPkwJ"
+    WHATSAPP_TOKEN = "EAALmgS1woeIBPRcEqrb9ZCRFynrnu93cvMdOopDsYcTlJ50jH2WcNGUkoz6bp0D17xsZCSASatFATLjCeASTHtyQLqEjcTDox1knht9fOZBQBtcx0TcIrUumSV9CagwDGFkT9Jdd0IwN2kols5tVtaiBjBRlNiEZCcOwfVJDeucCgWs6nRDGyDOwl4XVuwZDZD"
     WHATSAPP_PHONE_ID = "823826790806739"
     WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
     NUMERO_DESTINO = "5541987876191"
