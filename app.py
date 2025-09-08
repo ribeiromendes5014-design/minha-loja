@@ -1387,11 +1387,6 @@ if "dados_fechamento_caixa" in st.session_state:
     st.write("---")
 
 # Agora, continue com a lógica de abertura/fechamento
-def fechar_caixa():
-    if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
-        operador = st.session_state.get("operador", "—")
-        valor_inicial = st.session_state.get("valor_inicial", 0.0)
-        hoje = str(date.today())
 
 if not st.session_state.get("caixa_aberto", False):
     st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
