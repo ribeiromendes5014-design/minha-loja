@@ -1214,82 +1214,70 @@ if view == "Produtos":
 
 
 
+   # ========================================================
+   # 1. IMPORTS E FUNÇÕES GLOBAIS (SEMPRE NO TOPO)
+   # ========================================================
+    
+    # Configuração WhatsApp (Variáveis Globais)
+WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"
+WHATSAPP_PHONE_ID = "823826790806739"
+WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
+NUMERO_DESTINO = "5541987876191"
 
+# Funções Auxiliares (Defina-as aqui)
+def enviar_whatsapp(destinatario, mensagem):
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "messaging_product": "whatsapp",
+        "to": destinatario,
+        "type": "text",
+        "text": {"body": mensagem}
+    }
+    try:
+        r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
+        resp = r.json()
+        print("DEBUG WHATSAPP:", resp)
+        if "messages" not in resp:
+            st.error(f"Erro WhatsApp: {resp}")
+    except Exception as e:
+        st.error(f"Erro ao enviar WhatsApp: {e}")
 
+def abrir_caixa():
+    with st.form("abrir_caixa_form"):
+        st.subheader("🟢 Abrir Caixa")
+        operador = st.text_input("👤 Nome do Operador", key="input_operador")
+        valor_inicial = st.number_input("💵 Valor Inicial do Caixa", min_value=0.0, step=1.0, key="input_valor_inicial")
+        submitted = st.form_submit_button("🚀 Abrir Caixa")
+        if submitted:
+            if not operador:
+                st.warning("⚠️ Informe o nome do operador para abrir o caixa.")
+            else:
+                st.session_state["operador"] = operador
+                st.session_state["valor_inicial"] = valor_inicial
+                st.session_state["caixa_aberto"] = True
+                st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
+                st.rerun()
 
-    # 🔹 Configuração WhatsApp
-    import requests
-    from datetime import datetime, date
-    import pytz
-
-    WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"  # coloque aqui o token válido da API do WhatsApp Cloud
-    WHATSAPP_PHONE_ID = "823826790806739"
-    WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
-    NUMERO_DESTINO = "5541987876191"
-
-    def enviar_whatsapp(destinatario, mensagem):
-        headers = {
-            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "messaging_product": "whatsapp",
-            "to": destinatario,
-            "type": "text",
-            "text": {"body": mensagem}
-        }
-        try:
-            r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
-            resp = r.json()
-            print("DEBUG WHATSAPP:", resp)
-            if "messages" not in resp:
-                st.error(f"Erro WhatsApp: {resp}")
-        except Exception as e:
-            st.error(f"Erro ao enviar WhatsApp: {e}")
-
-
-    # ========================================================
-    # ABERTURA DE CAIXA
-    # ========================================================
-    def abrir_caixa():
-        with st.form("abrir_caixa_form"):
-            st.subheader("🟢 Abrir Caixa")
-
-            operador = st.text_input("👤 Nome do Operador", key="input_operador")
-            valor_inicial = st.number_input("💵 Valor Inicial do Caixa", min_value=0.0, step=1.0, key="input_valor_inicial")
-
-            submitted = st.form_submit_button("🚀 Abrir Caixa")
-            if submitted:
-                if not operador:
-                    st.warning("⚠️ Informe o nome do operador para abrir o caixa.")
-                else:
-                    st.session_state["operador"] = operador
-                    st.session_state["valor_inicial"] = valor_inicial
-                    st.session_state["caixa_aberto"] = True
-                    st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
-                    st.rerun()
-
-
-    # ========================================================
-# FECHAMENTO DE CAIXA
-# ========================================================
 def fechar_caixa():
     if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
         operador = st.session_state.get("operador", "—")
         valor_inicial = st.session_state.get("valor_inicial", 0.0)
         hoje = str(date.today())
-
+        
         # 🔹 Filtrar vendas do dia
         vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
         vendas_dia = vendas[vendas["Data"].dt.strftime("%Y-%m-%d") == hoje]
-
+        
         # 🔹 Calcular totais por forma de pagamento
         total_dinheiro = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
         total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
         total_cartao = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
         total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
         faturamento_total = total_dinheiro + total_pix + total_cartao + total_fiado
-
+        
         # 🔹 Montar dados do caixa
         dados_caixa = {
             "Data": hoje,
@@ -1302,7 +1290,7 @@ def fechar_caixa():
             "Fiado": total_fiado,
             "Status": "Fechado"
         }
-
+        
         # 🔹 Atualizar CSV de caixas
         caixas = norm_caixas(pd.DataFrame())
         caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
@@ -1315,26 +1303,21 @@ def fechar_caixa():
         st.success(f"📦 Caixa fechado! Operador: {operador}")
         st.rerun()
 
-
- # ========================================================
-# FUNÇÃO FINALIZAR VENDA
-# ========================================================
-
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
     global vendas, produtos
-
+    
     if not st.session_state.get("pedido_atual"):
         st.warning("⚠️ Nenhum item no pedido.")
         return
-
+    
     # Garante coluna IDVenda como numérica
     if not vendas.empty and "IDVenda" in vendas.columns:
         vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
         novo_id = int(vendas["IDVenda"].max() + 1)
     else:
         novo_id = 1
-
+    
     df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
     df_pedido["IDVenda"] = novo_id
     df_pedido["Data"] = str(date.today())
@@ -1344,151 +1327,139 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
     df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
     df_pedido["ValorRecebido"] = valor_recebido
-
+    
     vendas = pd.concat([vendas, df_pedido], ignore_index=True)
     save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
-
+    
     st.session_state["pedido_atual"] = []
     st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
 
 
-
-
 # ========================================================
-# BLOQUEIO DE CAIXA
+# 2. LÓGICA DO APP (USE as funções definidas acima)
 # ========================================================
-# =====================================
-# VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
-# =====================================
 if view == "Vendas":
     show_logo("main")
     st.header("🧾 Vendas")
 
-# Primeiro, verifique e mostre o resumo do último fechamento, se existir
-if "dados_fechamento_caixa" in st.session_state:
-    st.subheader("📊 Resumo do Último Fechamento de Caixa")
-    dados_caixa = st.session_state.pop("dados_fechamento_caixa")
-    vendas_dia = st.session_state.pop("vendas_dia_fechamento")
-    
-    st.write(f"💵 Dinheiro: {brl(dados_caixa['Dinheiro'])}")
-    st.write(f"⚡ PIX: {brl(dados_caixa['PIX'])}")
-    st.write(f"💳 Cartão: {brl(dados_caixa['Cartão'])}")
-    st.write(f"📒 Fiado: {brl(dados_caixa['Fiado'])}")
-    st.write(f"📦 Total: {brl(dados_caixa['FaturamentoTotal'])}")
-
-    caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
-    gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
-    with open(caminho_pdf, "rb") as f:
-        st.download_button(
-            label=f"⬇️ Baixar Relatório de Caixa ({dados_caixa['Data']})",
-            data=f,
-            file_name=caminho_pdf,
-            mime="application/pdf",
-            key="download_caixa"
-        )
-    st.write("---")
-
-# Agora, continue com a lógica de abertura/fechamento
-
-if not st.session_state.get("caixa_aberto", False):
-    st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
-    abrir_caixa()
-
-else:
-    operador = st.session_state.get("operador", "—")
-    valor_inicial = st.session_state.get("valor_inicial", 0.0)
-    st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
-
-    # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
-    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
-
-    
-    # ================= TAB 1 - VENDA DETALHADA =================
-    with tab1:
-        st.subheader("🛒 Venda Detalhada")
-
-        # --- PESQUISA DE PRODUTO ---
-        st.markdown("### 🔍 Pesquisar Produto")
-        sub1, sub2, sub3 = st.tabs(["Por Nome", "Por Código de Barras", "Por Foto"])
-
-        # --- POR NOME ---
-        with sub1:
-            nome_filtro = st.text_input("Digite o nome do produto", key="nome_filtro_venda")
-            df_sel = produtos.copy()
-            if nome_filtro:
-                df_sel = df_sel[df_sel["Nome"].astype(str).str.contains(nome_filtro, case=False, na=False)]
-
-            if not df_sel.empty:
-                escolha = st.selectbox(
-                    "Selecione o produto",
-                    (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(),
-                    key="select_nome_venda"
-                )
-                qtd_nome = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_nome_venda")
-                if st.button("Adicionar ao pedido (nome)", key="btn_add_nome_venda"):
-                    pid = escolha.split(" - ")[0].strip()
-                    rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
-                    st.session_state["pedido_atual"].append({
-                        "IDProduto": pid,
-                        "NomeProduto": rowp["Nome"],
-                        "CodigoBarras": str(rowp.get("CodigoBarras", "")),
-                        "Quantidade": int(qtd_nome),
-                        "PrecoVista": float(rowp["PrecoVista"]),
-                    })
-                    st.success("Item adicionado ao pedido.")
-                    st.rerun()
-
-        # --- POR CÓDIGO DE BARRAS ---
-        with sub2:
-            codigo = st.text_input("Digite ou escaneie o código de barras", key="codigo_barras_venda")
-            df_sel = produtos.copy()
-            if codigo:
-                df_sel = df_sel[(df_sel["ID"].astype(str).str.contains(codigo)) |
-                                (df_sel["CodigoBarras"].astype(str).str.contains(codigo))]
-            if not df_sel.empty:
-                escolha = st.selectbox(
-                    "Selecione o produto",
-                    (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(),
-                    key="select_codigo_venda"
-                )
-                qtd_codigo = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_codigo_venda")
-                if st.button("Adicionar ao pedido (código)", key="btn_add_codigo_venda"):
-                    pid = escolha.split(" - ")[0].strip()
-                    rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
-                    st.session_state["pedido_atual"].append({
-                        "IDProduto": pid,
-                        "NomeProduto": rowp["Nome"],
-                        "CodigoBarras": str(rowp.get("CodigoBarras", "")),
-                        "Quantidade": int(qtd_codigo),
-                        "PrecoVista": float(rowp["PrecoVista"]),
-                    })
-                    st.success("Item adicionado ao pedido.")
-                    st.rerun()
-
-        # --- POR FOTO ---
-        with sub3:
-            foto = st.camera_input("Tirar foto do produto", key="foto_venda")
-            if foto:
-                st.info("🚧 Pesquisa por foto em desenvolvimento (placeholder).")
-
-        st.markdown("---")
-
-        # ================= MOSTRAR PAGAMENTO SOMENTE SE HOUVER ITENS =================
-        if st.session_state.get("pedido_atual"):
-            # --- FORMA DE PAGAMENTO ---
-            st.markdown("### Forma de Pagamento")
-            forma = st.radio(
-                "Selecione a forma de pagamento",
-                ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
-                horizontal=True,
-                key="radio_forma_pagamento_venda"
+    # 🔹 Lógica de Bloqueio de Caixa
+    if "dados_fechamento_caixa" in st.session_state:
+        st.subheader("📊 Resumo do Último Fechamento de Caixa")
+        dados_caixa = st.session_state.pop("dados_fechamento_caixa")
+        vendas_dia = st.session_state.pop("vendas_dia_fechamento")
+        
+        st.write(f"💵 Dinheiro: {brl(dados_caixa['Dinheiro'])}")
+        st.write(f"⚡ PIX: {brl(dados_caixa['PIX'])}")
+        st.write(f"💳 Cartão: {brl(dados_caixa['Cartão'])}")
+        st.write(f"📒 Fiado: {brl(dados_caixa['Fiado'])}")
+        st.write(f"📦 Total: {brl(dados_caixa['FaturamentoTotal'])}")
+        
+        caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
+        gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
+        with open(caminho_pdf, "rb") as f:
+            st.download_button(
+                label=f"⬇️ Baixar Relatório de Caixa ({dados_caixa['Data']})",
+                data=f,
+                file_name=caminho_pdf,
+                mime="application/pdf",
+                key="download_caixa"
             )
+        st.write("---")
 
-            forma1 = forma2 = None
-            valor1 = valor2 = 0.0
-            valor_recebido = 0.0
-            nome_cliente = None
-            data_pagamento = None
+    if not st.session_state.get("caixa_aberto", False):
+        st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
+        abrir_caixa()
+    else:
+        operador = st.session_state.get("operador", "—")
+        valor_inicial = st.session_state.get("valor_inicial", 0.0)
+        st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
+
+        # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
+        tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+
+        # ================= TAB 1 - VENDA DETALHADA =================
+        with tab1:
+            st.subheader("🛒 Venda Detalhada")
+            # --- PESQUISA DE PRODUTO ---
+            st.markdown("### 🔍 Pesquisar Produto")
+            sub1, sub2, sub3 = st.tabs(["Por Nome", "Por Código de Barras", "Por Foto"])
+            
+            with sub1:
+                nome_filtro = st.text_input("Digite o nome do produto", key="nome_filtro_venda")
+                df_sel = produtos.copy()
+                if nome_filtro:
+                    df_sel = df_sel[df_sel["Nome"].astype(str).str.contains(nome_filtro, case=False, na=False)]
+                if not df_sel.empty:
+                    escolha = st.selectbox(
+                        "Selecione o produto",
+                        (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(),
+                        key="select_nome_venda"
+                    )
+                    qtd_nome = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_nome_venda")
+                    if st.button("Adicionar ao pedido (nome)", key="btn_add_nome_venda"):
+                        pid = escolha.split(" - ")[0].strip()
+                        rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
+                        st.session_state["pedido_atual"].append({
+                            "IDProduto": pid,
+                            "NomeProduto": rowp["Nome"],
+                            "CodigoBarras": str(rowp.get("CodigoBarras", "")),
+                            "Quantidade": int(qtd_nome),
+                            "PrecoVista": float(rowp["PrecoVista"]),
+                        })
+                        st.success("Item adicionado ao pedido.")
+                        st.rerun()
+
+            # --- POR CÓDIGO DE BARRAS ---
+            with sub2:
+                codigo = st.text_input("Digite ou escaneie o código de barras", key="codigo_barras_venda")
+                df_sel = produtos.copy()
+                if codigo:
+                    df_sel = df_sel[(df_sel["ID"].astype(str).str.contains(codigo)) |
+                                    (df_sel["CodigoBarras"].astype(str).str.contains(codigo))]
+                if not df_sel.empty:
+                    escolha = st.selectbox(
+                        "Selecione o produto",
+                        (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(),
+                        key="select_codigo_venda"
+                    )
+                    qtd_codigo = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_codigo_venda")
+                    if st.button("Adicionar ao pedido (código)", key="btn_add_codigo_venda"):
+                        pid = escolha.split(" - ")[0].strip()
+                        rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
+                        st.session_state["pedido_atual"].append({
+                            "IDProduto": pid,
+                            "NomeProduto": rowp["Nome"],
+                            "CodigoBarras": str(rowp.get("CodigoBarras", "")),
+                            "Quantidade": int(qtd_codigo),
+                            "PrecoVista": float(rowp["PrecoVista"]),
+                        })
+                        st.success("Item adicionado ao pedido.")
+                        st.rerun()
+            
+            # --- POR FOTO ---
+            with sub3:
+                foto = st.camera_input("Tirar foto do produto", key="foto_venda")
+                if foto:
+                    st.info("🚧 Pesquisa por foto em desenvolvimento (placeholder).")
+
+            st.markdown("---")
+
+            # ================= MOSTRAR PAGAMENTO SOMENTE SE HOUVER ITENS =================
+            if st.session_state.get("pedido_atual"):
+                # --- FORMA DE PAGAMENTO ---
+                st.markdown("### Forma de Pagamento")
+                forma = st.radio(
+                    "Selecione a forma de pagamento",
+                    ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
+                    horizontal=True,
+                    key="radio_forma_pagamento_venda"
+                )
+
+                forma1 = forma2 = None
+                valor1 = valor2 = 0.0
+                valor_recebido = 0.0
+                nome_cliente = None
+                data_pagamento = None
 
             if forma == "Misto":
                 st.markdown("#### Configuração do pagamento misto")
