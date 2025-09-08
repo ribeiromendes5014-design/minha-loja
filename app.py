@@ -1655,14 +1655,14 @@ if view == "Vendas":
                 colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
 
             st.markdown("---")
-# -- Botões de ação
-b1, b2 = st.columns([1, 1])
-with b1:
-    if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
-        finalizar_venda(...)
-with b2:
-    if st.button("🆕 Nova Venda", key="btn_nova_venda"):
-        nova_venda()
+ # -- Botões de ação
+    b1, b2 = st.columns([1, 1])
+    with b1:
+        if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
+            finalizar_venda(...)
+    with b2:
+        if st.button("🆕 Nova Venda", key="btn_nova_venda"):
+            nova_venda()
 
 else:
     st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
@@ -1674,9 +1674,7 @@ if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
     fechar_caixa()
 
 
-   
-
-    # ================= TAB 2 - ÚLTIMAS VENDAS =================
+# ================= TAB 2 - ÚLTIMAS VENDAS =================
     with tab2:
         st.subheader("📊 Últimas Vendas")
         if not vendas.empty:
