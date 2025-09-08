@@ -1420,20 +1420,20 @@ if view == "Vendas":
                     nome_cliente = st.text_input("👤 Nome do Cliente")
                     data_pagamento = st.date_input("📅 Data prevista de pagamento", value=date.today())
 
-                # -- Métricas
-                colA, colB, colC = st.columns(3)
-                colA.metric("Valor Total", brl(valor_total))
-                if forma == "Misto":
-                    colB.metric(f"{forma1}", brl(valor1))
-                    colC.metric(f"{forma2}", brl(valor2))
-                elif forma == "Dinheiro":
-                    colB.metric("Valor Recebido", brl(valor_recebido))
-                    colC.metric("Troco", brl(max(valor_recebido - valor_total, 0.0)))
-                elif forma == "Fiado":
-                    colB.metric("Cliente", nome_cliente if nome_cliente else "—")
-                    colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
+                            # -- Métricas
+            colA, colB, colC = st.columns(3)
+            colA.metric("Valor Total", brl(valor_total))
+            if forma == "Misto":
+                colB.metric(f"{forma1}", brl(valor1))
+                colC.metric(f"{forma2}", brl(valor2))
+            elif forma == "Dinheiro":
+                colB.metric("Valor Recebido", brl(valor_recebido))
+                colC.metric("Troco", brl(max(valor_recebido - valor_total, 0.0)))
+            elif forma == "Fiado":
+                colB.metric("Cliente", nome_cliente if nome_cliente else "—")
+                colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
 
-                            st.markdown("---")
+            st.markdown("---")
 
             # -- Botões de ação
             b1, b2, b4 = st.columns([1, 1, 1])
