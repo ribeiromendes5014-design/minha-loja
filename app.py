@@ -1484,8 +1484,6 @@ if not st.session_state["caixa_aberto"]:
             st.session_state["caixa_aberto"] = False
             st.session_state["fechar_caixa"] = False
         
-        
-        
         # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
         tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
