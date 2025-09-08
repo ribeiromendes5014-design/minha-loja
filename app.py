@@ -1436,18 +1436,21 @@ if view == "Vendas":
                 st.markdown("---")
 
                 # -- Botões de ação
-                b1, b2, b4 = st.columns([1, 1, 1])
-                with b1:
-                    if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
-                        finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
-                                        nome_cliente=nome_cliente, data_pagamento=data_pagamento,
-                                        valor_recebido=valor_recebido)
-                                with b2:
-                    if st.button("🆕 Nova Venda", key="btn_nova_venda"):
-                        nova_venda()
-                with b4:
-                    if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
-                        fechar_caixa()
+                            b1, b2, b4 = st.columns([1, 1, 1])
+            with b1:
+                if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
+                    finalizar_venda(
+                        forma, forma1, forma2, valor1, valor2, promocoes,
+                        nome_cliente=nome_cliente, data_pagamento=data_pagamento,
+                        valor_recebido=valor_recebido
+                    )
+            with b2:
+                if st.button("🆕 Nova Venda", key="btn_nova_venda"):
+                    nova_venda()
+            with b4:
+                if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
+                    fechar_caixa()
+
                        else:
                 st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
