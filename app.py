@@ -1299,20 +1299,18 @@ def fechar_caixa():
         # Valor final esperado no caixa
         valor_final_caixa = valor_inicial + faturamento_caixa
 
-        # Dados do fechamento do caixa
         dados_caixa = {
-            "Data": hoje.strftime("%Y-%m-%d"),
-            "Operador": operador,
-            "ValorInicial": valor_inicial,
-            "Dinheiro": total_dinheiro,
-            "PIX": total_pix,
-            "Cartão": total_cartao_bruto,  # valor bruto da venda no cartão
-            "Fiado": total_fiado,
-            "FaturamentoTotalCaixa": faturamento_caixa,  # somente valores que entram no caixa
-            "ValorFinalCaixa": valor_final_caixa,
-            "Status": "Fechado"
-        }
-
+    "Data": hoje.strftime("%Y-%m-%d"),
+    "Operador": operador,
+    "ValorInicial": valor_inicial,
+    "Dinheiro": total_dinheiro,
+    "PIX": total_pix,
+    "Cartão": total_cartao_bruto,
+    "Fiado": total_fiado,
+    "FaturamentoTotal": faturamento_caixa,  # mantém o nome antigo
+    "ValorFinalCaixa": valor_final_caixa,
+    "Status": "Fechado"
+}
         # Salvar no CSV e na sessão
         caixas = norm_caixas(pd.DataFrame())
         caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
