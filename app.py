@@ -1361,6 +1361,7 @@ def fechar_caixa():
 
 
 
+
 # ================= FUNÇÕES AUXILIARES DE VENDAS =================
 # (sua função finalizar_venda e demais continuam iguais...)
     # 🔹 Sub-abas principais (somente 3)
