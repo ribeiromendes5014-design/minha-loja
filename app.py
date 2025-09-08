@@ -1390,7 +1390,9 @@ if "dados_fechamento_caixa" in st.session_state:
     total_cartao_bruto = dados_caixa['Cartão']
     total_fiado = dados_caixa['Fiado']
 
+    # Faturamento total inclui todas as formas
     faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_bruto + total_fiado
+    # Valor final do caixa: somente dinheiro + valor inicial
     valor_final_caixa = valor_inicial + total_dinheiro
 
     st.write(f"💵 Valor Inicial do Caixa: {brl(valor_inicial)}")
