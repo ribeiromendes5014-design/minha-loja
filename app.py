@@ -1249,22 +1249,6 @@ def tela_vendas():
 
     st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
 
-    # ================== CONTEÚDO DAS VENDAS ==================
-    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
-
-    with tab1:
-        st.subheader("🛒 Venda Detalhada")
-        st.write("Aqui vai a lógica da venda detalhada...")
-        if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
-            fechar_caixa()
-
-    with tab2:
-        st.subheader("📊 Últimas Vendas")
-        st.write("Aqui mostra as últimas vendas...")
-
-    with tab3:
-        st.subheader("📄 Recibos de Vendas")
-        st.write("Aqui gera os recibos...")
 
 # ========================================================
 # ROTEAMENTO PRINCIPAL
