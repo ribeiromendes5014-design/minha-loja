@@ -1269,6 +1269,7 @@ if view == "Vendas":
         else:
             st.warning("⚠️ Informe o nome do operador e o valor inicial.")
 
+
     def fechar_caixa():
         if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
             st.session_state["caixa_aberto"] = False
