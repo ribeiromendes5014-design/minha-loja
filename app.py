@@ -1279,8 +1279,8 @@ if view == "Vendas":
         hoje = str(date.today())
         if not caixas.empty and (caixas["Data"] == hoje).any():
             st.warning("⚠️ Já existe um caixa aberto hoje.")
-            return
-                novo = {
+            return 
+        novo = {
             "Data": hoje,
             "Operador": operador,
             "ValorInicial": float(valor_inicial),
