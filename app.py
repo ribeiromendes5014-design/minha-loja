@@ -1442,7 +1442,7 @@ if view == "Vendas":
                         finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                                         nome_cliente=nome_cliente, data_pagamento=data_pagamento,
                                         valor_recebido=valor_recebido)
-                with b2:
+                                with b2:
                     if st.button("🆕 Nova Venda", key="btn_nova_venda"):
                         nova_venda()
                 with b4:
@@ -1451,47 +1451,50 @@ if view == "Vendas":
             else:
                 st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
-   
-    # ================= TAB 2 - ÚLTIMAS VENDAS =================
-    with tab2:
-        st.subheader("📊 Últimas Vendas")
-        if not vendas.empty:
-            ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
-            colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
-                       "Total", "FormaPagamento", "ValorPago1", "ValorPago2"]
-            colunas = [c for c in colunas if c in ult.columns]
-            st.dataframe(ult[colunas], use_container_width=True, key="df_ultimas_vendas")
+        # ================= TAB 2 - ÚLTIMAS VENDAS =================
+        with tab2:
+            st.subheader("📊 Últimas Vendas")
+            if not vendas.empty:
+                ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
+                colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
+                           "Total", "FormaPagamento", "ValorPago1", "ValorPago2"]
+                colunas = [c for c in colunas if c in ult.columns]
+                st.dataframe(ult[colunas], use_container_width=True, key="df_ultimas_vendas")
 
-            ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
+                ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
 
-            colx, coly = st.columns([3, 1])
-            with colx:
-                id_excluir = st.selectbox("Selecione a venda para excluir (devolve estoque)", ids if ids else [0], key="select_excluir_venda")
-            with coly:
-                if st.button("Excluir venda", key="btn_excluir_venda"):
-                    try:
-                        id_excluir_int = int(id_excluir)
-                    except:
-                        id_excluir_int = None
-                    if id_excluir_int and id_excluir_int in ids:
-                        linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
-                        for _, r in linhas.iterrows():
-                            mask = produtos["ID"].astype(str) == str(r["IDProduto"])
-                            if mask.any():
-                                produtos.loc[mask, "Quantidade"] = (
-                                    produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
-                                ).astype(int)
-                        vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
-                        save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
-                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-                        st.session_state["vendas"] = vendas
-                        st.session_state["produtos"] = produtos
-                        st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
-                        st.rerun()
-                    else:
-                        st.warning("Venda não encontrada.")
-        else:
-            st.info("Ainda não há vendas registradas.")
+                colx, coly = st.columns([3, 1])
+                with colx:
+                    id_excluir = st.selectbox(
+                        "Selecione a venda para excluir (devolve estoque)",
+                        ids if ids else [0],
+                        key="select_excluir_venda"
+                    )
+                with coly:
+                    if st.button("Excluir venda", key="btn_excluir_venda"):
+                        try:
+                            id_excluir_int = int(id_excluir)
+                        except:
+                            id_excluir_int = None
+                        if id_excluir_int and id_excluir_int in ids:
+                            linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
+                            for _, r in linhas.iterrows():
+                                mask = produtos["ID"].astype(str) == str(r["IDProduto"])
+                                if mask.any():
+                                    produtos.loc[mask, "Quantidade"] = (
+                                        produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
+                                    ).astype(int)
+                            vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
+                            save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
+                            save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                            st.session_state["vendas"] = vendas
+                            st.session_state["produtos"] = produtos
+                            st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
+                            st.rerun()
+                        else:
+                            st.warning("Venda não encontrada.")
+            else:
+                st.info("Ainda não há vendas registradas.")
 
               # ================= TAB 3 - RECIBOS =================
     with tab3:
