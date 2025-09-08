@@ -1352,34 +1352,27 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     total_pedido = df_pedido["PrecoVista"].multiply(df_pedido["Quantidade"]).sum()
 
     if forma == "Misto" and forma1 and forma2:
-        # Se houver dinheiro, somamos o valor exato dele para o caixa
         df_vendas_misto = pd.DataFrame()
-        if forma1 == "Dinheiro":
-            df_temp = df_pedido.copy()
-            df_temp["FormaPagamento"] = forma1
-            df_temp["Total"] = valor1
-            df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
-        else:
-            df_temp = df_pedido.copy()
-            df_temp["FormaPagamento"] = forma1
-            df_temp["Total"] = valor1
-            df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
-        if forma2 == "Dinheiro":
-            df_temp = df_pedido.copy()
-            df_temp["FormaPagamento"] = forma2
-            df_temp["Total"] = valor2
-            df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
-        else:
-            df_temp = df_pedido.copy()
-            df_temp["FormaPagamento"] = forma2
-            df_temp["Total"] = valor2
-            df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
+        # Sempre salva o valor bruto (sem taxa) no CSV
+        df_temp = df_pedido.copy()
+        df_temp["FormaPagamento"] = forma1
+        df_temp["Total"] = valor1 if forma1 != "Cartão" else valor1 * FATOR_CARTAO
+        df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
+
+        df_temp = df_pedido.copy()
+        df_temp["FormaPagamento"] = forma2
+        df_temp["Total"] = valor2 if forma2 != "Cartão" else valor2 * FATOR_CARTAO
+        df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
         vendas = pd.concat([vendas, df_vendas_misto], ignore_index=True)
     else:
         df_pedido["FormaPagamento"] = forma
-        df_pedido["Total"] = total_pedido
+        # Salvar bruto no cartão também
+        if forma == "Cartão":
+            df_pedido["Total"] = total_pedido  # bruto
+        else:
+            df_pedido["Total"] = total_pedido
         vendas = pd.concat([vendas, df_pedido], ignore_index=True)
 
     save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
