@@ -1398,16 +1398,8 @@ else:
     # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
         tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
     
-    with tab1:
-        # ... (Seu código da aba Venda Detalhada, incluindo os botões) ...
-        # Lembre-se de colocar o st.rerun() no botão que chama fechar_caixa()
-        # if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
-        #     fechar_caixa()
-        #     st.rerun()
       
-    
 
-    
 
         # ================= TAB 1 - VENDA DETALHADA =================
         with tab1:
