@@ -1396,49 +1396,46 @@ else:
     valor_inicial = st.session_state.get("valor_inicial", 0.0)
     st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
 
-    
-    
-    
-    
     # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
-        tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
-        # ================= TAB 1 - VENDA DETALHADA =================
-        with tab1:
-            st.subheader("🛒 Venda Detalhada")
+    # ================= TAB 1 - VENDA DETALHADA =================
+    with tab1:
+        st.subheader("🛒 Venda Detalhada")
 
-            # --- PESQUISA DE PRODUTO ---
-            st.markdown("### 🔍 Pesquisar Produto")
-            sub1, sub2, sub3 = st.tabs(["Por Nome", "Por Código de Barras", "Por Foto"])
+        # --- PESQUISA DE PRODUTO ---
+        st.markdown("### 🔍 Pesquisar Produto")
+        sub1, sub2, sub3 = st.tabs(["Por Nome", "Por Código de Barras", "Por Foto"])
 
-            # --- POR NOME ---
-            with sub1:
-                nome_filtro = st.text_input("Digite o nome do produto", key="nome_filtro_venda")
-                df_sel = produtos.copy()
-                if nome_filtro:
-                    df_sel = df_sel[df_sel["Nome"].astype(str).str.contains(nome_filtro, case=False, na=False)]
+        # --- POR NOME ---
+        with sub1:
+            nome_filtro = st.text_input("Digite o nome do produto", key="nome_filtro_venda")
+            df_sel = produtos.copy()
+            if nome_filtro:
+                df_sel = df_sel[df_sel["Nome"].astype(str).str.contains(nome_filtro, case=False, na=False)]
 
-                if not df_sel.empty:
-                    escolha = st.selectbox(
-                        "Selecione o produto",
-                        (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(),
-                        key="select_nome_venda"
-                    )
-                    qtd_nome = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_nome_venda")
-                    if st.button("Adicionar ao pedido (nome)", key="btn_add_nome_venda"):
-                        pid = escolha.split(" - ")[0].strip()
-                        rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
-                        st.session_state["pedido_atual"].append({
-                            "IDProduto": pid,
-                            "NomeProduto": rowp["Nome"],
-                            "CodigoBarras": str(rowp.get("CodigoBarras", "")),
-                            "Quantidade": int(qtd_nome),
-                            "PrecoVista": float(rowp["PrecoVista"]),
-                        })
-                        st.success("Item adicionado ao pedido.")
-                        st.rerun()
+            if not df_sel.empty:
+                escolha = st.selectbox(
+                    "Selecione o produto",
+                    (df_sel["ID"].astype(str) + " - " + df_sel["Nome"]).tolist(),
+                    key="select_nome_venda"
+                )
+                qtd_nome = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_nome_venda")
+                if st.button("Adicionar ao pedido (nome)", key="btn_add_nome_venda"):
+                    pid = escolha.split(" - ")[0].strip()
+                    rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
+                    st.session_state["pedido_atual"].append({
+                        "IDProduto": pid,
+                        "NomeProduto": rowp["Nome"],
+                        "CodigoBarras": str(rowp.get("CodigoBarras", "")),
+                        "Quantidade": int(qtd_nome),
+                        "PrecoVista": float(rowp["PrecoVista"]),
+                    })
+                    st.success("Item adicionado ao pedido.")
+                    st.rerun()
 
-            # --- POR CÓDIGO DE BARRAS ---
+        # --- POR CÓDIGO DE BARRAS ---
+
             with sub2:
                 codigo = st.text_input("Digite ou escaneie o código de barras", key="codigo_barras_venda")
                 df_sel = produtos.copy()
