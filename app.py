@@ -1309,55 +1309,6 @@ if view == "Vendas":
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
     # ========================================================
-    # FUNÇÃO FINALIZAR VENDA
-    # ========================================================
-    def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
-                        nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
-        global vendas, produtos
-
-        pedido = st.session_state.get("pedido_atual", [])
-        if not pedido:
-            st.warning("⚠️ Nenhum produto no pedido.")
-            return
-
-        # ID da venda
-        novo_id = int(vendas["IDVenda"].max() + 1) if not vendas.empty else 1
-        agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        for item in pedido:
-            vendas.loc[len(vendas)] = {
-                "IDVenda": novo_id,
-                "Data": agora,
-                "IDProduto": item["IDProduto"],
-                "NomeProduto": item["NomeProduto"],
-                "Quantidade": item["Quantidade"],
-                "PrecoUnitario": item["PrecoVista"],
-                "Total": item["Quantidade"] * item["PrecoVista"],
-                "FormaPagamento": forma,
-                "ValorPago1": valor1,
-                "ValorPago2": valor2,
-                "Cliente": nome_cliente if nome_cliente else "",
-                "DataPagamento": str(data_pagamento) if data_pagamento else "",
-            }
-
-            # Atualizar estoque
-            mask = produtos["ID"].astype(str) == str(item["IDProduto"])
-            if mask.any():
-                produtos.loc[mask, "Quantidade"] = (
-                    produtos.loc[mask, "Quantidade"].astype(int) - int(item["Quantidade"])
-                ).astype(int)
-
-        # Salvar CSVs
-        save_csv_github(vendas, ARQ_VENDAS, "Nova venda registrada")
-        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando estoque pós-venda")
-
-        # Limpar pedido atual
-        st.session_state["pedido_atual"] = []
-
-        st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
-        st.rerun()
-
-    # ========================================================
     # ABERTURA DE CAIXA
     # ========================================================
     def abrir_caixa():
@@ -1387,69 +1338,93 @@ if view == "Vendas":
             valor_inicial = st.session_state.get("valor_inicial", 0.0)
             hoje = str(date.today())
 
-            # Filtrar vendas do dia
+            # 🔹 Filtrar vendas do dia
             vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
             vendas_dia = vendas[vendas["Data"].dt.strftime("%Y-%m-%d") == hoje]
 
-            if vendas_dia.empty:
-                st.warning("⚠️ Nenhuma venda encontrada para hoje.")
-                return
-
-            # Totais automáticos
+            # 🔹 Calcular totais por forma de pagamento
+            total_dinheiro = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
             total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
             total_cartao = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
             total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
-            total_misto = vendas_dia[vendas_dia["FormaPagamento"] == "Misto"]["Total"].sum()
+            faturamento_total = total_dinheiro + total_pix + total_cartao + total_fiado
 
-            # Dinheiro informado manualmente
-            dinheiro_final = st.number_input(
-                "💵 Informe o valor de dinheiro em caixa no final do dia",
-                min_value=0.0, step=1.0, key="dinheiro_final"
-            )
+            # 🔹 Montar dados do caixa
+            dados_caixa = {
+                "Data": hoje,
+                "Operador": operador,
+                "ValorInicial": valor_inicial,
+                "FaturamentoTotal": faturamento_total,
+                "Dinheiro": total_dinheiro,
+                "PIX": total_pix,
+                "Cartão": total_cartao,
+                "Fiado": total_fiado,
+                "Status": "Fechado"
+            }
 
-            faturamento_total = dinheiro_final + total_pix + total_cartao + total_fiado + total_misto
+            # 🔹 Atualizar CSV de caixas
+            caixas = norm_caixas(pd.DataFrame())
+            caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
+            save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje}")
 
-            # Resumo
+            # 🔹 Mostrar resumo antes de baixar
             st.subheader("📊 Resumo do Caixa")
-            st.write(f"💵 Dinheiro (informado): {brl(dinheiro_final)}")
+            st.write(f"💵 Dinheiro: {brl(total_dinheiro)}")
             st.write(f"⚡ PIX: {brl(total_pix)}")
             st.write(f"💳 Cartão: {brl(total_cartao)}")
             st.write(f"📒 Fiado: {brl(total_fiado)}")
-            st.write(f"🔀 Misto: {brl(total_misto)}")
-            st.write(f"📦 Total Geral: {brl(faturamento_total)}")
+            st.write(f"📦 Total: {brl(faturamento_total)}")
 
-            if st.button("✅ Confirmar Fechamento de Caixa", key="btn_confirmar_caixa"):
-                dados_caixa = {
-                    "Data": hoje,
-                    "Operador": operador,
-                    "ValorInicial": valor_inicial,
-                    "DinheiroFinal": dinheiro_final,
-                    "PIX": total_pix,
-                    "Cartão": total_cartao,
-                    "Fiado": total_fiado,
-                    "Misto": total_misto,
-                    "FaturamentoTotal": faturamento_total,
-                    "Status": "Fechado"
-                }
+            # 🔹 Gerar PDF
+            caminho_pdf = f"caixa_{hoje}.pdf"
+            gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
+            with open(caminho_pdf, "rb") as f:
+                st.download_button(
+                    label=f"⬇️ Baixar Relatório de Caixa ({hoje})",
+                    data=f,
+                    file_name=caminho_pdf,
+                    mime="application/pdf",
+                    key="download_caixa"
+                )
 
-                caixas = norm_caixas(pd.DataFrame())
-                caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
-                save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje}")
+            # 🔹 Fechar caixa na sessão
+            st.session_state["caixa_aberto"] = False
+            st.success(f"📦 Caixa fechado! Operador: {operador}")
+            st.rerun()
 
-                caminho_pdf = f"caixa_{hoje}.pdf"
-                gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
-                with open(caminho_pdf, "rb") as f:
-                    st.download_button(
-                        label=f"⬇️ Baixar Relatório de Caixa ({hoje})",
-                        data=f,
-                        file_name=caminho_pdf,
-                        mime="application/pdf",
-                        key="download_caixa"
-                    )
+    # ========================================================
+    # FINALIZAR VENDA (correção do bug IDVenda)
+    # ========================================================
+    def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
+                        nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
+        global vendas, produtos
 
-                st.session_state["caixa_aberto"] = False
-                st.success(f"📦 Caixa fechado com sucesso! Operador: {operador}")
-                st.rerun()
+        if not st.session_state.get("pedido_atual"):
+            st.warning("⚠️ Nenhum item no pedido.")
+            return
+
+        # Garante coluna IDVenda como numérica
+        if not vendas.empty and "IDVenda" in vendas.columns:
+            vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
+            novo_id = int(vendas["IDVenda"].max() + 1)
+        else:
+            novo_id = 1
+
+        df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
+        df_pedido["IDVenda"] = novo_id
+        df_pedido["Data"] = str(date.today())
+        df_pedido["FormaPagamento"] = forma
+        df_pedido["ValorPago1"] = valor1
+        df_pedido["ValorPago2"] = valor2
+        df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
+        df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
+        df_pedido["ValorRecebido"] = valor_recebido
+
+        vendas = pd.concat([vendas, df_pedido], ignore_index=True)
+        save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
+
+        st.session_state["pedido_atual"] = []
+        st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
 
     # ========================================================
     # BLOQUEIO DE CAIXA
@@ -1722,6 +1697,7 @@ if view == "Vendas":
 
             else:
                 st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
