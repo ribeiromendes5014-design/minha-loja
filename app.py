@@ -1386,20 +1386,6 @@ if view == "Vendas":
         valor_inicial = st.session_state.get("valor_inicial", 0.0)
         st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
 
-        
-        # =====================================
-# Exemplo de DataFrame de Vendas do Dia
-# (No seu caso já deve vir do banco de dados ou CSV)
-# =====================================
-vendas = pd.DataFrame([
-    {"forma_pagamento": "Dinheiro", "valor": 150},
-    {"forma_pagamento": "Pix", "valor": 200},
-    {"forma_pagamento": "Cartão", "valor": 350},
-    {"forma_pagamento": "Fiado", "valor": 100},
-    {"forma_pagamento": "Dinheiro", "valor": 50},
-    {"forma_pagamento": "Misto Dinheiro", "valor": 70},
-])
-            
         # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
         tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
