@@ -1373,7 +1373,7 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
     st.session_state["pedido_atual"] = []
     st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
-
+    st.rerun()
 
 # 🔹 Lógica de Bloqueio de Caixa (Resumo Último Fechamento)
 if "dados_fechamento_caixa" in st.session_state:
