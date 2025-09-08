@@ -1330,66 +1330,101 @@ def fechar_caixa():
 
 
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
-                    nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
-    global vendas, produtos, clientes  # <- inclui clientes aqui
+else:
+novo_id = 1
 
-    if not st.session_state.get("pedido_atual"):
-        st.warning("⚠️ Nenhum item no pedido.")
-        return
 
-    if not vendas.empty and "IDVenda" in vendas.columns:
-        vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
-        novo_id = int(vendas["IDVenda"].max() + 1)
-    else:
-        novo_id = 1
+df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
+df_pedido["IDVenda"] = novo_id
+df_pedido["Data"] = date.today()
+df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
+df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
+df_pedido["ValorRecebido"] = valor_recebido
+total_pedido = df_pedido["PrecoVista"].multiply(df_pedido["Quantidade"]).sum()
 
-    df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
-    df_pedido["IDVenda"] = novo_id
-    df_pedido["Data"] = date.today()
-    df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
-    df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
-    df_pedido["ValorRecebido"] = valor_recebido
-    total_pedido = df_pedido["PrecoVista"].multiply(df_pedido["Quantidade"]).sum()
 
-    if forma == "Misto" and forma1 and forma2:
-        df_vendas_misto = pd.DataFrame()
+if forma == "Misto" and forma1 and forma2:
+df_vendas_misto = pd.DataFrame()
 
-        # Sempre salva o valor bruto (sem taxa) no CSV
-        df_temp = df_pedido.copy()
-        df_temp["FormaPagamento"] = forma1
-        df_temp["Total"] = valor1 if forma1 != "Cartão" else valor1 * FATOR_CARTAO
-        df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
-        df_temp = df_pedido.copy()
-        df_temp["FormaPagamento"] = forma2
-        df_temp["Total"] = valor2 if forma2 != "Cartão" else valor2 * FATOR_CARTAO
-        df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
+df_temp = df_pedido.copy()
+df_temp["FormaPagamento"] = forma1
+df_temp["Total"] = valor1 if forma1 != "Cartão" else valor1 * FATOR_CARTAO
+df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
-        vendas = pd.concat([vendas, df_vendas_misto], ignore_index=True)
-    else:
-        df_pedido["FormaPagamento"] = forma
-        # Salvar bruto no cartão também
-        if forma == "Cartão":
-            df_pedido["Total"] = total_pedido  # bruto
-        else:
-            df_pedido["Total"] = total_pedido
-        vendas = pd.concat([vendas, df_pedido], ignore_index=True)
 
-        # 🔹 Se a venda for no Fiado, registrar também em clientes.csv
-        if forma == "Fiado":
-            novo_cliente = {
-                "ID": prox_id(clientes, "ID"),
-                "Cliente": nome_cliente.strip() if nome_cliente else "Cliente não informado",
-                "Produto": ", ".join(df_pedido["NomeProduto"].unique()),
-                "CodigoBarras": "",
-                "Valor": float(total_pedido),
-                "DataPagamento": str(data_pagamento) if data_pagamento else "",
-                "Status": "Aberto",
-                "FormaPagamento": "Fiado"
-            }
-            clientes = pd.concat([clientes, pd.DataFrame([novo_cliente])], ignore_index=True)
-            st.session_state["clientes"] = clientes
-            save_csv_github(clientes, ARQ_CLIENTES, "Novo fiado adicionado")
+df_temp = df_pedido.copy()
+df_temp["FormaPagamento"] = forma2
+df_temp["Total"] = valor2 if forma2 != "Cartão" else valor2 * FATOR_CARTAO
+df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
+
+
+vendas = pd.concat([vendas, df_vendas_misto], ignore_index=True)
+else:
+df_pedido["FormaPagamento"] = forma
+if forma == "Cartão":
+df_pedido["Total"] = total_pedido
+else:
+df_pedido["Total"] = total_pedido
+vendas = pd.concat([vendas, df_pedido], ignore_index=True)
+
+
+if forma == "Fiado":
+novo_cliente = {
+"ID": prox_id(clientes, "ID"),
+"Cliente": nome_cliente.strip() if nome_cliente else "Cliente não informado",
+"Produto": ", ".join(df_pedido["NomeProduto"].unique()),
+"CodigoBarras": "",
+"Valor": float(total_pedido),
+"DataPagamento": str(data_pagamento) if data_pagamento else "",
+"Status": "Aberto",
+"FormaPagamento": "Fiado"
+}
+clientes = pd.concat([clientes, pd.DataFrame([novo_cliente])], ignore_index=True)
+st.session_state["clientes"] = clientes
+save_csv_github(clientes, ARQ_CLIENTES, "Novo fiado adicionado")
+
+
+# 🔹 Após finalizar venda, limpa pedido e esconde pagamento
+st.session_state["pedido_atual"] = []
+st.session_state["mostrar_pagamento"] = False
+st.rerun()
+
+
+
+
+# ========================================================
+# CONTROLE DE VISIBILIDADE DA INTERFACE
+# ========================================================
+if "mostrar_pagamento" not in st.session_state:
+st.session_state["mostrar_pagamento"] = False
+
+
+st.subheader("🛒 Adicionar Produtos")
+
+
+# ... código de adicionar produto ...
+# Quando adicionar produto:
+# st.session_state["pedido_atual"].append(novo_item)
+# st.session_state["mostrar_pagamento"] = True
+# st.rerun()
+
+
+# ================= MOSTRAR PAGAMENTO SOMENTE SE FLAG ATIVA =================
+if st.session_state.get("mostrar_pagamento", False):
+st.markdown("### Forma de Pagamento")
+forma = st.radio(
+"Selecione a forma de pagamento",
+["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
+horizontal=True,
+key="radio_forma_pagamento_venda"
+)
+
+
+if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
+finalizar_venda(forma, None, None, 0, 0, [])
+else:
+st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
     # ========================================================
     # 🔹 Depois de finalizar a venda:
