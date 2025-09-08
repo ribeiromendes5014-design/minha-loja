@@ -1236,57 +1236,56 @@ if view == "Vendas":
         except Exception as e:
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
-    # ================= CONTROLE DE CAIXA =================
-    if "caixa_aberto" not in st.session_state:
-        st.session_state["caixa_aberto"] = False
-    if "operador" not in st.session_state:
-        st.session_state["operador"] = None
-    if "caixa_inicio" not in st.session_state:
-        st.session_state["caixa_inicio"] = 0.0
-    if "caixa_fechado" not in st.session_state:
-        st.session_state["caixa_fechado"] = []
+    # 🔹 Controle do Caixa
+st.subheader("💵 Controle de Caixa")
 
-    st.subheader("💵 Controle de Caixa")
+if not st.session_state["caixa_aberto"]:
+    with st.form("abrir_caixa"):
+        operador = st.text_input("👤 Nome do Operador")
+        valor_inicio = st.number_input("💰 Valor Inicial do Caixa", min_value=0.0, step=1.0)
+        abrir = st.form_submit_button("✅ Abrir Caixa")
 
-    if not st.session_state["caixa_aberto"]:
-        with st.form("abrir_caixa"):
-            operador = st.text_input("👤 Nome do Operador")
-            valor_inicio = st.number_input("💰 Valor Inicial do Caixa", min_value=0.0, step=1.0)
-            abrir = st.form_submit_button("✅ Abrir Caixa")
+        if abrir:
+            if operador.strip() == "" or valor_inicio <= 0:
+                st.warning("Informe nome do operador e valor inicial válido.")
+            else:
+                st.session_state["operador"] = operador
+                st.session_state["caixa_inicio"] = valor_inicio
+                st.session_state["caixa_aberto"] = True
+                st.success(f"Caixa aberto por {operador} com R$ {valor_inicio:.2f}")
+else:
+    st.info(f"📌 Caixa aberto por **{st.session_state['operador']}** | Valor Inicial: R$ {st.session_state['caixa_inicio']:.2f}")
 
-            if abrir:
-                if operador.strip() == "" or valor_inicio <= 0:
-                    st.warning("Informe nome do operador e valor inicial válido.")
-                else:
-                    st.session_state["operador"] = operador
-                    st.session_state["caixa_inicio"] = valor_inicio
-                    st.session_state["caixa_aberto"] = True
-                    st.success(f"Caixa aberto por {operador} com R$ {valor_inicio:.2f}")
-                    st.rerun()
-    else:
-        st.info(f"📌 Caixa aberto por **{st.session_state['operador']}** | Valor Inicial: R$ {st.session_state['caixa_inicio']:.2f}")
+    with st.form("fechar_caixa"):
+        valor_final = st.number_input("💰 Valor Final em Dinheiro", min_value=0.0, step=1.0)
+        confirmar_fechamento = st.form_submit_button("🔒 Fechar Caixa")
 
-        if st.button("🔒 Fechar Caixa"):
-            with st.form("fechar_caixa"):
-                valor_final = st.number_input("💰 Valor Final em Dinheiro", min_value=0.0, step=1.0)
-                confirmar_fechamento = st.form_submit_button("✅ Confirmar Fechamento")
+        if confirmar_fechamento:
+            diferenca = valor_final - st.session_state["caixa_inicio"]
+            fechamento = {
+                "operador": st.session_state["operador"],
+                "inicio": st.session_state["caixa_inicio"],
+                "final": valor_final,
+                "diferenca": diferenca,
+                "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            }
+            st.session_state["caixa_fechado"].append(fechamento)
 
-                if confirmar_fechamento:
-                    diferenca = valor_final - st.session_state["caixa_inicio"]
-                    fechamento = {
-                        "operador": st.session_state["operador"],
-                        "inicio": st.session_state["caixa_inicio"],
-                        "final": valor_final,
-                        "diferenca": diferenca,
-                        "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                    }
-                    st.session_state["caixa_fechado"].append(fechamento)
+            # Reseta caixa
+            st.session_state["caixa_aberto"] = False
+            st.session_state["operador"] = None
+            st.session_state["caixa_inicio"] = 0.0
 
-                    st.session_state["caixa_aberto"] = False
-                    st.session_state["operador"] = None
-                    st.session_state["caixa_inicio"] = 0.0
+            st.success("✅ Caixa fechado com sucesso! Aba de vendas bloqueada.")
+            st.rerun()   # 🔹 força atualização da tela para bloquear as vendas
 
-                    st.success("✅ Caixa fechado com sucesso! Aba de vendas bloqueada.")
+# 🔹 Área de Vendas só libera se o caixa estiver aberto
+if st.session_state["caixa_aberto"]:
+    st.subheader("🛒 Área de Vendas Liberada")
+    # 👉 aqui continua seu fluxo de vendas (produtos, finalizar, etc.)
+else:
+    st.warning("⚠️ Caixa fechado. Abra o caixa para habilitar as vendas.")
+
                     st.rerun()
 
     # 🔹 BLOQUEIO DA ABA DE VENDAS
