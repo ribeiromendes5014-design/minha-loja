@@ -1345,8 +1345,13 @@ if view == "Vendas":
             caixas.loc[idx, "Status"] = "Fechado"   # 🔒 garante fechamento
 
             caixas = norm_caixas(caixas)  # ✅ normaliza antes de salvar
-            st.session_state["caixas"] = caixas
-            save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
+            st.session_state["caixas"] = caixas.copy()
+
+            # 🔒 garante sobrescrita no CSV (não acumula registros duplicados)
+            save_csv_github(st.session_state["caixas"], ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
+
+            
+            
 
             st.success(f"📦 Caixa do dia {hoje_data} fechado! Diferença em dinheiro: {brl(diff)}")
             st.rerun()
