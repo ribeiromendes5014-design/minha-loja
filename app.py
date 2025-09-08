@@ -1277,28 +1277,6 @@ def fechar_caixa():
         st.rerun()
 
 
-# ========================================================
-# BLOQUEIO: MOSTRAR ABRIR CAIXA OU VENDAS
-# ========================================================
-if not st.session_state.get("caixa_aberto", False):
-    st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
-    abrir_caixa()
-else:
-    operador = st.session_state.get("operador", "—")
-    valor_inicial = st.session_state.get("valor_inicial", 0.0)
-    st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
-
-
-    # ========================================================
-    # 🔒 BLOQUEIO: SÓ MOSTRA AS ABAS DE VENDA SE CAIXA ESTIVER ABERTO
-    # ========================================================
-    if not st.session_state.get("caixa_aberto", False):
-        st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
-        abrir_caixa()
-    else:
-        operador = st.session_state.get("operador", "—")
-        valor_inicial = st.session_state.get("valor_inicial", 0.0)
-        st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
 
 
     # ================= FUNÇÕES AUXILIARES DE VENDAS =================
