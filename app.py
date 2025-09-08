@@ -1448,7 +1448,7 @@ if view == "Vendas":
                 with b4:
                     if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
                         fechar_caixa()
-            else:
+                       else:
                 st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
         # ================= TAB 2 - ÚLTIMAS VENDAS =================
@@ -1496,7 +1496,7 @@ if view == "Vendas":
             else:
                 st.info("Ainda não há vendas registradas.")
 
-              # ================= TAB 3 - RECIBOS =================
+        # ================= TAB 3 - RECIBOS =================
     with tab3:
         import os
         from PIL import Image, UnidentifiedImageError
