@@ -1281,28 +1281,28 @@ if view == "Vendas":
             st.warning("⚠️ Já existe um caixa aberto hoje.")
             return 
         novo = {
-            "Data": hoje,
-            "Operador": operador,
-            "ValorInicial": float(valor_inicial),
-            "FaturamentoTotal": 0.0,
-            "Dinheiro": 0.0,
-            "PIX": 0.0,
-            "Cartão": 0.0,
-            "Fiado": 0.0,
-            "RealDinheiro": 0.0,
-            "RealPIX": 0.0,
-            "RealCartao": 0.0,
-            "RealFiado": 0.0,
-            "Diferenca": 0.0,
-            "Status": "Aberto"
-        }
-        caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
-        save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
-        st.session_state["caixas"] = caixas
-        st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
+                    "Data": hoje,
+        "Operador": operador,
+        "ValorInicial": float(valor_inicial),
+        "FaturamentoTotal": 0.0,
+        "Dinheiro": 0.0,
+        "PIX": 0.0,
+        "Cartão": 0.0,
+        "Fiado": 0.0,
+        "RealDinheiro": 0.0,
+        "RealPIX": 0.0,
+        "RealCartao": 0.0,
+        "RealFiado": 0.0,
+        "Diferenca": 0.0,
+        "Status": "Aberto"
+    }
+    caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
+    save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
+    st.session_state["caixas"] = caixas
+    st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
 
 
-    def fechar_caixa():
+def fechar_caixa():
     caixas = norm_caixas(pd.DataFrame())
     hoje_data = str(date.today())
     if caixas.empty or not (caixas["Data"] == hoje_data).any():
@@ -1356,9 +1356,8 @@ if view == "Vendas":
 
 
 
-    # ================= FUNÇÕES AUXILIARES DE VENDAS =================
-    # (sua função finalizar_venda e demais continuam iguais...)
-
+# ================= FUNÇÕES AUXILIARES DE VENDAS =================
+# (sua função finalizar_venda e demais continuam iguais...)
     # 🔹 Sub-abas principais (somente 3)
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
