@@ -1280,6 +1280,58 @@ def fechar_caixa():
         # Remove o st.rerun() daqui, ele será chamado no botão
         # st.rerun()
 
+
+# ========================================================
+# BLOQUEIO DE CAIXA
+# ========================================================
+# Primeiro, verifique e mostre o resumo do último fechamento, se existir
+if "dados_fechamento_caixa" in st.session_state:
+    st.subheader("📊 Resumo do Último Fechamento de Caixa")
+    dados_caixa = st.session_state.pop("dados_fechamento_caixa")
+    vendas_dia = st.session_state.pop("vendas_dia_fechamento")
+    
+    st.write(f"💵 Dinheiro: {brl(dados_caixa['Dinheiro'])}")
+    st.write(f"⚡ PIX: {brl(dados_caixa['PIX'])}")
+    st.write(f"💳 Cartão: {brl(dados_caixa['Cartão'])}")
+    st.write(f"📒 Fiado: {brl(dados_caixa['Fiado'])}")
+    st.write(f"📦 Total: {brl(dados_caixa['FaturamentoTotal'])}")
+
+    caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
+    gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
+    with open(caminho_pdf, "rb") as f:
+        st.download_button(
+            label=f"⬇️ Baixar Relatório de Caixa ({dados_caixa['Data']})",
+            data=f,
+            file_name=caminho_pdf,
+            mime="application/pdf",
+            key="download_caixa"
+        )
+    st.write("---")
+
+# Agora, continue com a lógica de abertura/fechamento
+if not st.session_state.get("caixa_aberto", False):
+    st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
+    abrir_caixa()
+else:
+    operador = st.session_state.get("operador", "—")
+    valor_inicial = st.session_state.get("valor_inicial", 0.0)
+    st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
+
+    # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
+    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+    
+    with tab1:
+        # ... (Seu código da aba Venda Detalhada, incluindo os botões) ...
+        # Lembre-se de colocar o st.rerun() no botão que chama fechar_caixa()
+        # if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
+        #     fechar_caixa()
+        #     st.rerun()
+        # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
+        tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+
+
+
+
 # =====================================
 # VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
 # =====================================
