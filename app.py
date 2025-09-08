@@ -1331,7 +1331,7 @@ def fechar_caixa():
 
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
-    global vendas, produtos
+    global vendas, produtos, clientes   # 🔹 inclui clientes aqui
 
     if not st.session_state.get("pedido_atual"):
         st.warning("⚠️ Nenhum item no pedido.")
@@ -1354,26 +1354,40 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     if forma == "Misto" and forma1 and forma2:
         df_vendas_misto = pd.DataFrame()
 
-        # Sempre salva o valor bruto (sem taxa) no CSV
         df_temp = df_pedido.copy()
         df_temp["FormaPagamento"] = forma1
-        df_temp["Total"] = valor1 if forma1 != "Cartão" else valor1 * FATOR_CARTAO
+        df_temp["Total"] = valor1
         df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
         df_temp = df_pedido.copy()
         df_temp["FormaPagamento"] = forma2
-        df_temp["Total"] = valor2 if forma2 != "Cartão" else valor2 * FATOR_CARTAO
+        df_temp["Total"] = valor2
         df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
         vendas = pd.concat([vendas, df_vendas_misto], ignore_index=True)
     else:
         df_pedido["FormaPagamento"] = forma
-        # Salvar bruto no cartão também
-        if forma == "Cartão":
-            df_pedido["Total"] = total_pedido  # bruto
-        else:
-            df_pedido["Total"] = total_pedido
+        df_pedido["Total"] = total_pedido
         vendas = pd.concat([vendas, df_pedido], ignore_index=True)
+
+    # 🔹 Se for FIADO, registrar também no CSV de clientes
+    if forma == "Fiado" and nome_cliente:
+        novos_registros = []
+        for _, row in df_pedido.iterrows():
+            novo_cliente = {
+                "ID": prox_id(clientes, "ID"),
+                "Cliente": nome_cliente,
+                "Produto": row["NomeProduto"],
+                "CodigoBarras": row.get("CodigoBarras", ""),
+                "Valor": float(row["PrecoVista"]) * int(row["Quantidade"]),
+                "DataPagamento": str(data_pagamento) if data_pagamento else "",
+                "Status": "Aberto",
+                "FormaPagamento": "Fiado",
+            }
+            novos_registros.append(novo_cliente)
+
+        clientes = pd.concat([clientes, pd.DataFrame(novos_registros)], ignore_index=True)
+        save_csv_github(clientes, ARQ_CLIENTES, "Novo fiado adicionado")
 
     save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
     st.session_state["pedido_atual"] = []
