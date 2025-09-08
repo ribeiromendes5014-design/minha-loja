@@ -1534,7 +1534,9 @@ if view == "Vendas":
 else:  
     st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
-# -- Botão de fechar caixa (fora do bloco 'if/else' acima) --
+ with b3:
+
+     # -- Botão de fechar caixa (fora do bloco 'if/else' acima) --
 st.markdown("---")
 if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
     fechar_caixa()
