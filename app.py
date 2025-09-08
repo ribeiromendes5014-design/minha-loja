@@ -1322,39 +1322,40 @@ def fechar_caixa():
         st.rerun()
 
 
+ # ========================================================
+# FUNÇÃO FINALIZAR VENDA
 # ========================================================
-    # FUNÇÃO FINALIZAR VENDA
-    # ========================================================
-    def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
-                        nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
-        global vendas, produtos
+def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
+                    nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
+    global vendas, produtos
 
-        if not st.session_state.get("pedido_atual"):
-            st.warning("⚠️ Nenhum item no pedido.")
-            return
+    if not st.session_state.get("pedido_atual"):
+        st.warning("⚠️ Nenhum item no pedido.")
+        return
 
-        # Garante coluna IDVenda como numérica
-        if not vendas.empty and "IDVenda" in vendas.columns:
-            vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
-            novo_id = int(vendas["IDVenda"].max() + 1)
-        else:
-            novo_id = 1
+    # Garante coluna IDVenda como numérica
+    if not vendas.empty and "IDVenda" in vendas.columns:
+        vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
+        novo_id = int(vendas["IDVenda"].max() + 1)
+    else:
+        novo_id = 1
 
-        df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
-        df_pedido["IDVenda"] = novo_id
-        df_pedido["Data"] = str(date.today())
-        df_pedido["FormaPagamento"] = forma
-        df_pedido["ValorPago1"] = valor1
-        df_pedido["ValorPago2"] = valor2
-        df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
-        df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
-        df_pedido["ValorRecebido"] = valor_recebido
+    df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
+    df_pedido["IDVenda"] = novo_id
+    df_pedido["Data"] = str(date.today())
+    df_pedido["FormaPagamento"] = forma
+    df_pedido["ValorPago1"] = valor1
+    df_pedido["ValorPago2"] = valor2
+    df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
+    df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
+    df_pedido["ValorRecebido"] = valor_recebido
 
-        vendas = pd.concat([vendas, df_pedido], ignore_index=True)
-        save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
+    vendas = pd.concat([vendas, df_pedido], ignore_index=True)
+    save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
 
-        st.session_state["pedido_atual"] = []
-        st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
+    st.session_state["pedido_atual"] = []
+    st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
+
 
 
 
