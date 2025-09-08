@@ -1306,49 +1306,49 @@ if view == "Vendas":
         st.rerun()
 
     def fechar_caixa():
-        caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
-        hoje_data = str(date.today())
-        if caixas.empty or not (caixas["Data"] == hoje_data).any():
-            st.warning("⚠️ Nenhum caixa aberto hoje.")
-            return
-        idx = caixas["Data"] == hoje_data
+    caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
+    hoje_data = str(date.today())
+    if caixas.empty or not (caixas["Data"] == hoje_data).any():
+        st.warning("⚠️ Nenhum caixa aberto hoje.")
+        return
+    idx = caixas["Data"] == hoje_data
 
-        st.subheader("📦 Fechamento de Caixa")
-        st.info("Informe o valor real contado em dinheiro:")
+    st.subheader("📦 Fechamento de Caixa")
+    st.info("Informe o valor real contado em dinheiro:")
 
-        real_din = st.number_input("💵 Dinheiro real", min_value=0.0, step=1.0, key="real_din")
+    real_din = st.number_input("💵 Dinheiro real", min_value=0.0, step=1.0, key="real_din")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            confirmar = st.button("✅ Confirmar Fechamento")
-        with col2:
-            cancelar = st.button("❌ Cancelar e Voltar")
+    col1, col2 = st.columns(2)
+    with col1:
+        confirmar = st.button("✅ Confirmar Fechamento")
+    with col2:
+        cancelar = st.button("❌ Cancelar e Voltar")
 
-        if confirmar:
-            esperado_din = caixas.loc[idx, "Dinheiro"].values[0] + caixas.loc[idx, "ValorInicial"].values[0]
-            esperado_pix = caixas.loc[idx, "PIX"].values[0]
-            esperado_cart = caixas.loc[idx, "Cartão"].values[0]
-            esperado_fiado = caixas.loc[idx, "Fiado"].values[0]
+    if confirmar:
+        esperado_din = caixas.loc[idx, "Dinheiro"].values[0] + caixas.loc[idx, "ValorInicial"].values[0]
+        esperado_pix = caixas.loc[idx, "PIX"].values[0]
+        esperado_cart = caixas.loc[idx, "Cartão"].values[0]
+        esperado_fiado = caixas.loc[idx, "Fiado"].values[0]
 
-            diff = real_din - esperado_din
+        diff = real_din - esperado_din
 
-            caixas.loc[idx, "RealDinheiro"] = real_din
-            caixas.loc[idx, "RealPIX"] = esperado_pix
-            caixas.loc[idx, "RealCartao"] = esperado_cart
-            caixas.loc[idx, "RealFiado"] = esperado_fiado
-            caixas.loc[idx, "Diferenca"] = diff
-            caixas.loc[idx, "Status"] = "Fechado"
+        caixas.loc[idx, "RealDinheiro"] = real_din
+        caixas.loc[idx, "RealPIX"] = esperado_pix
+        caixas.loc[idx, "RealCartao"] = esperado_cart
+        caixas.loc[idx, "RealFiado"] = esperado_fiado
+        caixas.loc[idx, "Diferenca"] = diff
+        caixas.loc[idx, "Status"] = "Fechado"   # 🔒 garante fechamento
 
-            # 🔹 Atualiza estado e salva
-            st.session_state["caixas"] = caixas
-            save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
+        st.session_state["caixas"] = caixas
+        save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
 
-            st.success(f"📦 Caixa do dia {hoje_data} fechado! Diferença em dinheiro: {brl(diff)}")
-            st.rerun()
+        st.success(f"📦 Caixa do dia {hoje_data} fechado! Diferença em dinheiro: {brl(diff)}")
+        st.rerun()
 
-        if cancelar:
-            st.warning("❌ Fechamento cancelado. O caixa continua aberto.")
-            st.stop()
+    if cancelar:
+        st.warning("❌ Fechamento cancelado. O caixa continua aberto.")
+        st.stop()
+
 
     # ================= FUNÇÕES AUXILIARES DE VENDAS =================
     # 🔹 Bloqueia vendas se não houver caixa aberto
