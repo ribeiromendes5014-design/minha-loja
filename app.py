@@ -1245,6 +1245,7 @@ def enviar_whatsapp(destinatario, mensagem):
     except Exception as e:
         st.error(f"Erro ao enviar WhatsApp: {e}")
 
+
 def abrir_caixa():
     with st.form("abrir_caixa_form"):
         st.subheader("🟢 Abrir Caixa")
@@ -1260,6 +1261,7 @@ def abrir_caixa():
                 st.session_state["caixa_aberto"] = True
                 st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
                 st.rerun()
+
 
 def fechar_caixa():
     if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
@@ -1349,7 +1351,8 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     st.session_state["pedido_atual"] = []
     st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
 
-# 🔹 Lógica de Bloqueio de Caixa
+
+# 🔹 Lógica de Bloqueio de Caixa (Resumo Último Fechamento)
 if "dados_fechamento_caixa" in st.session_state:
     st.subheader("📊 Resumo do Último Fechamento de Caixa")
     dados_caixa = st.session_state.pop("dados_fechamento_caixa")
@@ -1380,17 +1383,19 @@ if "dados_fechamento_caixa" in st.session_state:
         )
     st.write("---")
 
-# 🔹 Bloqueio de vendas se caixa não estiver aberto
+
+# 🔹 Controle de fluxo: se caixa aberto ou não
 if not st.session_state.get("caixa_aberto", False):
     st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
     abrir_caixa()
-    else:
-        operador = st.session_state.get("operador", "—")
-        valor_inicial = st.session_state.get("valor_inicial", 0.0)
-        st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
+else:
+    operador = st.session_state.get("operador", "—")
+    valor_inicial = st.session_state.get("valor_inicial", 0.0)
+    st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
 
-        # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
-        tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+    # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
+    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+
 
         # ================= TAB 1 - VENDA DETALHADA =================
         with tab1:
