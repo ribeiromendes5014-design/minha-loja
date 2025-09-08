@@ -12,118 +12,6 @@ import pandas as pd
 from datetime import datetime
 import os
 
-# =====================================
-# Exemplo de DataFrame de Vendas do Dia
-# (No seu caso já deve vir do banco de dados ou CSV)
-# =====================================
-vendas = pd.DataFrame([
-    {"forma_pagamento": "Dinheiro", "valor": 150},
-    {"forma_pagamento": "Pix", "valor": 200},
-    {"forma_pagamento": "Cartão", "valor": 350},
-    {"forma_pagamento": "Fiado", "valor": 100},
-    {"forma_pagamento": "Dinheiro", "valor": 50},
-    {"forma_pagamento": "Misto Dinheiro", "valor": 70},
-])
-
-# =====================================
-# Inicialização do estado da sessão
-# =====================================
-if "caixa_aberto" not in st.session_state:
-    st.session_state["caixa_aberto"] = False
-if "valor_inicial" not in st.session_state:
-    st.session_state["valor_inicial"] = 0.0
-if "operador" not in st.session_state:
-    st.session_state["operador"] = ""
-
-# =====================================
-# Abrir Caixa
-# =====================================
-if not st.session_state["caixa_aberto"]:
-    st.header("📂 Abertura de Caixa")
-
-    operador = st.text_input("👤 Nome do operador")
-    valor_inicial = st.number_input("💵 Valor inicial de caixa", min_value=0.0, step=0.01)
-
-    if st.button("Abrir Caixa"):
-        if operador.strip() == "" or valor_inicial <= 0:
-            st.warning("Preencha o nome do operador e o valor inicial.")
-        else:
-            st.session_state["caixa_aberto"] = True
-            st.session_state["operador"] = operador
-            st.session_state["valor_inicial"] = valor_inicial
-            st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
-
-# =====================================
-# Caixa Aberto → Mostrar Opções de Venda + Fechar
-# =====================================
-else:
-    st.header(f"🛒 Caixa Aberto - Operador: {st.session_state['operador']}")
-    st.info("⚡ Aqui ficariam as telas de vendas do seu sistema")
-
-    # 🔹 Botão para fechar caixa
-    if st.button("🔒 Fechar Caixa"):
-        st.session_state["fechar_caixa"] = True
-
-    # =====================================
-    # Fechamento
-    # =====================================
-    if st.session_state.get("fechar_caixa", False):
-        st.subheader("🔐 Fechamento de Caixa")
-
-        # Pergunta valor final (dinheiro físico contado)
-        valor_final = st.number_input("💰 Valor final em dinheiro físico (contado)", min_value=0.0, step=0.01)
-
-        if st.button("Confirmar Fechamento"):
-            # Totais automáticos
-            resumo = vendas.groupby("forma_pagamento")["valor"].sum().to_dict()
-
-            total_dinheiro = resumo.get("Dinheiro", 0) + resumo.get("Misto Dinheiro", 0)
-            total_pix = resumo.get("Pix", 0)
-            total_cartao = resumo.get("Cartão", 0)
-            total_fiado = resumo.get("Fiado", 0)
-            total_misto = resumo.get("Misto", 0)  # caso exista registro separado
-
-            total_vendas = sum(resumo.values())
-
-            # Registro do fechamento
-            fechamento = {
-                "DataHora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Operador": st.session_state["operador"],
-                "ValorInicial": st.session_state["valor_inicial"],
-                "ValorFinal": valor_final,
-                "Dinheiro": total_dinheiro,
-                "Pix": total_pix,
-                "Cartão": total_cartao,
-                "Fiado": total_fiado,
-                "Misto": total_misto,
-                "TotalVendas": total_vendas,
-                "Diferenca": (total_dinheiro + st.session_state["valor_inicial"]) - valor_final
-            }
-
-            # Salvar CSV
-            filename = "fechamentos.csv"
-            if os.path.exists(filename):
-                df = pd.read_csv(filename)
-                df = pd.concat([df, pd.DataFrame([fechamento])], ignore_index=True)
-            else:
-                df = pd.DataFrame([fechamento])
-            df.to_csv(filename, index=False)
-
-            # Mostrar relatório
-            st.success("✅ Fechamento registrado com sucesso!")
-
-            st.subheader("📊 Relatório de Fechamento")
-            st.table(pd.DataFrame([fechamento]).T.rename(columns={0: "Valor"}))
-
-            # Reset caixa
-            st.session_state["caixa_aberto"] = False
-            st.session_state["fechar_caixa"] = False
-
-
-
-
-
-
 
 
 
@@ -1427,90 +1315,112 @@ if view == "Vendas":
         except Exception as e:
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
-    # ========================================================
-    # ABERTURA DE CAIXA
-    # ========================================================
-    def abrir_caixa():
-        with st.form("abrir_caixa_form"):
-            st.subheader("🟢 Abrir Caixa")
+    # =====================================
+# Exemplo de DataFrame de Vendas do Dia
+# (No seu caso já deve vir do banco de dados ou CSV)
+# =====================================
+vendas = pd.DataFrame([
+    {"forma_pagamento": "Dinheiro", "valor": 150},
+    {"forma_pagamento": "Pix", "valor": 200},
+    {"forma_pagamento": "Cartão", "valor": 350},
+    {"forma_pagamento": "Fiado", "valor": 100},
+    {"forma_pagamento": "Dinheiro", "valor": 50},
+    {"forma_pagamento": "Misto Dinheiro", "valor": 70},
+])
 
-            operador = st.text_input("👤 Nome do Operador", key="input_operador")
-            valor_inicial = st.number_input("💵 Valor Inicial do Caixa", min_value=0.0, step=1.0, key="input_valor_inicial")
+# =====================================
+# Inicialização do estado da sessão
+# =====================================
+if "caixa_aberto" not in st.session_state:
+    st.session_state["caixa_aberto"] = False
+if "valor_inicial" not in st.session_state:
+    st.session_state["valor_inicial"] = 0.0
+if "operador" not in st.session_state:
+    st.session_state["operador"] = ""
 
-            submitted = st.form_submit_button("🚀 Abrir Caixa")
-            if submitted:
-                if not operador:
-                    st.warning("⚠️ Informe o nome do operador para abrir o caixa.")
-                else:
-                    st.session_state["operador"] = operador
-                    st.session_state["valor_inicial"] = valor_inicial
-                    st.session_state["caixa_aberto"] = True
-                    st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
-                    st.rerun()
+# =====================================
+# Abrir Caixa
+# =====================================
+if not st.session_state["caixa_aberto"]:
+    st.header("📂 Abertura de Caixa")
 
-    # ========================================================
-    # FECHAMENTO DE CAIXA
-    # ========================================================
-    def fechar_caixa():
-        if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
-            operador = st.session_state.get("operador", "—")
-            valor_inicial = st.session_state.get("valor_inicial", 0.0)
-            hoje = str(date.today())
+    operador = st.text_input("👤 Nome do operador")
+    valor_inicial = st.number_input("💵 Valor inicial de caixa", min_value=0.0, step=0.01)
 
-            # 🔹 Filtrar vendas do dia
-            vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
-            vendas_dia = vendas[vendas["Data"].dt.strftime("%Y-%m-%d") == hoje]
+    if st.button("Abrir Caixa"):
+        if operador.strip() == "" or valor_inicial <= 0:
+            st.warning("Preencha o nome do operador e o valor inicial.")
+        else:
+            st.session_state["caixa_aberto"] = True
+            st.session_state["operador"] = operador
+            st.session_state["valor_inicial"] = valor_inicial
+            st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
 
-            # 🔹 Calcular totais por forma de pagamento
-            total_dinheiro = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
-            total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
-            total_cartao = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
-            total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
-            faturamento_total = total_dinheiro + total_pix + total_cartao + total_fiado
+# =====================================
+# Caixa Aberto → Mostrar Opções de Venda + Fechar
+# =====================================
+else:
+    st.header(f"🛒 Caixa Aberto - Operador: {st.session_state['operador']}")
+    st.info("⚡ Aqui ficariam as telas de vendas do seu sistema")
 
-            # 🔹 Montar dados do caixa
-            dados_caixa = {
-                "Data": hoje,
-                "Operador": operador,
-                "ValorInicial": valor_inicial,
-                "FaturamentoTotal": faturamento_total,
+    # 🔹 Botão para fechar caixa
+    if st.button("🔒 Fechar Caixa"):
+        st.session_state["fechar_caixa"] = True
+
+    # =====================================
+    # Fechamento
+    # =====================================
+    if st.session_state.get("fechar_caixa", False):
+        st.subheader("🔐 Fechamento de Caixa")
+
+        # Pergunta valor final (dinheiro físico contado)
+        valor_final = st.number_input("💰 Valor final em dinheiro físico (contado)", min_value=0.0, step=0.01)
+
+        if st.button("Confirmar Fechamento"):
+            # Totais automáticos
+            resumo = vendas.groupby("forma_pagamento")["valor"].sum().to_dict()
+
+            total_dinheiro = resumo.get("Dinheiro", 0) + resumo.get("Misto Dinheiro", 0)
+            total_pix = resumo.get("Pix", 0)
+            total_cartao = resumo.get("Cartão", 0)
+            total_fiado = resumo.get("Fiado", 0)
+            total_misto = resumo.get("Misto", 0)  # caso exista registro separado
+
+            total_vendas = sum(resumo.values())
+
+            # Registro do fechamento
+            fechamento = {
+                "DataHora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "Operador": st.session_state["operador"],
+                "ValorInicial": st.session_state["valor_inicial"],
+                "ValorFinal": valor_final,
                 "Dinheiro": total_dinheiro,
-                "PIX": total_pix,
+                "Pix": total_pix,
                 "Cartão": total_cartao,
                 "Fiado": total_fiado,
-                "Status": "Fechado"
+                "Misto": total_misto,
+                "TotalVendas": total_vendas,
+                "Diferenca": (total_dinheiro + st.session_state["valor_inicial"]) - valor_final
             }
 
-            # 🔹 Atualizar CSV de caixas
-            caixas = norm_caixas(pd.DataFrame())
-            caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
-            save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje}")
+            # Salvar CSV
+            filename = "fechamentos.csv"
+            if os.path.exists(filename):
+                df = pd.read_csv(filename)
+                df = pd.concat([df, pd.DataFrame([fechamento])], ignore_index=True)
+            else:
+                df = pd.DataFrame([fechamento])
+            df.to_csv(filename, index=False)
 
-            # 🔹 Mostrar resumo antes de baixar
-            st.subheader("📊 Resumo do Caixa")
-            st.write(f"💵 Dinheiro: {brl(total_dinheiro)}")
-            st.write(f"⚡ PIX: {brl(total_pix)}")
-            st.write(f"💳 Cartão: {brl(total_cartao)}")
-            st.write(f"📒 Fiado: {brl(total_fiado)}")
-            st.write(f"📦 Total: {brl(faturamento_total)}")
+            # Mostrar relatório
+            st.success("✅ Fechamento registrado com sucesso!")
 
-            # 🔹 Gerar PDF
-            caminho_pdf = f"caixa_{hoje}.pdf"
-            gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
-            with open(caminho_pdf, "rb") as f:
-                st.download_button(
-                    label=f"⬇️ Baixar Relatório de Caixa ({hoje})",
-                    data=f,
-                    file_name=caminho_pdf,
-                    mime="application/pdf",
-                    key="download_caixa"
-                )
+            st.subheader("📊 Relatório de Fechamento")
+            st.table(pd.DataFrame([fechamento]).T.rename(columns={0: "Valor"}))
 
-            # 🔹 Fechar caixa na sessão
+            # Reset caixa
             st.session_state["caixa_aberto"] = False
-            st.success(f"📦 Caixa fechado! Operador: {operador}")
-            st.rerun()
-
+            st.session_state["fechar_caixa"] = False
     # ========================================================
     # FINALIZAR VENDA (correção do bug IDVenda)
     # ========================================================
