@@ -1388,26 +1388,26 @@ if "dados_fechamento_caixa" in st.session_state:
     valor_inicial = dados_caixa['ValorInicial']
     total_dinheiro = dados_caixa['Dinheiro']
     total_pix = dados_caixa['PIX']
-    total_cartao_bruto = dados_caixa['Cartão']  # valor vendido no cartão
+    total_cartao_bruto = dados_caixa['Cartão']  # Valor bruto da venda no cartão
     total_fiado = dados_caixa['Fiado']
 
-    # Aplica taxa do cartão (se houver)
+    # Aplica taxa do cartão apenas para calcular quanto entra no caixa
     taxa_cartao = 0.8872  # 11,28% de desconto
     total_cartao_liquido = total_cartao_bruto * taxa_cartao
 
     # Faturamento total do dia (somente valores que entram no caixa)
-    faturamento_total = total_dinheiro + total_pix + total_cartao_liquido
+    faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_liquido
 
     # Mostra detalhamento
     st.write(f"💵 Valor Inicial do Caixa: {brl(valor_inicial)}")
     st.write(f"💵 Dinheiro recebido hoje: {brl(total_dinheiro)}")
     st.write(f"⚡ PIX recebido: {brl(total_pix)}")
-    st.write(f"💳 Cartão (líquido após taxa): {brl(total_cartao_liquido)}")
+    st.write(f"💳 Cartão (valor bruto da venda): {brl(total_cartao_bruto)}")
     st.write(f"📒 Fiado (não entra no caixa): {brl(total_fiado)}")
-    st.write(f"📦 Faturamento Total do Dia (caixa): {brl(faturamento_total)}")
+    st.write(f"📦 Faturamento Total do Dia (entrando no caixa): {brl(faturamento_total_caixa)}")
 
     # Calcula valor final esperado no caixa
-    valor_final_caixa = valor_inicial + faturamento_total
+    valor_final_caixa = valor_inicial + faturamento_total_caixa
     st.write(f"💰 Valor Final esperado no Caixa: {brl(valor_final_caixa)}")
 
     # Gera PDF
