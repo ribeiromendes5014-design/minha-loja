@@ -1273,10 +1273,6 @@ def fechar_caixa():
         # 🔹 Filtrar vendas do dia
         vendas_dia = vendas[vendas["Data"].dt.date == hoje.date()]
 
-        # 🔹 Calcular Total de cada venda se não existir
-        if "Total" not in vendas_dia.columns:
-            vendas_dia["Total"] = vendas_dia["PrecoVista"] * vendas_dia["Quantidade"]
-
         # 🔹 Totais por forma de pagamento
         total_dinheiro = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
         total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
@@ -1285,7 +1281,6 @@ def fechar_caixa():
 
         faturamento_total = total_dinheiro + total_pix + total_cartao + total_fiado
 
-        # 🔹 Montar dados do caixa
         dados_caixa = {
             "Data": hoje.strftime("%Y-%m-%d"),
             "Operador": operador,
@@ -1298,7 +1293,6 @@ def fechar_caixa():
             "Status": "Fechado"
         }
 
-        # 🔹 Atualizar CSV de caixas
         caixas = norm_caixas(pd.DataFrame())
         caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
         save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje.strftime('%Y-%m-%d')}")
@@ -1308,6 +1302,7 @@ def fechar_caixa():
         st.session_state["caixa_aberto"] = False
         st.success(f"📦 Caixa fechado! Operador: {operador}")
         st.rerun()
+
 
 
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
