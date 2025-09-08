@@ -1323,7 +1323,7 @@ def fechar_caixa():
 
 
 # ========================================================
-    # FINALIZAR VENDA (correção do bug IDVenda)
+    # FUNÇÃO FINALIZAR VENDA
     # ========================================================
     def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                         nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
@@ -1355,6 +1355,7 @@ def fechar_caixa():
 
         st.session_state["pedido_atual"] = []
         st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
+
 
 
 # ========================================================
