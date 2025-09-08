@@ -1278,7 +1278,8 @@ if view == "Vendas":
                     st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
                     st.rerun()
 
-    # ========================================================
+
+# ========================================================
 # FECHAMENTO DE CAIXA
 # ========================================================
 def fechar_caixa():
@@ -1355,7 +1356,6 @@ def fechar_caixa():
         st.session_state["caixa_aberto"] = False
         st.success(f"📦 Caixa fechado! Operador: {operador}")
         st.rerun()
-
 
     # ========================================================
     # FINALIZAR VENDA (correção do bug IDVenda)
