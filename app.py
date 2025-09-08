@@ -1588,7 +1588,6 @@ if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
 
 
 # ================= TAB 2 - ÚLTIMAS VENDAS =================
-
         with tab2:
             st.subheader("📊 Últimas Vendas")
             if not vendas.empty:
