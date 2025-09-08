@@ -1314,27 +1314,26 @@ if view == "Vendas":
             st.rerun()
 
     # ========================================================
-# BLOQUEIO DE CAIXA
-# ========================================================
-if not st.session_state.get("caixa_aberto", False):
-    st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
-    abrir_caixa()
-else:
-    operador = st.session_state.get("operador", "—")
-    valor_inicial = st.session_state.get("valor_inicial", 0.0)
-    st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
+    # BLOQUEIO DE CAIXA
+    # ========================================================
+    if not st.session_state.get("caixa_aberto", False):
+        st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
+        abrir_caixa()
+    else:
+        operador = st.session_state.get("operador", "—")
+        valor_inicial = st.session_state.get("valor_inicial", 0.0)
+        st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
 
-    # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
-    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+        # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
+        tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
-    # ================= TAB 1 - VENDA DETALHADA =================
-    with tab1:
-        st.subheader("🛒 Venda Detalhada")
+        # ================= TAB 1 - VENDA DETALHADA =================
+        with tab1:
+            st.subheader("🛒 Venda Detalhada")
 
-        # --- PESQUISA DE PRODUTO ---
-        st.markdown("### 🔍 Pesquisar Produto")
-        sub1, sub2, sub3 = st.tabs(["Por Nome", "Por Código de Barras", "Por Foto"])
-
+            # --- PESQUISA DE PRODUTO ---
+            st.markdown("### 🔍 Pesquisar Produto")
+            sub1, sub2, sub3 = st.tabs(["Por Nome", "Por Código de Barras", "Por Foto"])
 
             # --- POR NOME ---
             with sub1:
@@ -1585,6 +1584,7 @@ else:
 
             else:
                 st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
