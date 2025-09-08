@@ -6,6 +6,16 @@ from PIL import Image, ImageEnhance
 from io import BytesIO
 import requests  
 from github import Github
+import pytz
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.colors import HexColor
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import Image as RLImage
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+
 
 # =====================================
 # Funções auxiliares
@@ -202,16 +212,6 @@ def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
     doc.build(story)
 
 
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.colors import HexColor
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.platypus import Image as RLImage  # <- renomeado para não conflitar com Pillow
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
-from reportlab.lib.units import mm
-from datetime import datetime
-
 def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     """Gera um PDF estilo cupom com fundo amarelo claro"""
     # 📐 Tamanho tipo recibo (80mm x 200mm)
@@ -307,8 +307,6 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 # =====================================
 # Leitura de Código de Barras (API ZXing)
 # =====================================
-import requests
-
 def ler_codigo_barras_api(image_bytes):
     try:
         files = {"f": ("barcode.png", image_bytes, "image/png")}
@@ -435,221 +433,6 @@ def reset_admin_user():
         df.loc[df["Usuario"]=="admin", "Senha"] = "123"
     else:
         df.loc[len(df)] = {"Usuario":"admin","Senha":"123"}
-    save_csv_github(df, ARQ_USUARIOS, "Resetando admin")
-    return True
-
-def do_login(usuarios: pd.DataFrame) -> bool:
-    st.subheader("Login")
-
-    user = st.text_input("Usuário")
-    pwd = st.text_input("Senha", type="password")
-
-    if st.button("Entrar"):
-        if ((usuarios["Usuario"] == user) & (usuarios["Senha"] == pwd)).any():
-            st.session_state["logado"] = True
-            st.session_state["usuario"] = user
-            st.success(f"Bem-vindo, {user}!")
-            return True
-        else:
-            st.error("Usuário ou senha inválidos.")
-            return False
-
-    return st.session_state.get("logado", False)
-
-# =====================================
-# Salvar CSV no GitHub (somente produtos)
-# =====================================
-from github import Github
-
-def save_csv_github(df: pd.DataFrame, path="produtos.csv", mensagem="Atualizando produtos"):
-    """Salva DataFrame CSV no GitHub e também localmente (backup)."""
-    # Sempre salva local
-    df.to_csv(path, index=False)
-
-    try:
-        gh = st.secrets["github"]
-        token = gh["token"]
-        repo_name = gh["repo"]
-
-        g = Github(token)
-        repo = g.get_repo(repo_name)
-        content = df.to_csv(index=False)
-
-        try:
-            contents = repo.get_contents(path, ref="main")
-            repo.update_file(contents.path, mensagem, content, contents.sha, branch="main")
-        except Exception:
-            repo.create_file(path, mensagem, content, branch="main")
-
-    except Exception as e:
-        st.error(f"❌ Erro ao salvar no GitHub: {e}")
-
-
-
-
-
-def to_float(x, default=0.0):
-    try:
-        return float(str(x).replace(",", ".").strip())
-    except Exception:
-        return default
-
-def to_int(x, default=0):
-    try:
-        return int(float(str(x).strip()))
-    except Exception:
-        return default
-
-def prox_id(df: pd.DataFrame, col: str) -> int:
-    if df.empty or col not in df.columns:
-        return 1
-    try:
-        vals = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
-        return int(vals.max()) + 1 if len(vals) else 1
-    except Exception:
-        return 1
-
-# =====================================
-# Normalizadores de dados (com CodigoBarras nas tabelas)
-# =====================================
-def norm_produtos(_: pd.DataFrame) -> pd.DataFrame:
-    cols = ["ID","Nome","Marca","Categoria","Quantidade","PrecoCusto","PrecoVista","PrecoCartao","Validade","FotoURL","CodigoBarras"]
-    df = ensure_csv(ARQ_PRODUTOS, cols)
-    df["Quantidade"] = df["Quantidade"].apply(to_int)
-    for c in ["PrecoCusto","PrecoVista","PrecoCartao"]:
-        df[c] = df[c].apply(to_float)
-    return df
-
-def norm_vendas(_: pd.DataFrame) -> pd.DataFrame:
-    cols = ["IDVenda","Data","IDProduto","NomeProduto","CodigoBarras","FormaPagamento","Quantidade","PrecoUnitario","Total"]
-    df = ensure_csv(ARQ_VENDAS, cols)
-    df["Quantidade"] = df["Quantidade"].apply(to_int)
-    for c in ["PrecoUnitario","Total"]:
-        df[c] = df[c].apply(to_float)
-    return df
-
-def norm_clientes(_: pd.DataFrame) -> pd.DataFrame:
-    cols = ["ID","Cliente","Produto","CodigoBarras","Valor","DataPagamento","Status","FormaPagamento"]
-    df = ensure_csv(ARQ_CLIENTES, cols)
-    df["Valor"] = df["Valor"].apply(to_float)
-    return df
-
-
-
-def norm_caixas(_: pd.DataFrame) -> pd.DataFrame:
-    cols = ["Data","FaturamentoTotal","Dinheiro","PIX","Cartão","Fiado","Status"]
-
-    # tenta carregar do GitHub primeiro
-    df = load_csv_github(ARQ_CAIXAS)
-    if df is None:
-        df = ensure_csv(ARQ_CAIXAS, cols)
-
-    for c in ["FaturamentoTotal","Dinheiro","PIX","Cartão","Fiado"]:
-        df[c] = df[c].apply(to_float)
-    return df
-    
-def norm_usuarios(_: pd.DataFrame) -> pd.DataFrame:
-    cols = ["Usuario","Senha"]
-    df = ensure_csv(ARQ_USUARIOS, cols)
-    # Se vazio, cria admin padrão
-    if df.empty:
-        df = pd.DataFrame([{"Usuario":"admin","Senha":"123"}])
-        save_csv(df, ARQ_USUARIOS)
-    return df
-
-# ---- PROMOÇÕES ----
-def norm_promocoes(_: pd.DataFrame) -> pd.DataFrame:
-    cols = ["ID","IDProduto","NomeProduto","Desconto","DataInicio","DataFim"]
-    df = ensure_csv(ARQ_PROMOCOES, cols)
-    # Tipos
-    df["IDProduto"] = df["IDProduto"].astype(str)
-    df["Desconto"] = df["Desconto"].apply(to_float)
-    # Datas como string YYYY-MM-DD
-    df["DataInicio"] = df["DataInicio"].astype(str)
-    df["DataFim"] = df["DataFim"].astype(str)
-    return df
-
-def parse_date_yyyy_mm_dd(s: str):
-    try:
-        return datetime.strptime(str(s)[:10], "%Y-%m-%d").date()
-    except Exception:
-        return None
-
-def promocao_ativa_para(prod_id: str, hoje: date, prom_df: pd.DataFrame):
-    """Retorna a promoção ativa (dict) para um produto na data 'hoje' ou None."""
-    if prom_df is None or prom_df.empty:
-        return None
-    z = prom_df[prom_df["IDProduto"].astype(str) == str(prod_id)].copy()
-    if z.empty:
-        return None
-    z["di"] = z["DataInicio"].apply(parse_date_yyyy_mm_dd)
-    z["df"] = z["DataFim"].apply(parse_date_yyyy_mm_dd)
-    z = z[(z["di"].notna()) & (z["df"].notna())]
-    z = z[(z["di"] <= hoje) & (hoje <= z["df"])]
-    if z.empty:
-        return None
-    # Se houver várias promoções, pega a de maior desconto
-    z = z.sort_values(by="Desconto", ascending=False).iloc[0]
-    return {
-        "ID": z["ID"],
-        "IDProduto": z["IDProduto"],
-        "NomeProduto": z["NomeProduto"],
-        "Desconto": float(z["Desconto"]),
-        "DataInicio": str(z["DataInicio"]),
-        "DataFim": str(z["DataFim"]),
-    }
-
-def aplica_promocao_no_preco(preco_vista: float, promo: dict | None) -> float:
-    if not promo:
-        return float(preco_vista)
-    desc = float(promo.get("Desconto", 0.0))
-    desc = max(0.0, min(desc, 100.0))
-    return round(float(preco_vista) * (1.0 - desc/100.0), 2)
-
-# =====================================
-# Formatação BRL
-# =====================================
-def brl(v: float) -> str:
-    try:
-        s = f"{float(v):,.2f}"
-        s = s.replace(",", "X").replace(".", ",").replace("X", ".")
-        return f"R$ {s}"
-    except Exception:
-        return "R$ 0,00"
-
-# =====================================
-# Logo helpers
-# =====================================
-def get_logo_source():
-    # URL de ambiente tem prioridade
-    if LOGO_URL:
-        return LOGO_URL
-    for p in LOGO_CANDIDATES:
-        if os.path.exists(p):
-            return p
-    return None
-
-def show_logo(where="main"):
-    src = get_logo_source()
-    if not src:
-        return
-    if where == "sidebar":
-        st.sidebar.image(src, use_column_width=True)
-    else:
-        st.image(src, width=180)
-
-# =====================================
-# Sessão: login simples (com recuperação e "manter conectado")
-# =====================================
-def reset_admin_user():
-    """Cria/atualiza o usuário admin com senha 123 para recuperar acesso."""
-    df = norm_usuarios(pd.DataFrame())
-    if "Usuario" not in df.columns:
-        df = pd.DataFrame(columns=["Usuario","Senha"])
-    if (df["Usuario"] == "admin").any():
-        df.loc[df["Usuario"]=="admin", "Senha"] = "123"
-    else:
-        df.loc[len(df)] = {"Usuario":"admin","Senha":"123"}
     save_csv(df, ARQ_USUARIOS)
     return True
 
@@ -707,6 +490,10 @@ def boot_session():
         st.session_state["pedido_atual"] = []  # itens: IDProduto, NomeProduto, Quantidade, PrecoVista, CodigoBarras
     if "valor_pago" not in st.session_state:
         st.session_state["valor_pago"] = 0.0
+    if "caixa_aberto" not in st.session_state:
+        st.session_state["caixa_aberto"] = False
+    if "caixas" not in st.session_state:
+        st.session_state["caixas"] = norm_caixas(pd.DataFrame())
 
 # =====================================
 # Helpers de Vendas
@@ -1216,11 +1003,7 @@ if view == "Vendas":
     st.header("🧾 Vendas")
 
     # 🔹 Configuração WhatsApp
-    import requests
-    from datetime import datetime
-    import pytz
-
-    WHATSAPP_TOKEN = "EAALmgS1woeIBPQfGQxOsGaiUsdZBVZBLL7lXnT29GeAF5hcbwBkSXXXe9CMz0LKPMb4dCkH54A738V3OIZBTJxdNuLhWCWCjIHtgtDvTzAYxgRYwdftHsSY7MVBEndXv0tgOKl4sl5ZCGxojh7PktqhbPIAEen5HtIBzmByPLnK28D7XEBxE3OHASB5afwZDZD"  # coloque aqui o token válido da API do WhatsApp Cloud
+    WHATSAPP_TOKEN = "EAALmgS1woeIBPQfGQxOsGaiUsdZBVZBLL7lXnT29GeAF5hcbwBkSXXXe9CMz0LKPMb4dCkH54A738V3OIZBTJxdNuLhWCWCjIHtgtDvTzAYxgRYwdftHsSY7MVBEndXv0tgOKl4sl5ZCGxojh7PktqhbPIAEen5HtIBzmByPLnK28D7XEBxE3OHASB5afwZDZD"
     WHATSAPP_PHONE_ID = "823826790806739"
     WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
     NUMERO_DESTINO = "5541987876191"
@@ -1245,6 +1028,133 @@ if view == "Vendas":
         except Exception as e:
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
+    # ========================================================
+    # ABERTURA DE CAIXA
+    # ========================================================
+    def abrir_caixa():
+        with st.form("abrir_caixa_form"):
+            st.subheader("🟢 Abrir Caixa")
+            hoje_data = str(date.today())
+            caixas_df = norm_caixas(pd.DataFrame())
+
+            # Verifica se o caixa já está aberto para o dia
+            caixa_hoje = caixas_df[caixas_df["Data"] == hoje_data]
+            if not caixa_hoje.empty and caixa_hoje.iloc[0]["Status"] == "Aberto":
+                st.session_state["caixa_aberto"] = True
+                st.success(f"✅ O caixa já está aberto para o dia {hoje_data}!")
+                st.session_state["valor_inicial"] = caixa_hoje.iloc[0].get("ValorInicial", 0.0)
+                st.session_state["operador"] = caixa_hoje.iloc[0].get("Operador", "Não informado")
+                st.rerun()
+
+            operador = st.text_input("👤 Nome do Operador", key="input_operador")
+            valor_inicial = st.number_input("💵 Valor Inicial do Caixa", min_value=0.0, step=1.0, key="input_valor_inicial")
+            submitted = st.form_submit_button("🚀 Abrir Caixa")
+
+            if submitted:
+                if not operador:
+                    st.warning("⚠️ Informe o nome do operador para abrir o caixa.")
+                else:
+                    novo_caixa = {
+                        "Data": hoje_data,
+                        "FaturamentoTotal": 0.0,
+                        "Dinheiro": 0.0,
+                        "PIX": 0.0,
+                        "Cartão": 0.0,
+                        "Fiado": 0.0,
+                        "Status": "Aberto",
+                        "Operador": operador,
+                        "ValorInicial": valor_inicial
+                    }
+                    caixas_df = pd.concat([caixas_df, pd.DataFrame([novo_caixa])], ignore_index=True)
+                    save_csv_github(caixas_df, ARQ_CAIXAS, f"Abertura de caixa {hoje_data}")
+                    st.session_state["caixas"] = caixas_df
+                    st.session_state["operador"] = operador
+                    st.session_state["valor_inicial"] = valor_inicial
+                    st.session_state["caixa_aberto"] = True
+                    st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
+                    st.rerun()
+
+    # ========================================================
+    # FECHAMENTO DE CAIXA
+    # ========================================================
+    def fechar_caixa():
+        if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
+            operador = st.session_state.get("operador", "—")
+            valor_inicial = st.session_state.get("valor_inicial", 0.0)
+            hoje = str(date.today())
+
+            # 🔹 NOVO: pedir valor final do caixa
+            valor_final_informado = st.number_input(
+                "Digite o valor final do caixa (contado em dinheiro):",
+                min_value=0.0,
+                step=0.01,
+                key="valor_final_caixa"
+            )
+
+            # 🔹 Filtrar vendas do dia
+            vendas = st.session_state["vendas"]
+            vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
+            vendas_dia = vendas[vendas["Data"].dt.strftime("%Y-%m-%d") == hoje]
+
+            # 🔹 Calcular totais por forma de pagamento
+            total_dinheiro_vendas = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
+            total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
+            total_cartao = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
+            total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
+            faturamento_total = total_dinheiro_vendas + total_pix + total_cartao + total_fiado
+
+            total_dinheiro_caixa = valor_inicial + total_dinheiro_vendas
+            diferenca_caixa = valor_final_informado - total_dinheiro_caixa
+
+            st.subheader("📊 Resumo do Caixa")
+            st.write(f"💵 Valor Inicial: {brl(valor_inicial)}")
+            st.write(f"💵 Recebimento em Dinheiro: {brl(total_dinheiro_vendas)}")
+            st.write(f"💰 Total Esperado em Dinheiro: {brl(total_dinheiro_caixa)}")
+            st.write(f"📝 Valor Final Informado: {brl(valor_final_informado)}")
+            st.write(f"📊 Diferença (Caixa - Esperado): {brl(diferenca_caixa)}")
+            st.write("---")
+            st.write(f"⚡ Total em PIX: {brl(total_pix)}")
+            st.write(f"💳 Total em Cartão: {brl(total_cartao)}")
+            st.write(f"📒 Total em Fiado: {brl(total_fiado)}")
+            st.write(f"**📦 Faturamento Total do Dia:** {brl(faturamento_total)}")
+            
+            if st.button("📦 Confirmar Fechamento de Caixa", key="btn_confirmar_fechar_caixa"):
+                # 🔹 Montar dados do caixa
+                dados_caixa = {
+                    "Data": hoje,
+                    "Operador": operador,
+                    "ValorInicial": valor_inicial,
+                    "FaturamentoTotal": faturamento_total,
+                    "Dinheiro": total_dinheiro_vendas,
+                    "PIX": total_pix,
+                    "Cartão": total_cartao,
+                    "Fiado": total_fiado,
+                    "ValorFinalInformado": valor_final_informado,  # << novo campo
+                    "Status": "Fechado"
+                }
+
+                # 🔹 Atualizar CSV de caixas
+                caixas = norm_caixas(pd.DataFrame())
+                caixas.loc[caixas["Data"] == hoje, ["Status", "ValorFinalInformado"]] = ["Fechado", valor_final_informado]
+                save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje}")
+
+                # 🔹 Gerar PDF
+                caminho_pdf = f"caixa_{hoje}.pdf"
+                gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
+                with open(caminho_pdf, "rb") as f:
+                    st.download_button(
+                        label=f"⬇️ Baixar Relatório de Caixa ({hoje})",
+                        data=f,
+                        file_name=caminho_pdf,
+                        mime="application/pdf",
+                        key="download_caixa"
+                    )
+
+                # 🔹 Fechar caixa na sessão
+                st.session_state["caixa_aberto"] = False
+                st.success(f"📦 Caixa fechado! Operador: {operador}")
+                st.rerun()
+
     # ================= FUNÇÕES AUXILIARES DE VENDAS =================
     def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                         nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
@@ -1255,11 +1165,15 @@ if view == "Vendas":
 
         vendas = st.session_state["vendas"]
         produtos = st.session_state["produtos"]
-        caixas = norm_caixas(pd.DataFrame())
+        caixas = st.session_state["caixas"]
         clientes = st.session_state["clientes"]
 
         # Novo ID de venda
-        novo_id = prox_id(vendas, "IDVenda")
+        if not vendas.empty and "IDVenda" in vendas.columns:
+            vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
+            novo_id = int(vendas["IDVenda"].max() + 1)
+        else:
+            novo_id = 1
         hoje = str(date.today())
         registros = []
 
@@ -1411,20 +1325,27 @@ if view == "Vendas":
         st.info("🆕 Nova venda iniciada.")
         st.rerun()   # 🔄 atualiza tela
 
-    def fechar_caixa():
-        caixas = norm_caixas(pd.DataFrame())
-        hoje_data = str(date.today())
-        if caixas.empty or not (caixas["Data"] == hoje_data).any():
-            st.warning("⚠️ Nenhuma venda hoje para fechar caixa.")
-            return
-        idx = caixas["Data"] == hoje_data
-        caixas.loc[idx, "Status"] = "Fechado"
-        save_csv_github(caixas, ARQ_CAIXAS, f"Fechando caixa {hoje_data}")
-        st.session_state["caixas"] = caixas
-        st.success(f"📦 Caixa do dia {hoje_data} fechado!")
-        st.rerun()   # 🔄 atualiza tela
+    # ========================================================
+    # LÓGICA DE BLOQUEIO E ABERTURA/FECHAMENTO DE CAIXA
+    # ========================================================
+    hoje = str(date.today())
+    caixas_df = norm_caixas(pd.DataFrame())
 
-    # 🔹 Sub-abas principais
+    # Verifica se o caixa está aberto para o dia atual no CSV
+    caixa_aberto_hoje = not caixas_df[(caixas_df["Data"] == hoje) & (caixas_df["Status"] == "Fechado")].empty
+
+    if not st.session_state.get("caixa_aberto") and not caixa_aberto_hoje:
+        st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
+        abrir_caixa()
+        st.stop()
+    else:
+        st.session_state["caixa_aberto"] = True # Garante que a sessão reflete o CSV
+
+    operador = st.session_state.get("operador", "—")
+    valor_inicial = st.session_state.get("valor_inicial", 0.0)
+    st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
+
+    # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 # ================= TAB 1 - VENDA DETALHADA =================
     with tab1:
