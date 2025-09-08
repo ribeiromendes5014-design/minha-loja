@@ -1329,8 +1329,8 @@ if view == "Vendas":
                     st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
                     st.rerun()
 
-    # ========================================================
-    # FECHAMENTO DE CAIXA
+        # ========================================================
+    # FECHAMENTO DE CAIXA (alterado conforme solicitado)
     # ========================================================
     def fechar_caixa():
         if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
@@ -1347,50 +1347,71 @@ if view == "Vendas":
             total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
             total_cartao = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
             total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
-            faturamento_total = total_dinheiro + total_pix + total_cartao + total_fiado
+            total_misto = vendas_dia[vendas_dia["FormaPagamento"] == "Misto"]["Total"].sum()
 
-            # 🔹 Montar dados do caixa
-            dados_caixa = {
-                "Data": hoje,
-                "Operador": operador,
-                "ValorInicial": valor_inicial,
-                "FaturamentoTotal": faturamento_total,
-                "Dinheiro": total_dinheiro,
-                "PIX": total_pix,
-                "Cartão": total_cartao,
-                "Fiado": total_fiado,
-                "Status": "Fechado"
-            }
+            faturamento_total = total_dinheiro + total_pix + total_cartao + total_fiado + total_misto
 
-            # 🔹 Atualizar CSV de caixas
-            caixas = norm_caixas(pd.DataFrame())
-            caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
-            save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje}")
+            # 🔹 Perguntar valor final do caixa (dinheiro físico)
+            valor_final = st.number_input(
+                "💵 Informe o valor final do caixa (dinheiro físico contado)",
+                min_value=0.0,
+                step=1.0,
+                key="valor_final_caixa"
+            )
 
-            # 🔹 Mostrar resumo antes de baixar
-            st.subheader("📊 Resumo do Caixa")
-            st.write(f"💵 Dinheiro: {brl(total_dinheiro)}")
-            st.write(f"⚡ PIX: {brl(total_pix)}")
-            st.write(f"💳 Cartão: {brl(total_cartao)}")
-            st.write(f"📒 Fiado: {brl(total_fiado)}")
-            st.write(f"📦 Total: {brl(faturamento_total)}")
+            if st.button("✅ Confirmar Fechamento de Caixa", key="btn_confirmar_fechamento"):
+                # 🔹 Montar dados do caixa
+                dados_caixa = {
+                    "Data": hoje,
+                    "Operador": operador,
+                    "ValorInicial": valor_inicial,
+                    "ValorFinal": valor_final,
+                    "FaturamentoTotal": faturamento_total,
+                    "Dinheiro": total_dinheiro,
+                    "PIX": total_pix,
+                    "Cartão": total_cartao,
+                    "Fiado": total_fiado,
+                    "Misto": total_misto,
+                    "Status": "Fechado"
+                }
 
-            # 🔹 Gerar PDF
-            caminho_pdf = f"caixa_{hoje}.pdf"
-            gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
-            with open(caminho_pdf, "rb") as f:
-                st.download_button(
-                    label=f"⬇️ Baixar Relatório de Caixa ({hoje})",
-                    data=f,
-                    file_name=caminho_pdf,
-                    mime="application/pdf",
-                    key="download_caixa"
-                )
+                # 🔹 Atualizar CSV de caixas
+                caixas = norm_caixas(pd.DataFrame())
+                caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
+                save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje}")
 
-            # 🔹 Fechar caixa na sessão
-            st.session_state["caixa_aberto"] = False
-            st.success(f"📦 Caixa fechado! Operador: {operador}")
-            st.rerun()
+                # 🔹 Exibir relatório resumido
+                st.subheader("📊 Relatório de Fechamento")
+                resumo = pd.DataFrame([
+                    ["Dinheiro", total_dinheiro],
+                    ["PIX", total_pix],
+                    ["Cartão", total_cartao],
+                    ["Fiado", total_fiado],
+                    ["Misto", total_misto],
+                    ["TOTAL", faturamento_total],
+                    ["Valor Final (informado)", valor_final],
+                    ["Diferença (Dinheiro vs Informado)", valor_final - total_dinheiro]
+                ], columns=["Categoria", "Valor"])
+                resumo["Valor"] = resumo["Valor"].apply(brl)
+                st.dataframe(resumo, use_container_width=True)
+
+                # 🔹 Gerar PDF
+                caminho_pdf = f"caixa_{hoje}.pdf"
+                gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
+                with open(caminho_pdf, "rb") as f:
+                    st.download_button(
+                        label=f"⬇️ Baixar Relatório de Caixa ({hoje})",
+                        data=f,
+                        file_name=caminho_pdf,
+                        mime="application/pdf",
+                        key="download_caixa"
+                    )
+
+                # 🔹 Fechar caixa na sessão
+                st.session_state["caixa_aberto"] = False
+                st.success(f"📦 Caixa fechado! Operador: {operador}")
+                st.rerun()
+
 
     # ========================================================
     # FINALIZAR VENDA (correção do bug IDVenda)
