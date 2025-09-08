@@ -1254,19 +1254,20 @@ if view == "Vendas":
     # ========================================================
     # CONTROLE DE ABERTURA E FECHAMENTO DO CAIXA
     # ========================================================
+    
     def abrir_caixa():
-        operador = st.text_input("👤 Nome do Operador", key="operador_nome")
-        valor_inicial = st.number_input("💵 Valor Inicial do Caixa", min_value=0.0, step=1.0, key="valor_inicial")
+    operador = st.text_input("👤 Nome do Operador", key="operador_nome")
+    st.number_input("💵 Valor Inicial do Caixa", min_value=0.0, step=1.0, key="valor_inicial")
 
-        if st.button("🚀 Abrir Caixa", key="btn_abrir_caixa"):
-            if operador and valor_inicial >= 0:
-                st.session_state["caixa_aberto"] = True
-                st.session_state["operador"] = operador
-                st.session_state["valor_inicial"] = valor_inicial
-                st.success(f"✅ Caixa aberto com operador {operador} e valor inicial {valor_inicial:.2f}")
-                st.rerun()
-            else:
-                st.warning("⚠️ Informe o nome do operador e o valor inicial.")
+    if st.button("🚀 Abrir Caixa", key="btn_abrir_caixa"):
+        valor_inicial = st.session_state.get("valor_inicial", 0.0)
+        if operador and valor_inicial >= 0:
+            st.session_state["caixa_aberto"] = True
+            st.session_state["operador"] = operador
+            st.success(f"✅ Caixa aberto com operador {operador} e valor inicial {valor_inicial:.2f}")
+            st.rerun()
+        else:
+            st.warning("⚠️ Informe o nome do operador e o valor inicial.")
 
     def fechar_caixa():
         if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
