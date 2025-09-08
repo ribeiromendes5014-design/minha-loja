@@ -1473,162 +1473,163 @@ else:
 
 
 # ================= MOSTRAR PAGAMENTO SOMENTE SE HOUVER ITENS =================
-    if st.session_state.get("pedido_atual"):
-        # --- FORMA DE PAGAMENTO ---
-        st.markdown("### Forma de Pagamento")
-        forma = st.radio(
-            "Selecione a forma de pagamento",
-            ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
-            horizontal=True,
-            key="radio_forma_pagamento_venda"
-        )
-
-        forma1 = forma2 = None
-        valor1 = valor2 = 0.0
-        valor_recebido = 0.0
-        nome_cliente = None
-        data_pagamento = None
-
-        if forma == "Misto":
-            st.markdown("#### Configuração do pagamento misto")
-            colm1, colm2 = st.columns(2)
-            with colm1:
-                forma1 = st.selectbox(
-                    "Primeira forma",
-                    ["Dinheiro", "PIX", "Cartão", "Fiado"],
-                    key="misto_forma1"
-                )
-                valor1 = st.number_input(
-                    f"Valor em {forma1}",
-                    min_value=0.0,
-                    step=1.0,
-                    key="misto_valor1"
-                )
-            with colm2:
-                forma2 = st.selectbox(
-                    "Segunda forma",
-                    ["Dinheiro", "PIX", "Cartão", "Fiado"],
-                    key="misto_forma2"
-                )
-
-        # -- Pedido atual
-        df_pedido = desenha_pedido(forma, promocoes)
-        valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
-
-        # Corrige valor2 automático no pagamento misto
-        if forma == "Misto" and forma1 and forma2:
-            if forma1 == "Cartão":
-                valor1 = valor1 / 0.8872 if valor1 > 0 else 0.0
-            if forma2 == "Cartão":
-                valor2 = max((valor_total - valor1) / 0.8872, 0.0)
-            else:
-                valor2 = max(valor_total - valor1, 0.0)
-            st.info(f"💳 Pagamento dividido: {forma1} = {brl(valor1)}, {forma2} = {brl(valor2)}")
-
-        # Ajustes extras
-        if forma == "Dinheiro":
-            valor_recebido = st.number_input("💵 Valor recebido em dinheiro", min_value=0.0, step=1.0)
-            troco = max(valor_recebido - valor_total, 0.0)
-            st.info(f"Troco: {brl(troco)}")
-        elif forma == "Fiado":
-            nome_cliente = st.text_input("👤 Nome do Cliente")
-            data_pagamento = st.date_input("📅 Data prevista de pagamento", value=date.today())
-
-        # -- Métricas
-        colA, colB, colC = st.columns(3)
-        colA.metric("Valor Total", brl(valor_total))
-
-        if forma == "Misto":
-            colB.metric(f"{forma1}", brl(valor1))
-            colC.metric(f"{forma2}", brl(valor2))
-
-        elif forma == "Dinheiro":
-            colB.metric("Valor Recebido", brl(valor_recebido))
-            colC.metric("Troco", brl(max(valor_recebido - valor_total, 0.0)))
-
-        elif forma == "Fiado":
-            colB.metric("Cliente", nome_cliente if nome_cliente else "—")
-            colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
-
-        # -- Botões de ação relacionados à venda --
-        b1, b2 = st.columns([1, 1])
-        with b1:
-            if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
-                finalizar_venda(
-                    forma, forma1, forma2, valor1, valor2, promocoes,
-                    nome_cliente=nome_cliente, data_pagamento=data_pagamento,
-                    valor_recebido=valor_recebido
-                )
-        with b2:
-            if st.button("🆕 Nova Venda", key="btn_nova_venda"):
-                nova_venda()
-    else:
-        st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
-
-    # -- Botão de fechar caixa (sempre visível quando o caixa está aberto) --
-    st.markdown("---")
-    if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
-        fechar_caixa()
-
-
-# ================= TAB 2 - ÚLTIMAS VENDAS =================
-with tab2:
-    st.subheader("📊 Últimas Vendas")
-
-    if not vendas.empty:
-        ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
-
-        colunas = [
-            "IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
-            "Total", "FormaPagamento", "ValorPago1", "ValorPago2"
-        ]
-        colunas = [c for c in colunas if c in ult.columns]
-
-        st.dataframe(ult[colunas], use_container_width=True, key="df_ultimas_vendas")
-
-        ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
-
-        colx, coly = st.columns([3, 1])
-        with colx:
-            id_excluir = st.selectbox(
-                "Selecione a venda para excluir (devolve estoque)",
-                ids if ids else [0],
-                key="select_excluir_venda"
+    with tab1:
+        if st.session_state.get("pedido_atual"):
+            # --- FORMA DE PAGAMENTO ---
+            st.markdown("### Forma de Pagamento")
+            forma = st.radio(
+                "Selecione a forma de pagamento",
+                ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
+                horizontal=True,
+                key="radio_forma_pagamento_venda"
             )
-        with coly:
-            if st.button("Excluir venda", key="btn_excluir_venda"):
-                try:
-                    id_excluir_int = int(id_excluir)
-                except:
-                    id_excluir_int = None
 
-                if id_excluir_int and id_excluir_int in ids:
-                    linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
+            forma1 = forma2 = None
+            valor1 = valor2 = 0.0
+            valor_recebido = 0.0
+            nome_cliente = None
+            data_pagamento = None
 
-                    for _, r in linhas.iterrows():
-                        mask = produtos["ID"].astype(str) == str(r["IDProduto"])
-                        if mask.any():
-                            produtos.loc[mask, "Quantidade"] = (
-                                produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
-                            ).astype(int)
+            if forma == "Misto":
+                st.markdown("#### Configuração do pagamento misto")
+                colm1, colm2 = st.columns(2)
+                with colm1:
+                    forma1 = st.selectbox(
+                        "Primeira forma",
+                        ["Dinheiro", "PIX", "Cartão", "Fiado"],
+                        key="misto_forma1"
+                    )
+                    valor1 = st.number_input(
+                        f"Valor em {forma1}",
+                        min_value=0.0,
+                        step=1.0,
+                        key="misto_valor1"
+                    )
+                with colm2:
+                    forma2 = st.selectbox(
+                        "Segunda forma",
+                        ["Dinheiro", "PIX", "Cartão", "Fiado"],
+                        key="misto_forma2"
+                    )
 
-                    vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
+            # -- Pedido atual
+            df_pedido = desenha_pedido(forma, promocoes)
+            valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
 
-                    save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
-                    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-
-                    st.session_state["vendas"] = vendas
-                    st.session_state["produtos"] = produtos
-
-                    st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
-                    st.rerun()
+            # Corrige valor2 automático no pagamento misto
+            if forma == "Misto" and forma1 and forma2:
+                if forma1 == "Cartão":
+                    valor1 = valor1 / 0.8872 if valor1 > 0 else 0.0
+                if forma2 == "Cartão":
+                    valor2 = max((valor_total - valor1) / 0.8872, 0.0)
                 else:
-                    st.warning("Venda não encontrada.")
-    else:
-        st.info("Ainda não há vendas registradas.")
+                    valor2 = max(valor_total - valor1, 0.0)
+                st.info(f"💳 Pagamento dividido: {forma1} = {brl(valor1)}, {forma2} = {brl(valor2)}")
+
+            # Ajustes extras
+            if forma == "Dinheiro":
+                valor_recebido = st.number_input("💵 Valor recebido em dinheiro", min_value=0.0, step=1.0)
+                troco = max(valor_recebido - valor_total, 0.0)
+                st.info(f"Troco: {brl(troco)}")
+            elif forma == "Fiado":
+                nome_cliente = st.text_input("👤 Nome do Cliente")
+                data_pagamento = st.date_input("📅 Data prevista de pagamento", value=date.today())
+
+            # -- Métricas
+            colA, colB, colC = st.columns(3)
+            colA.metric("Valor Total", brl(valor_total))
+
+            if forma == "Misto":
+                colB.metric(f"{forma1}", brl(valor1))
+                colC.metric(f"{forma2}", brl(valor2))
+
+            elif forma == "Dinheiro":
+                colB.metric("Valor Recebido", brl(valor_recebido))
+                colC.metric("Troco", brl(max(valor_recebido - valor_total, 0.0)))
+
+            elif forma == "Fiado":
+                colB.metric("Cliente", nome_cliente if nome_cliente else "—")
+                colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
+
+            # -- Botões de ação relacionados à venda --
+            b1, b2 = st.columns([1, 1])
+            with b1:
+                if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
+                    finalizar_venda(
+                        forma, forma1, forma2, valor1, valor2, promocoes,
+                        nome_cliente=nome_cliente, data_pagamento=data_pagamento,
+                        valor_recebido=valor_recebido
+                    )
+            with b2:
+                if st.button("🆕 Nova Venda", key="btn_nova_venda"):
+                    nova_venda()
+        else:
+            st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
+
+        # -- Botão de fechar caixa (sempre visível quando o caixa está aberto) --
+        st.markdown("---")
+        if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
+            fechar_caixa()
 
 
-        # ================= TAB 3 - RECIBOS =================
+    # ================= TAB 2 - ÚLTIMAS VENDAS =================
+    with tab2:
+        st.subheader("📊 Últimas Vendas")
+
+        if not vendas.empty:
+            ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
+
+            colunas = [
+                "IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
+                "Total", "FormaPagamento", "ValorPago1", "ValorPago2"
+            ]
+            colunas = [c for c in colunas if c in ult.columns]
+
+            st.dataframe(ult[colunas], use_container_width=True, key="df_ultimas_vendas")
+
+            ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
+
+            colx, coly = st.columns([3, 1])
+            with colx:
+                id_excluir = st.selectbox(
+                    "Selecione a venda para excluir (devolve estoque)",
+                    ids if ids else [0],
+                    key="select_excluir_venda"
+                )
+            with coly:
+                if st.button("Excluir venda", key="btn_excluir_venda"):
+                    try:
+                        id_excluir_int = int(id_excluir)
+                    except:
+                        id_excluir_int = None
+
+                    if id_excluir_int and id_excluir_int in ids:
+                        linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
+
+                        for _, r in linhas.iterrows():
+                            mask = produtos["ID"].astype(str) == str(r["IDProduto"])
+                            if mask.any():
+                                produtos.loc[mask, "Quantidade"] = (
+                                    produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
+                                ).astype(int)
+
+                        vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
+
+                        save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
+                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+
+                        st.session_state["vendas"] = vendas
+                        st.session_state["produtos"] = produtos
+
+                        st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
+                        st.rerun()
+                    else:
+                        st.warning("Venda não encontrada.")
+        else:
+            st.info("Ainda não há vendas registradas.")
+
+
+    # ================= TAB 3 - RECIBOS =================
         with tab3:
             import os
             from PIL import Image, UnidentifiedImageError
