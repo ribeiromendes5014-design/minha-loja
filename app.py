@@ -1293,12 +1293,8 @@ def fechar_caixa():
         total_cartao_bruto = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
         total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
 
-        # Aplicar taxa do cartão (exemplo 11,28% de desconto)
-        taxa_cartao = 0.8872
-        total_cartao_liquido = total_cartao_bruto * taxa_cartao
-
-        # Faturamento total que entra no caixa (sem fiado)
-        faturamento_caixa = total_dinheiro + total_pix + total_cartao_liquido
+        # Faturamento total que entra no caixa (só dinheiro e PIX)
+        faturamento_caixa = total_dinheiro + total_pix  # NÃO inclui cartão nem fiado
 
         # Valor final esperado no caixa
         valor_final_caixa = valor_inicial + faturamento_caixa
@@ -1310,9 +1306,9 @@ def fechar_caixa():
             "ValorInicial": valor_inicial,
             "Dinheiro": total_dinheiro,
             "PIX": total_pix,
-            "Cartão": total_cartao_liquido,
+            "Cartão": total_cartao_bruto,  # valor bruto da venda no cartão
             "Fiado": total_fiado,
-            "FaturamentoTotal": faturamento_caixa,
+            "FaturamentoTotalCaixa": faturamento_caixa,
             "ValorFinalCaixa": valor_final_caixa,
             "Status": "Fechado"
         }
