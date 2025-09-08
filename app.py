@@ -1273,6 +1273,13 @@ if view == "Vendas":
         except Exception as e:
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
+# =====================================
+# VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
+# =====================================
+if view == "Vendas":
+    show_logo("main")
+    st.header("🧾 Vendas")
+
     # ================= FUNÇÕES AUXILIARES DE CAIXA =================
 def abrir_caixa(operador, valor_inicial):
     caixas = norm_caixas(pd.DataFrame())
