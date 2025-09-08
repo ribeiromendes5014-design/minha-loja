@@ -1271,6 +1271,64 @@ if view == "Vendas":
                     st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
                     st.rerun()
 
+    # =====================================
+# VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
+# =====================================
+if view == "Vendas":
+    show_logo("main")
+    st.header("🧾 Vendas")
+
+    # 🔹 Configuração WhatsApp
+    import requests
+    from datetime import datetime, date
+    import pytz
+
+    WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"  # coloque aqui o token válido da API do WhatsApp Cloud
+    WHATSAPP_PHONE_ID = "823826790806739"
+    WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
+    NUMERO_DESTINO = "5541987876191"
+
+    def enviar_whatsapp(destinatario, mensagem):
+        headers = {
+            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "messaging_product": "whatsapp",
+            "to": destinatario,
+            "type": "text",
+            "text": {"body": mensagem}
+        }
+        try:
+            r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
+            resp = r.json()
+            print("DEBUG WHATSAPP:", resp)
+            if "messages" not in resp:
+                st.error(f"Erro WhatsApp: {resp}")
+        except Exception as e:
+            st.error(f"Erro ao enviar WhatsApp: {e}")
+
+    # ========================================================
+    # ABERTURA DE CAIXA
+    # ========================================================
+    def abrir_caixa():
+        with st.form("abrir_caixa_form"):
+            st.subheader("🟢 Abrir Caixa")
+
+            operador = st.text_input("👤 Nome do Operador", key="input_operador")
+            valor_inicial = st.number_input("💵 Valor Inicial do Caixa", min_value=0.0, step=1.0, key="input_valor_inicial")
+
+            submitted = st.form_submit_button("🚀 Abrir Caixa")
+            if submitted:
+                if not operador:
+                    st.warning("⚠️ Informe o nome do operador para abrir o caixa.")
+                else:
+                    st.session_state["operador"] = operador
+                    st.session_state["valor_inicial"] = valor_inicial
+                    st.session_state["caixa_aberto"] = True
+                    st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
+                    st.rerun()
+
     # ========================================================
     # FECHAMENTO DE CAIXA
     # ========================================================
@@ -1620,6 +1678,7 @@ if view == "Vendas":
 
             else:
                 st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
