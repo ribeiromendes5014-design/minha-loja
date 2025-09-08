@@ -1366,32 +1366,36 @@ if view == "Vendas":
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
     # ================= TAB 1 - VENDA DETALHADA =================
-    with tab1:
-        st.subheader("🛒 Venda Detalhada")
+with tab1:
+    st.subheader("🛒 Venda Detalhada")
 
-        caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
-        caixas = norm_caixas(caixas)
-        hoje = str(date.today())
-        tem_caixa_aberto = not caixas.empty and (caixas["Data"] == hoje).any() and \
-                           (caixas.loc[caixas["Data"] == hoje, "Status"].values[0] == "Aberto")
+    if "caixas" not in st.session_state:
+        st.session_state["caixas"] = norm_caixas(pd.DataFrame())
 
-        if not tem_caixa_aberto:
-            st.warning("⚠️ É necessário abrir o caixa para registrar vendas.")
-            operador = st.text_input("👤 Nome do operador")
-            valor_inicial = st.number_input("💵 Valor inicial (troco)", min_value=0.0, step=1.0)
-            if st.button("🚀 Abrir Caixa"):
-                if operador.strip():
-                    abrir_caixa(operador, valor_inicial)
-                else:
-                    st.error("Informe o nome do operador.")
-            st.stop()
+    caixas = st.session_state["caixas"]
+    hoje = str(date.today())
+    tem_caixa_aberto = not caixas.empty and (caixas["Data"] == hoje).any() and \
+                       (caixas.loc[caixas["Data"] == hoje, "Status"].values[0] == "Aberto")
 
-        # 👉 Se caixa aberto → mostra fluxo de vendas normalmente
-        # (todo o seu código de pesquisa de produto, pedido, pagamento e finalizar_venda vai aqui)
+    if not tem_caixa_aberto:
+        st.warning("⚠️ É necessário abrir o caixa para registrar vendas.")
+        operador = st.text_input("👤 Nome do operador")
+        valor_inicial = st.number_input("💵 Valor inicial (troco)", min_value=0.0, step=1.0)
+        if st.button("🚀 Abrir Caixa"):
+            if operador.strip():
+                abrir_caixa(operador, valor_inicial)
+            else:
+                st.error("Informe o nome do operador.")
+        st.stop()
+
+    # 👉 Se caixa aberto → mostra fluxo de vendas normalmente
+    # (todo o seu código de pesquisa de produto, pedido, pagamento e finalizar_venda vai aqui)
+
 
 
     # (sua função finalizar_venda e demais continuam iguais...)
     # 🔹 Sub-abas principais (somente 3)
+    
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
     # ================= TAB 1 - VENDA DETALHADA =================
