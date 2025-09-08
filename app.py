@@ -1224,7 +1224,7 @@ WHATSAPP_PHONE_ID = "823826790806739"
 WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
 NUMERO_DESTINO = "5541987876191"
 
-# Funções Auxiliares (Defina-as aqui)
+# Funções Auxiliares
 def enviar_whatsapp(destinatario, mensagem):
     headers = {
         "Authorization": f"Bearer {WHATSAPP_TOKEN}",
@@ -1280,6 +1280,7 @@ def fechar_caixa():
         )
         hoje = date.today()
 
+        # Converte a coluna Data para datetime.date
         vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce").dt.date
         vendas_dia = vendas[vendas["Data"] == hoje]
 
@@ -1288,8 +1289,10 @@ def fechar_caixa():
         total_cartao_bruto = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
         total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
 
-        faturamento_caixa = total_dinheiro + total_pix
-        valor_final_caixa = valor_inicial + faturamento_caixa
+        # Apenas o dinheiro entra no valor final do caixa
+        valor_final_caixa = valor_inicial + total_dinheiro
+        # Faturamento total do dia inclui todas as formas
+        faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_bruto + total_fiado
 
         dados_caixa = {
             "Data": hoje.strftime("%Y-%m-%d"),
@@ -1299,7 +1302,7 @@ def fechar_caixa():
             "PIX": total_pix,
             "Cartão": total_cartao_bruto,
             "Fiado": total_fiado,
-            "FaturamentoTotal": faturamento_caixa,
+            "FaturamentoTotal": faturamento_total_caixa,
             "ValorFinalCaixa": valor_final_caixa,
             "Status": "Fechado"
         }
@@ -1376,16 +1379,16 @@ if "dados_fechamento_caixa" in st.session_state:
     total_cartao_bruto = dados_caixa['Cartão']
     total_fiado = dados_caixa['Fiado']
 
-    faturamento_total_caixa = total_dinheiro + total_pix
+    # Correção: faturamento total inclui todas as formas, mas valor final do caixa só soma o dinheiro
+    faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_bruto + total_fiado
+    valor_final_caixa = valor_inicial + total_dinheiro
 
     st.write(f"💵 Valor Inicial do Caixa: {brl(valor_inicial)}")
     st.write(f"💵 Dinheiro recebido hoje: {brl(total_dinheiro)}")
     st.write(f"⚡ PIX recebido: {brl(total_pix)}")
     st.write(f"💳 Cartão (valor bruto da venda): {brl(total_cartao_bruto)}")
     st.write(f"📒 Fiado (não entra no caixa): {brl(total_fiado)}")
-    st.write(f"📦 Faturamento Total do Dia (entrando no caixa): {brl(faturamento_total_caixa)}")
-
-    valor_final_caixa = valor_inicial + faturamento_total_caixa
+    st.write(f"📦 Faturamento Total do Dia: {brl(faturamento_total_caixa)}")
     st.write(f"💰 Valor Final esperado no Caixa: {brl(valor_final_caixa)}")
 
     caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
@@ -1400,8 +1403,9 @@ if "dados_fechamento_caixa" in st.session_state:
         )
     st.write("---")
 
+
+# 🔹 Fluxo de Vendas
 if view == "Vendas":
-    # 🔹 Fluxo do Caixa
     if not st.session_state.get("caixa_aberto", False):
         st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
         abrir_caixa()
