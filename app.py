@@ -1377,8 +1377,9 @@ if "dados_fechamento_caixa" in st.session_state:
             file_name=caminho_pdf,
             mime="application/pdf",
             key="download_caixa"
-            )
-        st.write("---")
+        )
+    st.write("---")
+
 
     # 🔹 Bloqueio de vendas se caixa não estiver aberto
     if not st.session_state.get("caixa_aberto", False):
