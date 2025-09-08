@@ -1274,46 +1274,36 @@ def abrir_caixa():
 def fechar_caixa():
     if st.session_state.get("caixa_aberto", False):
         operador = st.session_state.get("operador", "—")
-        # Valor inicial: primeiro tenta o original, senão pega o atual
         valor_inicial = st.session_state.get(
             "valor_inicial_original",
             st.session_state.get("valor_inicial", 0.0)
         )
         hoje = date.today()
 
-        # Garantir que a coluna Data é datetime.date
         vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce").dt.date
-
-        # Filtrar vendas do dia
         vendas_dia = vendas[vendas["Data"] == hoje]
 
-        # Totais por forma de pagamento
         total_dinheiro = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
         total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
         total_cartao_bruto = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
         total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
 
-        # Faturamento total que entra no caixa (só dinheiro e PIX)
-        faturamento_caixa = total_dinheiro + total_pix  # NÃO inclui cartão nem fiado
-
-        # Valor final esperado no caixa
+        faturamento_caixa = total_dinheiro + total_pix
         valor_final_caixa = valor_inicial + faturamento_caixa
 
-        # Dados do fechamento do caixa
         dados_caixa = {
             "Data": hoje.strftime("%Y-%m-%d"),
             "Operador": operador,
             "ValorInicial": valor_inicial,
             "Dinheiro": total_dinheiro,
             "PIX": total_pix,
-            "Cartão": total_cartao_bruto,  # valor bruto da venda no cartão (informativo)
+            "Cartão": total_cartao_bruto,
             "Fiado": total_fiado,
-            "FaturamentoTotal": faturamento_caixa,  # só valores que entram no caixa
+            "FaturamentoTotal": faturamento_caixa,
             "ValorFinalCaixa": valor_final_caixa,
             "Status": "Fechado"
         }
 
-        # Salvar no CSV e na sessão
         caixas = norm_caixas(pd.DataFrame())
         caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
         save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje.strftime('%Y-%m-%d')}")
@@ -1328,22 +1318,20 @@ def fechar_caixa():
         st.rerun()
 
 
-
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
     global vendas, produtos
-    
+
     if not st.session_state.get("pedido_atual"):
         st.warning("⚠️ Nenhum item no pedido.")
         return
-    
-    # Garante coluna IDVenda como numérica
+
     if not vendas.empty and "IDVenda" in vendas.columns:
         vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
         novo_id = int(vendas["IDVenda"].max() + 1)
     else:
         novo_id = 1
-    
+
     df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
     df_pedido["IDVenda"] = novo_id
     df_pedido["Data"] = date.today()
@@ -1375,23 +1363,21 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
     st.rerun()
 
-# 🔹 Lógica de Bloqueio de Caixa (Resumo Último Fechamento)
+
+# 🔹 Resumo Último Fechamento
 if "dados_fechamento_caixa" in st.session_state:
     st.subheader("📊 Resumo do Último Fechamento de Caixa")
     dados_caixa = st.session_state.pop("dados_fechamento_caixa")
     vendas_dia = st.session_state.pop("vendas_dia_fechamento")
 
-    # Valores individuais
     valor_inicial = dados_caixa['ValorInicial']
     total_dinheiro = dados_caixa['Dinheiro']
     total_pix = dados_caixa['PIX']
-    total_cartao_bruto = dados_caixa['Cartão']  # Valor bruto da venda no cartão
+    total_cartao_bruto = dados_caixa['Cartão']
     total_fiado = dados_caixa['Fiado']
 
-    # Faturamento total do dia que entra no caixa (dinheiro + PIX)
     faturamento_total_caixa = total_dinheiro + total_pix
 
-    # Mostra detalhamento
     st.write(f"💵 Valor Inicial do Caixa: {brl(valor_inicial)}")
     st.write(f"💵 Dinheiro recebido hoje: {brl(total_dinheiro)}")
     st.write(f"⚡ PIX recebido: {brl(total_pix)}")
@@ -1399,11 +1385,9 @@ if "dados_fechamento_caixa" in st.session_state:
     st.write(f"📒 Fiado (não entra no caixa): {brl(total_fiado)}")
     st.write(f"📦 Faturamento Total do Dia (entrando no caixa): {brl(faturamento_total_caixa)}")
 
-    # Calcula valor final esperado no caixa
     valor_final_caixa = valor_inicial + faturamento_total_caixa
     st.write(f"💰 Valor Final esperado no Caixa: {brl(valor_final_caixa)}")
 
-    # Gera PDF
     caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
     gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
     with open(caminho_pdf, "rb") as f:
@@ -1417,7 +1401,7 @@ if "dados_fechamento_caixa" in st.session_state:
     st.write("---")
 
 
-# 🔹 Controle de fluxo: se caixa aberto ou não
+# 🔹 Fluxo do Caixa
 if not st.session_state.get("caixa_aberto", False):
     st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
     abrir_caixa()
@@ -1426,7 +1410,6 @@ else:
     valor_inicial = st.session_state.get("valor_inicial", 0.0)
     st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
 
-    # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
     # ================= TAB 1 - VENDA DETALHADA =================
@@ -1582,115 +1565,114 @@ else:
         else:
             st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
+        # ================= BOTÃO FECHAR CAIXA =================
+        if st.session_state.get("caixa_aberto", False):
+            if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
+                fechar_caixa()
 
-            # ================= BOTÃO FECHAR CAIXA (sempre visível na aba de vendas) =================
-            if st.session_state.get("caixa_aberto", False):
-                if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
-                    fechar_caixa()
 
+    # ================= TAB 2 - ÚLTIMAS VENDAS =================
+    with tab2:
+        st.subheader("📊 Últimas Vendas")
+        if not vendas.empty:
+            ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
 
-        # ================= TAB 2 - ÚLTIMAS VENDAS =================
-        with tab2:
-            st.subheader("📊 Últimas Vendas")
-            if not vendas.empty:
-                ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
+            colunas = [
+                "IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
+                "Total", "FormaPagamento", "ValorPago1", "ValorPago2"
+            ]
+            colunas = [c for c in colunas if c in ult.columns]
 
-                colunas = [
-                    "IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
-                    "Total", "FormaPagamento", "ValorPago1", "ValorPago2"
-                ]
-                colunas = [c for c in colunas if c in ult.columns]
+            st.dataframe(ult[colunas], use_container_width=True, key="df_ultimas_vendas")
 
-                st.dataframe(ult[colunas], use_container_width=True, key="df_ultimas_vendas")
+            ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
 
-                ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
+            colx, coly = st.columns([3, 1])
+            with colx:
+                id_excluir = st.selectbox(
+                    "Selecione a venda para excluir (devolve estoque)",
+                    ids if ids else [0],
+                    key="select_excluir_venda"
+                )
+            with coly:
+                if st.button("Excluir venda", key="btn_excluir_venda"):
+                    try:
+                        id_excluir_int = int(id_excluir)
+                    except:
+                        id_excluir_int = None
 
-                colx, coly = st.columns([3, 1])
-                with colx:
-                    id_excluir = st.selectbox(
-                        "Selecione a venda para excluir (devolve estoque)",
-                        ids if ids else [0],
-                        key="select_excluir_venda"
-                    )
-                with coly:
-                    if st.button("Excluir venda", key="btn_excluir_venda"):
-                        try:
-                            id_excluir_int = int(id_excluir)
-                        except:
-                            id_excluir_int = None
+                    if id_excluir_int and id_excluir_int in ids:
+                        linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
 
-                        if id_excluir_int and id_excluir_int in ids:
-                            linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
+                        for _, r in linhas.iterrows():
+                            mask = produtos["ID"].astype(str) == str(r["IDProduto"])
+                            if mask.any():
+                                produtos.loc[mask, "Quantidade"] = (
+                                    produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
+                                ).astype(int)
 
-                            for _, r in linhas.iterrows():
-                                mask = produtos["ID"].astype(str) == str(r["IDProduto"])
-                                if mask.any():
-                                    produtos.loc[mask, "Quantidade"] = (
-                                        produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
-                                    ).astype(int)
+                        vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
 
-                            vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
+                        save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
+                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
 
-                            save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
-                            save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                        st.session_state["vendas"] = vendas
+                        st.session_state["produtos"] = produtos
 
-                            st.session_state["vendas"] = vendas
-                            st.session_state["produtos"] = produtos
-
-                            st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
-                            st.rerun()
-                        else:
-                            st.warning("Venda não encontrada.")
-            else:
-                st.info("Ainda não há vendas registradas.")
-
-        # ================= TAB 3 - RECIBOS =================
-        with tab3:
-            import os
-            from PIL import Image, UnidentifiedImageError
-
-            st.subheader("📄 Recibos de Vendas")
-
-            if not vendas.empty:
-                datas = sorted(vendas["Data"].unique())
-                data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
-                vendas_dia = vendas[vendas["Data"] == data_sel]
-                ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
-                id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
-
-                if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
-                    caminho_pdf = f"recibo_venda_{id_sel}.pdf"
-                    gerar_pdf_venda(id_sel, vendas, caminho_pdf)
-
-                    with open(caminho_pdf, "rb") as f:
-                        st.download_button(
-                            label="⬇️ Baixar Recibo",
-                            data=f,
-                            file_name=caminho_pdf,
-                            mime="application/pdf",
-                            key="download_recibo"
-                        )
-
-                    logo_candidates = [
-                        "logo_docebella.png",
-                        "assets/logo_docebella.png",
-                        "static/logo_docebella.png",
-                        "images/logo_docebella.png",
-                    ]
-                    logo_path = next((p for p in logo_candidates if os.path.exists(p)), None)
-
-                    if logo_path:
-                        try:
-                            img = Image.open(logo_path)
-                            st.image(img, width=200, caption="Doce Bella")
-                        except (UnidentifiedImageError, OSError) as e:
-                            st.warning(f"⚠️ Não foi possível abrir a imagem do logo em '{logo_path}': {e}")
+                        st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
+                        st.rerun()
                     else:
-                        st.warning("⚠️ Arquivo 'logo_docebella.png' não foi encontrado. Coloque o arquivo na pasta do app ou em assets/static/images.")
+                        st.warning("Venda não encontrada.")
+        else:
+            st.info("Ainda não há vendas registradas.")
 
-            else:
-                st.info("Nenhuma venda para gerar recibo.")
 
+    # ================= TAB 3 - RECIBOS =================
+    with tab3:
+        import os
+        from PIL import Image, UnidentifiedImageError
+
+        st.subheader("📄 Recibos de Vendas")
+
+        if not vendas.empty:
+            datas = sorted(vendas["Data"].unique())
+            data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
+            vendas_dia = vendas[vendas["Data"] == data_sel]
+            ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
+            id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
+
+            if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
+                caminho_pdf = f"recibo_venda_{id_sel}.pdf"
+                gerar_pdf_venda(id_sel, vendas, caminho_pdf)
+
+                with open(caminho_pdf, "rb") as f:
+                    st.download_button(
+                        label="⬇️ Baixar Recibo",
+                        data=f,
+                        file_name=caminho_pdf,
+                        mime="application/pdf",
+                        key="download_recibo"
+                    )
+
+                logo_candidates = [
+                    "logo_docebella.png",
+                    "assets/logo_docebella.png",
+                    "static/logo_docebella.png",
+                    "images/logo_docebella.png",
+                ]
+                logo_path = next((p for p in logo_candidates if os.path.exists(p)), None)
+
+                if logo_path:
+                    try:
+                        img = Image.open(logo_path)
+                        st.image(img, width=200, caption="Doce Bella")
+                    except (UnidentifiedImageError, OSError) as e:
+                        st.warning(f"⚠️ Não foi possível abrir a imagem do logo em '{logo_path}': {e}")
+                else:
+                    st.warning("⚠️ Arquivo 'logo_docebella.png' não foi encontrado. Coloque o arquivo na pasta do app ou em assets/static/images.")
+
+        else:
+            st.info("Nenhuma venda para gerar recibo.")
 
 
 
