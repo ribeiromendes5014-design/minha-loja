@@ -1217,7 +1217,7 @@ if view == "Produtos":
    # ========================================================
 # 1. IMPORTS E FUNÇÕES GLOBAIS (SEMPRE NO TOPO)
 # ========================================================
-if view == "Vendas"
+
 # Configuração WhatsApp (Variáveis Globais)
 WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"
 WHATSAPP_PHONE_ID = "823826790806739"
@@ -1402,6 +1402,7 @@ if "dados_fechamento_caixa" in st.session_state:
 
 
 # 🔹 Fluxo do Caixa
+if view == "Vendas":
 if not st.session_state.get("caixa_aberto", False):
     st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
     abrir_caixa()
