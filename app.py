@@ -681,18 +681,21 @@ if view == "Dashboard":
                             mime="application/pdf"
                         )
 
----
-## Produtos
-
+# =====================================
+# PRODUTOS
+# =====================================
 if view == "Produtos":
     show_logo("main")
     st.header("📦 Produtos")
+
+    # --- Cadastro ---
     with st.expander("Cadastrar novo produto"):
         c1, c2, c3 = st.columns(3)
         with c1:
             nome = st.text_input("Nome", key="cad_nome")
             marca = st.text_input("Marca", key="cad_marca")
             categoria = st.text_input("Categoria", key="cad_categoria")
+
         with c2:
             qtd = st.number_input("Quantidade", min_value=0, step=1, value=0, key="cad_qtd")
             preco_custo = st.text_input("Preço de Custo", value="0,00", key="cad_preco_custo")
@@ -703,13 +706,18 @@ if view == "Produtos":
             except Exception:
                 preco_cartao = 0.0
             st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True, key="cad_preco_cartao")
+
         with c3:
             validade = st.date_input("Validade (opcional)", value=date.today(), key="cad_validade")
             foto_url = st.text_input("URL da Foto (opcional)", key="cad_foto_url")
             foto_arquivo = st.file_uploader("📷 Enviar Foto", type=["png", "jpg", "jpeg"], key="cad_foto")
+
             if "codigo_barras" not in st.session_state:
                 st.session_state["codigo_barras"] = ""
+
             codigo_barras = st.text_input("Código de Barras", value=st.session_state["codigo_barras"], key="cad_cb")
+
+            # --- Escanear com câmera ---
             foto_codigo = st.camera_input("📷 Escanear código de barras / QR Code", key="cad_cam")
             if foto_codigo is not None:
                 imagem_bytes = foto_codigo.getvalue()
@@ -720,6 +728,8 @@ if view == "Produtos":
                     st.rerun()
                 else:
                     st.error("❌ Não foi possível ler nenhum código.")
+
+            # --- Upload de imagem do código de barras ---
             foto_codigo_upload = st.file_uploader("📤 Upload de imagem do código de barras", type=["png", "jpg", "jpeg"], key="cad_cb_upload")
             if foto_codigo_upload is not None:
                 imagem_bytes = foto_codigo_upload.getvalue()
@@ -730,6 +740,7 @@ if view == "Produtos":
                     st.rerun()
                 else:
                     st.error("❌ Não foi possível ler nenhum código da imagem enviada.")
+
         if st.button("💾 Salvar Produto", use_container_width=True, key="cad_salvar"):
             novo_id = prox_id(produtos, "ID")
             novo = {
@@ -750,12 +761,16 @@ if view == "Produtos":
             save_csv_github(produtos, ARQ_PRODUTOS, "Novo produto cadastrado")
             st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
             st.rerun()
+
+
+    # --- Busca minimalista ---
     with st.expander("🔍 Pesquisar produto"):
         criterio = st.selectbox(
             "Pesquisar por:",
             ["Nome", "Marca", "Código de Barras", "Valor"]
         )
         termo = st.text_input("Digite para buscar:")
+
         if termo:
             if criterio == "Nome":
                 produtos_filtrados = produtos[produtos["Nome"].astype(str).str.contains(termo, case=False, na=False)]
@@ -772,6 +787,8 @@ if view == "Produtos":
                     produtos_filtrados = produtos.copy()
         else:
             produtos_filtrados = produtos.copy()
+
+    # --- Lista de produtos ---
     st.markdown("### Lista de produtos")
     if produtos_filtrados.empty:
         st.info("Nenhum produto encontrado.")
@@ -787,7 +804,7 @@ if view == "Produtos":
                 else:
                     c[0].write("—")
                 cb = f' • CB: {row["CodigoBarras"]}' if str(row.get("CodigoBarras","")).strip() else ""
-                c[1].markdown(f"**{row['Nome']}** \nMarca: {row['Marca']}  \nCat: {row['Categoria']}{cb}")
+                c[1].markdown(f"**{row['Nome']}**  \nMarca: {row['Marca']}  \nCat: {row['Categoria']}{cb}")
                 c[2].write(f"Estoque: {row['Quantidade']}")
                 c[3].write(f"Validade: {row['Validade']}")
                 col_btn = c[4]
@@ -795,13 +812,17 @@ if view == "Produtos":
                     eid = int(row["ID"])
                 except Exception:
                     continue
+
+                # 🔽 Novo seletor de ação
                 acao = col_btn.selectbox(
                     "Ação",
                     ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
                     key=f"acao_{eid}"
                 )
+
                 if acao == "✏️ Editar":
-                    st.session_state["edit_prod"] = eid
+                    st.session_state["edit_prod"] = eid  # só marca, sem rerun
+
                 if acao == "🗑️ Excluir":
                     if col_btn.button("Confirmar exclusão", key=f"conf_del_{eid}"):
                         produtos = produtos[produtos["ID"] != str(eid)]
@@ -809,6 +830,8 @@ if view == "Produtos":
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
                         st.warning(f"Produto {row['Nome']} excluído!")
                         st.rerun()
+
+        # Editor inline
         if "edit_prod" in st.session_state:
             eid = st.session_state["edit_prod"]
             row = produtos[produtos["ID"]==str(eid)]
@@ -838,6 +861,7 @@ if view == "Produtos":
                         if codigo_lido:
                             novo_cb = codigo_lido
                             st.success(f"Código lido: {novo_cb}")
+
                 col_save, col_cancel = st.columns([1,1])
                 with col_save:
                     if st.button("Salvar alterações", key=f"save_{eid}"):
@@ -862,13 +886,13 @@ if view == "Produtos":
                         del st.session_state["edit_prod"]
                         st.success("Produto atualizado!")
                         st.rerun()
+
                 with col_cancel:
                     if st.button("Cancelar edição", key=f"cancel_{eid}"):
                         del st.session_state["edit_prod"]
                         st.info("Edição cancelada.")
                         st.rerun()
 
----
 ## Vendas
 
 if view == "Vendas":
