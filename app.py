@@ -1275,9 +1275,7 @@ if view == "Vendas":
 # VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
 # =====================================
 if view == "Vendas":
-    show_logo("main")
-    st.header("🧾 Vendas")
-
+    
     # 🔹 Configuração WhatsApp
     import requests
     from datetime import datetime, date
