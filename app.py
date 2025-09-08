@@ -1433,10 +1433,10 @@ if view == "Vendas":
                     colB.metric("Cliente", nome_cliente if nome_cliente else "—")
                     colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
 
-                st.markdown("---")
+                            st.markdown("---")
 
-                # -- Botões de ação
-                            b1, b2, b4 = st.columns([1, 1, 1])
+            # -- Botões de ação
+            b1, b2, b4 = st.columns([1, 1, 1])
             with b1:
                 if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
                     finalizar_venda(
@@ -1450,11 +1450,11 @@ if view == "Vendas":
             with b4:
                 if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
                     fechar_caixa()
-
-                       else:
-                st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
+        else:
+            st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
         # ================= TAB 2 - ÚLTIMAS VENDAS =================
+
         with tab2:
             st.subheader("📊 Últimas Vendas")
             if not vendas.empty:
