@@ -1358,8 +1358,6 @@ def fechar_caixa():
         st.warning("❌ Fechamento cancelado. O caixa continua aberto.")
         st.stop()
 
-
-    # ================= SUB-ABAS =================
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
     # ================= TAB 1 - VENDA DETALHADA =================
