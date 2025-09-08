@@ -1274,7 +1274,7 @@ if view == "Vendas":
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
     # ================= FUNÇÕES AUXILIARES DE CAIXA =================
-    def abrir_caixa(operador, valor_inicial):
+    def abrir_caixa(valor_inicial=0.0):
         caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
         hoje = str(date.today())
         if not caixas.empty and (caixas["Data"] == hoje).any() and \
@@ -1284,8 +1284,6 @@ if view == "Vendas":
 
         novo = {
             "Data": hoje,
-            "Operador": operador,
-            "ValorInicial": float(valor_inicial),
             "FaturamentoTotal": 0.0,
             "Dinheiro": 0.0,
             "PIX": 0.0,
@@ -1302,7 +1300,7 @@ if view == "Vendas":
         caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
         st.session_state["caixas"] = caixas
         save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
-        st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
+        st.success(f"✅ Caixa aberto com R$ {valor_inicial:.2f} (troco inicial)")
         st.rerun()
 
     def fechar_caixa():
@@ -1325,7 +1323,7 @@ if view == "Vendas":
             cancelar = st.button("❌ Cancelar e Voltar")
 
         if confirmar:
-            esperado_din = caixas.loc[idx, "Dinheiro"].values[0] + caixas.loc[idx, "ValorInicial"].values[0]
+            esperado_din = caixas.loc[idx, "Dinheiro"].values[0]   # 👈 agora sem ValorInicial
             esperado_pix = caixas.loc[idx, "PIX"].values[0]
             esperado_cart = caixas.loc[idx, "Cartão"].values[0]
             esperado_fiado = caixas.loc[idx, "Fiado"].values[0]
@@ -1364,15 +1362,12 @@ if view == "Vendas":
     if not tem_caixa_aberto:
         st.warning("⚠️ Nenhum caixa aberto no momento. Abra um caixa para iniciar as vendas.")
 
-        operador = st.text_input("👤 Nome do operador")
         valor_inicial = st.number_input("💵 Valor inicial (troco)", min_value=0.0, step=1.0)
 
         if st.button("🚀 Abrir Caixa"):
-            if operador.strip():
-                abrir_caixa(operador, valor_inicial)
-            else:
-                st.error("Informe o nome do operador.")
+            abrir_caixa(valor_inicial)
         st.stop()
+
 
 
     
