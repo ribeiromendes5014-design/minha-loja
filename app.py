@@ -1408,87 +1408,6 @@ if view == "Vendas":
     # ================= TAB 1 - VENDA DETALHADA =================
     with tab1:
         st.subheader("🛒 Venda Detalhada")
-        # (mantém toda sua lógica de pesquisa por nome/código/foto e seleção de produtos)
-
-        # Se houver itens no pedido → mostra formas de pagamento
-        if st.session_state.get("pedido_atual"):
-            st.markdown("### Forma de Pagamento")
-            forma = st.radio(
-                "Selecione a forma de pagamento",
-                ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
-                horizontal=True,
-                key="radio_forma_pagamento"
-            )
-
-            forma1 = forma2 = None
-            valor1 = valor2 = 0.0
-            valor_recebido = 0.0
-            nome_cliente = None
-            data_pagamento = None
-
-            if forma == "Misto":
-                st.markdown("#### Configuração do pagamento misto")
-                colm1, colm2 = st.columns(2)
-                with colm1:
-                    forma1 = st.selectbox(
-                        "Primeira forma",
-                        ["Dinheiro", "PIX", "Cartão", "Fiado"],
-                        key="misto_forma1"
-                    )
-                    valor1 = st.number_input(
-                        f"Valor em {forma1}",
-                        min_value=0.0,
-                        step=1.0,
-                        key="misto_valor1"
-                    )
-                with colm2:
-                    forma2 = st.selectbox(
-                        "Segunda forma",
-                        ["Dinheiro", "PIX", "Cartão", "Fiado"],
-                        key="misto_forma2"
-                    )
-
-            # -- Pedido atual
-            df_pedido = desenha_pedido(forma, promocoes)
-            valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
-
-            # Ajustes extras
-            if forma == "Dinheiro":
-                valor_recebido = st.number_input("💵 Valor recebido em dinheiro", min_value=0.0, step=1.0)
-                troco = max(valor_recebido - valor_total, 0.0)
-                st.info(f"Troco: {brl(troco)}")
-            elif forma == "Fiado":
-                nome_cliente = st.text_input("👤 Nome do Cliente")
-                data_pagamento = st.date_input("📅 Data prevista de pagamento", value=date.today())
-
-            # -- Métricas
-            colA, colB, colC = st.columns(3)
-            colA.metric("Valor Total", brl(valor_total))
-
-            st.markdown("---")
-
-            # -- Botões de ação
-            b1, b2, b4 = st.columns([1, 1, 1])
-            with b1:
-                if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
-                    finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
-                                    nome_cliente=nome_cliente, data_pagamento=data_pagamento,
-                                    valor_recebido=valor_recebido)
-            with b2:
-                if st.button("🆕 Nova Venda", key="btn_nova_venda"):
-                    nova_venda()
-            with b4:
-                if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
-                    fechar_caixa()
-        else:
-            st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
-
-
-    # 🔹 Sub-abas principais
-    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
-# ================= TAB 1 - VENDA DETALHADA =================
-    with tab1:
-        st.subheader("🛒 Venda Detalhada")
 
         # --- PESQUISA DE PRODUTO ---
         st.markdown("### 🔍 Pesquisar Produto")
@@ -1648,6 +1567,7 @@ if view == "Vendas":
                     fechar_caixa()
         else:
             st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
+
    
 
 
