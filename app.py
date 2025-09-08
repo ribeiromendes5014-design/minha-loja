@@ -1264,46 +1264,49 @@ def abrir_caixa():
 
 
 def fechar_caixa():
-    if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
+    if st.session_state.get("caixa_aberto", False):
         operador = st.session_state.get("operador", "—")
-        valor_inicial = st.session_state.get("valor_inicial", 0.0)
+        valor_inicial = st.session_state.get("valor_inicial_original", 
+                                             st.session_state.get("valor_inicial", 0.0))
         hoje = date.today()
 
-        # 🔹 Garantir que a coluna Data é datetime.date
+        # Garantir que a coluna Data é datetime.date
         vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce").dt.date
 
-        # 🔹 Filtrar vendas do dia
+        # Filtrar vendas do dia
         vendas_dia = vendas[vendas["Data"] == hoje]
 
-        # 🔹 Totais por forma de pagamento
+        # Totais por forma de pagamento
         total_dinheiro = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
         total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
         total_cartao_bruto = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
         total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
 
-        # 🔹 Aplicar taxa do cartão (exemplo 11,28% de desconto)
+        # Aplicar taxa do cartão (exemplo 11,28% de desconto)
         taxa_cartao = 0.8872
         total_cartao_liquido = total_cartao_bruto * taxa_cartao
 
-        # 🔹 Faturamento total que entra no caixa (sem fiado)
+        # Faturamento total que entra no caixa (sem fiado)
         faturamento_caixa = total_dinheiro + total_pix + total_cartao_liquido
 
-        # 🔹 Valor final esperado no caixa
+        # Valor final esperado no caixa
         valor_final_caixa = valor_inicial + faturamento_caixa
 
+        # Dados do fechamento do caixa
         dados_caixa = {
             "Data": hoje.strftime("%Y-%m-%d"),
             "Operador": operador,
             "ValorInicial": valor_inicial,
-            "FaturamentoTotal": faturamento_caixa,
             "Dinheiro": total_dinheiro,
             "PIX": total_pix,
             "Cartão": total_cartao_liquido,
             "Fiado": total_fiado,
+            "FaturamentoTotal": faturamento_caixa,
             "ValorFinalCaixa": valor_final_caixa,
             "Status": "Fechado"
         }
 
+        # Salvar no CSV e na sessão
         caixas = norm_caixas(pd.DataFrame())
         caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
         save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje.strftime('%Y-%m-%d')}")
