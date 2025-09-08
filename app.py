@@ -1397,9 +1397,6 @@ else:
 
     # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
         tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
-    
-      
-
 
         # ================= TAB 1 - VENDA DETALHADA =================
         with tab1:
