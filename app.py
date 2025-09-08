@@ -1301,7 +1301,7 @@ if view == "Vendas":
         st.session_state["caixas"] = caixas
         st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
 
-    def fechar_caixa():
+def fechar_caixa():
     caixas = norm_caixas(pd.DataFrame())
     hoje_data = str(date.today())
     if caixas.empty or not (caixas["Data"] == hoje_data).any():
@@ -1337,6 +1337,7 @@ if view == "Vendas":
 
         st.success(f"📦 Caixa do dia {hoje_data} fechado! Diferença em dinheiro: {brl(diff)}")
         st.rerun()
+
 
 
 
