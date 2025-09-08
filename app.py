@@ -1217,7 +1217,7 @@ if view == "Produtos":
    # ========================================================
 # 1. IMPORTS E FUNÇÕES GLOBAIS (SEMPRE NO TOPO)
 # ========================================================
-if view =="Vendas"
+if view == "Vendas"
 # Configuração WhatsApp (Variáveis Globais)
 WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"
 WHATSAPP_PHONE_ID = "823826790806739"
