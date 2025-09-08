@@ -1,3 +1,2 @@
-IDVenda,Data,IDProduto,NomeProduto,CodigoBarras,FormaPagamento,Quantidade,PrecoUnitario,Total,PrecoVista,ValorPago1,ValorPago2,Cliente,DataPagamento,ValorRecebido
-1,2025-09-08,2,Body Splash,,Dinheiro,1,,,,,,,,
-2,2025-09-08,2,Body Splash,nan,Dinheiro,1,,,30.0,0.0,0.0,,,100.0
+IDVenda,Data,IDProduto,NomeProduto,CodigoBarras,FormaPagamento,Quantidade,PrecoUnitario,Total
+1,2025-09-08,2,Body Splash,,Dinheiro,1,,
