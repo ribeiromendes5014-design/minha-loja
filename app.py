@@ -1400,9 +1400,6 @@ vendas = pd.DataFrame([
     {"forma_pagamento": "Misto Dinheiro", "valor": 70},
 ])
             
-            
-
-        
         # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
         tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
