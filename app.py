@@ -1315,6 +1315,41 @@ if view == "Vendas":
         except Exception as e:
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
+    
+    # ========================================================
+    # FINALIZAR VENDA (correção do bug IDVenda)
+    # ========================================================
+    def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
+                        nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
+        global vendas, produtos
+
+        if not st.session_state.get("pedido_atual"):
+            st.warning("⚠️ Nenhum item no pedido.")
+            return
+
+        # Garante coluna IDVenda como numérica
+        if not vendas.empty and "IDVenda" in vendas.columns:
+            vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
+            novo_id = int(vendas["IDVenda"].max() + 1)
+        else:
+            novo_id = 1
+
+        df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
+        df_pedido["IDVenda"] = novo_id
+        df_pedido["Data"] = str(date.today())
+        df_pedido["FormaPagamento"] = forma
+        df_pedido["ValorPago1"] = valor1
+        df_pedido["ValorPago2"] = valor2
+        df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
+        df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
+        df_pedido["ValorRecebido"] = valor_recebido
+
+        vendas = pd.concat([vendas, df_pedido], ignore_index=True)
+        save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
+
+        st.session_state["pedido_atual"] = []
+        st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
+
     # =====================================
 # Exemplo de DataFrame de Vendas do Dia
 # (No seu caso já deve vir do banco de dados ou CSV)
@@ -1421,53 +1456,6 @@ else:
             # Reset caixa
             st.session_state["caixa_aberto"] = False
             st.session_state["fechar_caixa"] = False
-    # ========================================================
-    # FINALIZAR VENDA (correção do bug IDVenda)
-    # ========================================================
-    def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
-                        nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
-        global vendas, produtos
-
-        if not st.session_state.get("pedido_atual"):
-            st.warning("⚠️ Nenhum item no pedido.")
-            return
-
-        # Garante coluna IDVenda como numérica
-        if not vendas.empty and "IDVenda" in vendas.columns:
-            vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
-            novo_id = int(vendas["IDVenda"].max() + 1)
-        else:
-            novo_id = 1
-
-        df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
-        df_pedido["IDVenda"] = novo_id
-        df_pedido["Data"] = str(date.today())
-        df_pedido["FormaPagamento"] = forma
-        df_pedido["ValorPago1"] = valor1
-        df_pedido["ValorPago2"] = valor2
-        df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
-        df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
-        df_pedido["ValorRecebido"] = valor_recebido
-
-        vendas = pd.concat([vendas, df_pedido], ignore_index=True)
-        save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
-
-        st.session_state["pedido_atual"] = []
-        st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
-
-    # ========================================================
-    # BLOQUEIO DE CAIXA
-    # ========================================================
-    if not st.session_state.get("caixa_aberto", False):
-        st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
-        abrir_caixa()
-    else:
-        operador = st.session_state.get("operador", "—")
-        valor_inicial = st.session_state.get("valor_inicial", 0.0)
-        st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
-
-        # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
-        tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
         # ================= TAB 1 - VENDA DETALHADA =================
         with tab1:
