@@ -1548,14 +1548,24 @@ if view == "Vendas":
             st.markdown("---")
 
             # ================= MOSTRAR PAGAMENTO SOMENTE SE HOUVER ITENS =================
-            if st.session_state.get("pedido_atual") and len(st.session_state["pedido_atual"]) > 0:
-                st.markdown("### Forma de Pagamento")
-                forma = st.radio(
-                    "Selecione a forma de pagamento",
-                    ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
-                    horizontal=True,
-                    key="radio_forma_pagamento_venda"
-                )
+if "mostrar_pagamento" not in st.session_state:
+    st.session_state["mostrar_pagamento"] = False
+
+# Ativa pagamento quando adiciona produto
+if st.session_state.get("pedido_atual") and len(st.session_state["pedido_atual"]) > 0:
+    st.session_state["mostrar_pagamento"] = True
+
+if st.session_state["mostrar_pagamento"]:
+    st.markdown("### Forma de Pagamento")
+    forma = st.radio(
+        "Selecione a forma de pagamento",
+        ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
+        horizontal=True,
+        key="radio_forma_pagamento_venda"
+    )
+    ...
+else:
+    st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
                 forma1 = forma2 = None
                 valor1 = valor2 = 0.0
