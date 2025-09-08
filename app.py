@@ -1276,6 +1276,7 @@ if view == "Vendas":
     # ================= FUNÇÕES AUXILIARES DE CAIXA =================
     def abrir_caixa(operador, valor_inicial=0.0):
         caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
+        caixas = norm_caixas(caixas)
         hoje = str(date.today())
 
         if not caixas.empty and (caixas["Data"] == hoje).any() and \
@@ -1301,13 +1302,15 @@ if view == "Vendas":
         }
 
         caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
-        st.session_state["caixas"] = norm_caixas(caixas)
-        save_csv_github(st.session_state["caixas"], ARQ_CAIXAS, f"Abertura de caixa {hoje}")
+        caixas = norm_caixas(caixas)
+        st.session_state["caixas"] = caixas
+        save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
         st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f} (troco inicial)")
         st.rerun()
 
     def fechar_caixa():
         caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
+        caixas = norm_caixas(caixas)
         hoje_data = str(date.today())
 
         if caixas.empty or not (caixas["Data"] == hoje_data).any():
@@ -1344,7 +1347,8 @@ if view == "Vendas":
             caixas.loc[idx, "Diferenca"] = diff
             caixas.loc[idx, "Status"] = "Fechado"
 
-            st.session_state["caixas"] = norm_caixas(caixas)
+            caixas = norm_caixas(caixas)
+            st.session_state["caixas"] = caixas.copy()
             save_csv_github(st.session_state["caixas"], ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
 
             st.success(f"📦 Caixa do dia {hoje_data} fechado por {operador}! Diferença em dinheiro: {brl(diff)}")
