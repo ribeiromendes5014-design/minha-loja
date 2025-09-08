@@ -1218,13 +1218,21 @@ if view == "Produtos":
 # 1. IMPORTS E FUNÇÕES GLOBAIS (SEMPRE NO TOPO)
 # ========================================================
 
+import streamlit as st
+import pandas as pd
+from datetime import date
+import requests
+
 # Configuração WhatsApp (Variáveis Globais)
 WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"
 WHATSAPP_PHONE_ID = "823826790806739"
 WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
 NUMERO_DESTINO = "5541987876191"
 
-# Funções Auxiliares
+# ========================================================
+# 2. FUNÇÕES AUXILIARES
+# ========================================================
+
 def enviar_whatsapp(destinatario, mensagem):
     headers = {
         "Authorization": f"Bearer {WHATSAPP_TOKEN}",
@@ -1344,17 +1352,14 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     df_pedido["Total"] = df_pedido["PrecoVista"] * df_pedido["Quantidade"]
 
     if forma == "Misto" and forma1 and forma2:
-        total_pedido = df_pedido["Total"].sum()
-        proporcao1 = valor1 / (valor1 + valor2) if (valor1 + valor2) > 0 else 0.5
-        proporcao2 = 1 - proporcao1
-
+        # Correção: dinheiro entra integral no caixa, cartão ou outra forma apenas registro bruto
         df_pedido1 = df_pedido.copy()
         df_pedido1["FormaPagamento"] = forma1
-        df_pedido1["Total"] = df_pedido["Total"] * proporcao1
+        df_pedido1["Total"] = valor1 if forma1 != "Dinheiro" else df_pedido["Total"].sum() * (valor1 / (valor1 + valor2))
 
         df_pedido2 = df_pedido.copy()
         df_pedido2["FormaPagamento"] = forma2
-        df_pedido2["Total"] = df_pedido["Total"] * proporcao2
+        df_pedido2["Total"] = valor2 if forma2 != "Dinheiro" else df_pedido["Total"].sum() * (valor2 / (valor1 + valor2))
 
         vendas = pd.concat([vendas, df_pedido1, df_pedido2], ignore_index=True)
     else:
@@ -1379,7 +1384,6 @@ if "dados_fechamento_caixa" in st.session_state:
     total_cartao_bruto = dados_caixa['Cartão']
     total_fiado = dados_caixa['Fiado']
 
-    # Correção: faturamento total inclui todas as formas, mas valor final do caixa só soma o dinheiro
     faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_bruto + total_fiado
     valor_final_caixa = valor_inicial + total_dinheiro
 
