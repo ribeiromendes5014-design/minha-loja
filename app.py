@@ -1442,7 +1442,6 @@ if "dados_fechamento_caixa" in st.session_state:
         )
     st.write("---")
 
-
         # ================= TAB 2 - ÚLTIMAS VENDAS =================
         with tab2:
             st.subheader("📊 Últimas Vendas")
