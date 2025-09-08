@@ -1488,7 +1488,7 @@ if st.session_state.get("pedido_atual"):
         "Selecione a forma de pagamento",
         ["Dinheiro", "PIX", "Cartão", "Fiado", "Misto"],
         horizontal=True,
-        key="radio_forma_pagamento_venda_venda"
+        key="radio_forma_pagamento_venda"
     )
 
     forma1 = forma2 = None
