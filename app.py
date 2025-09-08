@@ -1214,7 +1214,7 @@ if view == "Produtos":
 
 
 
-   # ========================================================
+  # ========================================================
 # 1. IMPORTS E FUNÇÕES GLOBAIS (SEMPRE NO TOPO)
 # ========================================================
 
@@ -1329,7 +1329,7 @@ def fechar_caixa():
         st.rerun()
 
 
-def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
+def finalizar_venda(forma, forma1=None, forma2=None, valor1=0.0, valor2=0.0, promocoes=None,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
     global vendas, produtos
 
@@ -1351,15 +1351,17 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     df_pedido["ValorRecebido"] = valor_recebido
     df_pedido["Total"] = df_pedido["PrecoVista"] * df_pedido["Quantidade"]
 
+    # ========================================================
+    # Venda Mista: cada forma recebe exatamente o valor informado
+    # ========================================================
     if forma == "Misto" and forma1 and forma2:
-        # Correção: dinheiro entra integral no caixa, cartão ou outra forma apenas registro bruto
         df_pedido1 = df_pedido.copy()
         df_pedido1["FormaPagamento"] = forma1
-        df_pedido1["Total"] = valor1 if forma1 != "Dinheiro" else df_pedido["Total"].sum() * (valor1 / (valor1 + valor2))
+        df_pedido1["Total"] = valor1
 
         df_pedido2 = df_pedido.copy()
         df_pedido2["FormaPagamento"] = forma2
-        df_pedido2["Total"] = valor2 if forma2 != "Dinheiro" else df_pedido["Total"].sum() * (valor2 / (valor1 + valor2))
+        df_pedido2["Total"] = valor2
 
         vendas = pd.concat([vendas, df_pedido1, df_pedido2], ignore_index=True)
     else:
