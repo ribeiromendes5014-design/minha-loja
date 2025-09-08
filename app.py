@@ -1274,7 +1274,7 @@ if view == "Vendas":
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
     # ================= FUNÇÕES AUXILIARES DE CAIXA =================
-    def abrir_caixa(operador, valor_inicial):
+def abrir_caixa(operador, valor_inicial):
     caixas = norm_caixas(pd.DataFrame())
     hoje = str(date.today())
     if not caixas.empty and (caixas["Data"] == hoje).any():
@@ -1350,7 +1350,8 @@ def fechar_caixa():
         st.stop()
 
 
-    # ================= FUNÇÕES AUXILIARES DE VENDAS =================
+# ================= FUNÇÕES AUXILIARES DE VENDAS =================
+
     # (sua função finalizar_venda e demais continuam iguais...)
     # 🔹 Sub-abas principais (somente 3)
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
