@@ -1,1 +1,2 @@
-Data,FaturamentoTotal,Dinheiro,PIX,Cartão,Fiado,RealDinheiro,RealPIX,RealCartao,RealFiado,Diferenca,Status
+Data,FaturamentoTotal,Dinheiro,PIX,Cartão,Fiado,RealDinheiro,RealPIX,RealCartao,RealFiado,Diferenca,Status,Operador,ValorInicial
+2025-09-08,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,Aberto,Renan,0.0
