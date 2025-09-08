@@ -1328,67 +1328,51 @@ if view == "Vendas":
                     st.rerun()
 
     # ========================================================
-    # FECHAMENTO DE CAIXA
-    # ========================================================
-    def fechar_caixa():
-        if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
-            operador = st.session_state.get("operador", "—")
-            valor_inicial = st.session_state.get("valor_inicial", 0.0)
-            hoje = str(date.today())
+# FECHAMENTO DE CAIXA
+# ========================================================
+def fechar_caixa():
+    if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
+        operador = st.session_state.get("operador", "—")
+        valor_inicial = st.session_state.get("valor_inicial", 0.0)
+        hoje = str(date.today())
 
-            # 🔹 Filtrar vendas do dia
-            vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
-            vendas_dia = vendas[vendas["Data"].dt.strftime("%Y-%m-%d") == hoje]
+        # 🔹 Filtrar vendas do dia
+        vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
+        vendas_dia = vendas[vendas["Data"].dt.strftime("%Y-%m-%d") == hoje]
 
-            # 🔹 Calcular totais por forma de pagamento
-            total_dinheiro = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
-            total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
-            total_cartao = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
-            total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
-            faturamento_total = total_dinheiro + total_pix + total_cartao + total_fiado
+        # 🔹 Calcular totais por forma de pagamento
+        total_dinheiro = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
+        total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
+        total_cartao = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
+        total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
+        faturamento_total = total_dinheiro + total_pix + total_cartao + total_fiado
 
-            # 🔹 Montar dados do caixa
-            dados_caixa = {
-                "Data": hoje,
-                "Operador": operador,
-                "ValorInicial": valor_inicial,
-                "FaturamentoTotal": faturamento_total,
-                "Dinheiro": total_dinheiro,
-                "PIX": total_pix,
-                "Cartão": total_cartao,
-                "Fiado": total_fiado,
-                "Status": "Fechado"
-            }
+        # 🔹 Montar dados do caixa
+        dados_caixa = {
+            "Data": hoje,
+            "Operador": operador,
+            "ValorInicial": valor_inicial,
+            "FaturamentoTotal": faturamento_total,
+            "Dinheiro": total_dinheiro,
+            "PIX": total_pix,
+            "Cartão": total_cartao,
+            "Fiado": total_fiado,
+            "Status": "Fechado"
+        }
 
-            # 🔹 Atualizar CSV de caixas
-            caixas = norm_caixas(pd.DataFrame())
-            caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
-            save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje}")
+        # 🔹 Atualizar CSV de caixas
+        caixas = norm_caixas(pd.DataFrame())
+        caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
+        save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje}")
+        
+        # Armazena os dados do relatório na sessão antes de fechar o caixa
+        st.session_state["dados_fechamento_caixa"] = dados_caixa
+        st.session_state["vendas_dia_fechamento"] = vendas_dia
+        st.session_state["caixa_aberto"] = False
+        st.success(f"📦 Caixa fechado! Operador: {operador}")
 
-            # 🔹 Mostrar resumo antes de baixar
-            st.subheader("📊 Resumo do Caixa")
-            st.write(f"💵 Dinheiro: {brl(total_dinheiro)}")
-            st.write(f"⚡ PIX: {brl(total_pix)}")
-            st.write(f"💳 Cartão: {brl(total_cartao)}")
-            st.write(f"📒 Fiado: {brl(total_fiado)}")
-            st.write(f"📦 Total: {brl(faturamento_total)}")
-
-            # 🔹 Gerar PDF
-            caminho_pdf = f"caixa_{hoje}.pdf"
-            gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
-            with open(caminho_pdf, "rb") as f:
-                st.download_button(
-                    label=f"⬇️ Baixar Relatório de Caixa ({hoje})",
-                    data=f,
-                    file_name=caminho_pdf,
-                    mime="application/pdf",
-                    key="download_caixa"
-                )
-
-            # 🔹 Fechar caixa na sessão
-            st.session_state["caixa_aberto"] = False
-            st.success(f"📦 Caixa fechado! Operador: {operador}")
-            st.rerun()
+        # Remove o st.rerun() daqui, ele será chamado no botão
+        # st.rerun()
 
     # ========================================================
     # FINALIZAR VENDA (correção do bug IDVenda)
@@ -1425,16 +1409,50 @@ if view == "Vendas":
         st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
 
     # ========================================================
-    # BLOQUEIO DE CAIXA
-    # ========================================================
-    if not st.session_state.get("caixa_aberto", False):
-        st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
-        abrir_caixa()
-    else:
-        operador = st.session_state.get("operador", "—")
-        valor_inicial = st.session_state.get("valor_inicial", 0.0)
-        st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
+# BLOQUEIO DE CAIXA
+# ========================================================
+# Primeiro, verifique e mostre o resumo do último fechamento, se existir
+if "dados_fechamento_caixa" in st.session_state:
+    st.subheader("📊 Resumo do Último Fechamento de Caixa")
+    dados_caixa = st.session_state.pop("dados_fechamento_caixa")
+    vendas_dia = st.session_state.pop("vendas_dia_fechamento")
+    
+    st.write(f"💵 Dinheiro: {brl(dados_caixa['Dinheiro'])}")
+    st.write(f"⚡ PIX: {brl(dados_caixa['PIX'])}")
+    st.write(f"💳 Cartão: {brl(dados_caixa['Cartão'])}")
+    st.write(f"📒 Fiado: {brl(dados_caixa['Fiado'])}")
+    st.write(f"📦 Total: {brl(dados_caixa['FaturamentoTotal'])}")
 
+    caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
+    gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
+    with open(caminho_pdf, "rb") as f:
+        st.download_button(
+            label=f"⬇️ Baixar Relatório de Caixa ({dados_caixa['Data']})",
+            data=f,
+            file_name=caminho_pdf,
+            mime="application/pdf",
+            key="download_caixa"
+        )
+    st.write("---")
+
+# Agora, continue com a lógica de abertura/fechamento
+if not st.session_state.get("caixa_aberto", False):
+    st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
+    abrir_caixa()
+else:
+    operador = st.session_state.get("operador", "—")
+    valor_inicial = st.session_state.get("valor_inicial", 0.0)
+    st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
+
+    # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
+    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+    
+    with tab1:
+        # ... (Seu código da aba Venda Detalhada, incluindo os botões) ...
+        # Lembre-se de colocar o st.rerun() no botão que chama fechar_caixa()
+        # if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
+        #     fechar_caixa()
+        #     st.rerun()
         # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
         tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
