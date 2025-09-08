@@ -1339,7 +1339,6 @@ if view == "Vendas":
         st.rerun()
 
 
-
     # ================= FUNÇÕES AUXILIARES DE VENDAS =================
     # (sua função finalizar_venda e demais continuam iguais...)
 
