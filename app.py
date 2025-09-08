@@ -1548,7 +1548,7 @@ if view == "Vendas":
             st.markdown("---")
 
             # ================= MOSTRAR PAGAMENTO SOMENTE SE HOUVER ITENS =================
-            if st.session_state.get("pedido_atual"):
+            if st.session_state.get("pedido_atual") and len(st.session_state["pedido_atual"]) > 0:
                 st.markdown("### Forma de Pagamento")
                 forma = st.radio(
                     "Selecione a forma de pagamento",
