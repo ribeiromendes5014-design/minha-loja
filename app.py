@@ -1400,9 +1400,8 @@ if "dados_fechamento_caixa" in st.session_state:
         )
     st.write("---")
 
-
-# 🔹 Fluxo do Caixa
 if view == "Vendas":
+# 🔹 Fluxo do Caixa
 if not st.session_state.get("caixa_aberto", False):
     st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
     abrir_caixa()
