@@ -1285,8 +1285,7 @@ if st.session_state["caixa_aberto"]:
     # 👉 aqui continua seu fluxo de vendas (produtos, finalizar, etc.)
 else:
     st.warning("⚠️ Caixa fechado. Abra o caixa para habilitar as vendas.")
-
-                    st.rerun()
+    st.rerun()
 
     # 🔹 BLOQUEIO DA ABA DE VENDAS
     if not st.session_state["caixa_aberto"]:
