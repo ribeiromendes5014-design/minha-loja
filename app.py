@@ -1540,9 +1540,6 @@ if view == "Vendas":
             else:
                 st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
-
-
-              
                 # ================= TAB 2 - ÚLTIMAS VENDAS =================
 with tab2:
     st.subheader("📊 Últimas Vendas")
