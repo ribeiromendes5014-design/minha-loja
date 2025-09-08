@@ -163,13 +163,14 @@ def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
 
     # --- Resumo Financeiro
     tabela = [
-        ["Faturamento Total", f"R$ {dados_caixa['FaturamentoTotal']:.2f}"],
-        ["Dinheiro", f"R$ {dados_caixa['Dinheiro']:.2f}"],
-        ["PIX", f"R$ {dados_caixa['PIX']:.2f}"],
-        ["Cartão", f"R$ {dados_caixa['Cartão']:.2f}"],
-        ["Fiado", f"R$ {dados_caixa['Fiado']:.2f}"],
-        ["Status", dados_caixa['Status']],
-    ]
+    ["Faturamento Total", f"R$ {dados_caixa['FaturamentoTotal']:.2f}"],
+    ["Dinheiro", f"R$ {dados_caixa['Dinheiro']:.2f}"],
+    ["PIX", f"R$ {dados_caixa['PIX']:.2f}"],
+    ["Cartão", f"R$ {dados_caixa['Cartão']:.2f}"],
+    ["Fiado", f"R$ {dados_caixa['Fiado']:.2f}"],
+    ["Valor Final Informado", f"R$ {dados_caixa.get('ValorFinalInformado', 0):.2f}"],  # << NOVO
+    ["Status", dados_caixa['Status']],
+]
     t = Table(tabela, hAlign="LEFT")
     t.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
