@@ -1399,34 +1399,8 @@ vendas = pd.DataFrame([
     {"forma_pagamento": "Dinheiro", "valor": 50},
     {"forma_pagamento": "Misto Dinheiro", "valor": 70},
 ])
-
-# =====================================
-# Inicialização do estado da sessão
-# =====================================
-if "caixa_aberto" not in st.session_state:
-    st.session_state["caixa_aberto"] = False
-if "valor_inicial" not in st.session_state:
-    st.session_state["valor_inicial"] = 0.0
-if "operador" not in st.session_state:
-    st.session_state["operador"] = ""
-
-# =====================================
-# Abrir Caixa
-# =====================================
-if not st.session_state["caixa_aberto"]:
-    st.header("📂 Abertura de Caixa")
-
-    operador = st.text_input("👤 Nome do operador")
-    valor_inicial = st.number_input("💵 Valor inicial de caixa", min_value=0.0, step=0.01)
-
-    if st.button("Abrir Caixa"):
-        if operador.strip() == "" or valor_inicial <= 0:
-            st.warning("Preencha o nome do operador e o valor inicial.")
-        else:
-            st.session_state["caixa_aberto"] = True
-            st.session_state["operador"] = operador
-            st.session_state["valor_inicial"] = valor_inicial
-            st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
+            
+            
             # Salvar CSV
             filename = "fechamentos.csv"
             if os.path.exists(filename):
