@@ -1265,13 +1265,13 @@ def fechar_caixa():
     if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
         operador = st.session_state.get("operador", "—")
         valor_inicial = st.session_state.get("valor_inicial", 0.0)
-        hoje = pd.to_datetime(date.today())
+        hoje = date.today()
 
-        # 🔹 Garantir que a coluna Data é datetime
-        vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
+        # 🔹 Garantir que a coluna Data é datetime.date
+        vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce").dt.date
 
         # 🔹 Filtrar vendas do dia
-        vendas_dia = vendas[vendas["Data"].dt.date == hoje.date()]
+        vendas_dia = vendas[vendas["Data"] == hoje]
 
         # 🔹 Totais por forma de pagamento
         total_dinheiro = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
@@ -1304,7 +1304,6 @@ def fechar_caixa():
         st.rerun()
 
 
-
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
     global vendas, produtos
@@ -1322,20 +1321,33 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     
     df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
     df_pedido["IDVenda"] = novo_id
-    df_pedido["Data"] = str(date.today())
-    df_pedido["FormaPagamento"] = forma
-    df_pedido["ValorPago1"] = valor1
-    df_pedido["ValorPago2"] = valor2
+    df_pedido["Data"] = date.today()
     df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
     df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
     df_pedido["ValorRecebido"] = valor_recebido
-    
-    vendas = pd.concat([vendas, df_pedido], ignore_index=True)
+    df_pedido["Total"] = df_pedido["PrecoVista"] * df_pedido["Quantidade"]
+
+    if forma == "Misto" and forma1 and forma2:
+        total_pedido = df_pedido["Total"].sum()
+        proporcao1 = valor1 / (valor1 + valor2) if (valor1 + valor2) > 0 else 0.5
+        proporcao2 = 1 - proporcao1
+
+        df_pedido1 = df_pedido.copy()
+        df_pedido1["FormaPagamento"] = forma1
+        df_pedido1["Total"] = df_pedido["Total"] * proporcao1
+
+        df_pedido2 = df_pedido.copy()
+        df_pedido2["FormaPagamento"] = forma2
+        df_pedido2["Total"] = df_pedido["Total"] * proporcao2
+
+        vendas = pd.concat([vendas, df_pedido1, df_pedido2], ignore_index=True)
+    else:
+        df_pedido["FormaPagamento"] = forma
+        vendas = pd.concat([vendas, df_pedido], ignore_index=True)
+
     save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
-    
     st.session_state["pedido_atual"] = []
     st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
-
 
 # ========================================================
 # 2. LÓGICA DO APP (USE as funções definidas acima)
@@ -1425,7 +1437,7 @@ if view == "Vendas":
                     )
                     qtd_codigo = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_codigo_venda")
                     if st.button("Adicionar ao pedido (código)", key="btn_add_codigo_venda"):
-                        pid = escolha.split(" - ")[0].strip()
+                        pid = escolha.split(" - ")[0].
                         rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
                         st.session_state["pedido_atual"].append({
                             "IDProduto": pid,
