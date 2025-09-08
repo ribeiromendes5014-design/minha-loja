@@ -1428,16 +1428,6 @@ if not st.session_state["caixa_aberto"]:
             st.session_state["valor_inicial"] = valor_inicial
             st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
 
-# =====================================
-# Caixa Aberto → Mostrar Opções de Venda + Fechar
-# =====================================
-else:
-    st.header(f"🛒 Caixa Aberto - Operador: {st.session_state['operador']}")
-    st.info("⚡ Aqui ficariam as telas de vendas do seu sistema")
-
-    # 🔹 Botão para fechar caixa
-    if st.button("🔒 Fechar Caixa"):
-        st.session_state["fechar_caixa"] = True
 
     # =====================================
     # Fechamento
