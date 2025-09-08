@@ -1387,18 +1387,11 @@ if "dados_fechamento_caixa" in st.session_state:
     st.write("---")
 
 # Agora, continue com a lógica de abertura/fechamento
-def abrir_caixa():
-    with st.form("form_abrir_caixa"):
-        operador = st.text_input("👤 Nome do operador", key="operador")
-        valor_inicial = st.number_input("💵 Valor inicial do caixa", min_value=0.0, step=1.0, key="valor_inicial")
-        submitted = st.form_submit_button("Abrir Caixa")
-
-        if submitted:
-            st.session_state["caixa_aberto"] = True
-            st.session_state["operador"] = operador
-            st.session_state["valor_inicial"] = valor_inicial
-            st.success(f"Caixa aberto por {operador} com valor inicial {valor_inicial:.2f}")
-            st.rerun()
+def fechar_caixa():
+    if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
+        operador = st.session_state.get("operador", "—")
+        valor_inicial = st.session_state.get("valor_inicial", 0.0)
+        hoje = str(date.today())
 
 if not st.session_state.get("caixa_aberto", False):
     st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
