@@ -1342,7 +1342,7 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
         # 🔹 Atualiza sessão e salva
         st.session_state["clientes"] = clientes
         save_csv_github(clientes, ARQ_CLIENTES, "Novo fiado adicionado")
-
+        st.rerun()
 
 # 🔹 Resumo Último Fechamento
 if "dados_fechamento_caixa" in st.session_state:
