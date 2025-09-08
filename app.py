@@ -1250,11 +1250,14 @@ if view == "Vendas":
         except Exception as e:
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
-    def fechar_caixa():
+
+
+        def fechar_caixa():
     if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
         operador = st.session_state.get("operador", "—")
         valor_inicial = st.session_state.get("valor_inicial", 0.0)
         hoje = str(date.today())
+
 
         # 🔹 Filtrar vendas do dia
         vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce")
