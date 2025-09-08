@@ -1278,20 +1278,29 @@ def fechar_caixa():
         # 🔹 Totais por forma de pagamento
         total_dinheiro = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
         total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
-        total_cartao = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
+        total_cartao_bruto = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
         total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
 
-        faturamento_total = total_dinheiro + total_pix + total_cartao + total_fiado
+        # 🔹 Aplicar taxa do cartão (exemplo 11,28% de desconto)
+        taxa_cartao = 0.8872
+        total_cartao_liquido = total_cartao_bruto * taxa_cartao
+
+        # 🔹 Faturamento total que entra no caixa (sem fiado)
+        faturamento_caixa = total_dinheiro + total_pix + total_cartao_liquido
+
+        # 🔹 Valor final esperado no caixa
+        valor_final_caixa = valor_inicial + faturamento_caixa
 
         dados_caixa = {
             "Data": hoje.strftime("%Y-%m-%d"),
             "Operador": operador,
             "ValorInicial": valor_inicial,
-            "FaturamentoTotal": faturamento_total,
+            "FaturamentoTotal": faturamento_caixa,
             "Dinheiro": total_dinheiro,
             "PIX": total_pix,
-            "Cartão": total_cartao,
+            "Cartão": total_cartao_liquido,
             "Fiado": total_fiado,
+            "ValorFinalCaixa": valor_final_caixa,
             "Status": "Fechado"
         }
 
@@ -1302,7 +1311,8 @@ def fechar_caixa():
         st.session_state["dados_fechamento_caixa"] = dados_caixa
         st.session_state["vendas_dia_fechamento"] = vendas_dia
         st.session_state["caixa_aberto"] = False
-        st.success(f"📦 Caixa fechado! Operador: {operador}")
+
+        st.success(f"📦 Caixa fechado! Operador: {operador} | Valor final esperado: {brl(valor_final_caixa)}")
         st.rerun()
 
 
