@@ -543,9 +543,10 @@ def norm_clientes(_: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-
 def norm_caixas(_: pd.DataFrame) -> pd.DataFrame:
-    cols = ["Data","FaturamentoTotal","Dinheiro","PIX","Cartão","Fiado","Status"]
+    cols = ["Data","Operador","ValorInicial","FaturamentoTotal",
+            "Dinheiro","PIX","Cartão","Fiado","ValorFinalInformado","Status"]
+
 
     # tenta carregar do GitHub primeiro
     df = load_csv_github(ARQ_CAIXAS)
