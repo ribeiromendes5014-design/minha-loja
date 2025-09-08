@@ -1250,6 +1250,46 @@ if view == "Vendas":
         except Exception as e:
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
+
+    # ========================================================
+    # CONTROLE DE ABERTURA E FECHAMENTO DO CAIXA
+    # ========================================================
+    def abrir_caixa():
+        operador = st.text_input("👤 Nome do Operador", key="operador_nome")
+        valor_inicial = st.number_input("💵 Valor Inicial do Caixa", min_value=0.0, step=1.0, key="valor_inicial")
+
+        if st.button("🚀 Abrir Caixa", key="btn_abrir_caixa"):
+            if operador and valor_inicial >= 0:
+                st.session_state["caixa_aberto"] = True
+                st.session_state["operador"] = operador
+                st.session_state["valor_inicial"] = valor_inicial
+                st.success(f"✅ Caixa aberto com operador {operador} e valor inicial {valor_inicial:.2f}")
+                st.rerun()
+            else:
+                st.warning("⚠️ Informe o nome do operador e o valor inicial.")
+
+    def fechar_caixa():
+        if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
+            st.session_state["caixa_aberto"] = False
+            operador = st.session_state.get("operador", "—")
+            st.success(f"📦 Caixa fechado! Operador: {operador}")
+            st.rerun()
+
+    # ========================================================
+    # 🔒 BLOQUEIO: SÓ MOSTRA AS ABAS DE VENDA SE CAIXA ESTIVER ABERTO
+    # ========================================================
+    if not st.session_state.get("caixa_aberto", False):
+        st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
+        abrir_caixa()
+    else:
+        operador = st.session_state.get("operador", "—")
+        valor_inicial = st.session_state.get("valor_inicial", 0.0)
+        st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
+
+        # 🔹 Sub-abas principais (mantive as suas: Venda Detalhada, Últimas, Recibos)
+        tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+
+
     # ================= FUNÇÕES AUXILIARES DE VENDAS =================
     def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                         nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
@@ -1688,61 +1728,6 @@ if view == "Vendas":
             st.info("Nenhuma venda para gerar recibo.")
 
 
-# ========================================================
-# CONTROLE DE ABERTURA E FECHAMENTO DO CAIXA
-# ========================================================
-def abrir_caixa():
-    operador = st.text_input("👤 Nome do Operador", key="operador_nome")
-    valor_inicial = st.number_input("💵 Valor Inicial do Caixa", min_value=0.0, step=1.0, key="valor_inicial")
-
-    if st.button("🚀 Abrir Caixa", key="btn_abrir_caixa"):
-        if operador and valor_inicial >= 0:
-            st.session_state["caixa_aberto"] = True
-            st.session_state["operador"] = operador
-            st.session_state["valor_inicial"] = valor_inicial
-            st.success(f"✅ Caixa aberto com operador {operador} e valor inicial {valor_inicial:.2f}")
-            st.rerun()
-        else:
-            st.warning("⚠️ Informe o nome do operador e o valor inicial.")
-
-def fechar_caixa():
-    if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
-        st.session_state["caixa_aberto"] = False
-        operador = st.session_state.get("operador", "—")
-        st.success(f"📦 Caixa fechado! Operador: {operador}")
-        st.rerun()
-
-# ========================================================
-# SUA TELA DE VENDAS (COM BLOQUEIO SE NÃO HOUVER CAIXA)
-# ========================================================
-def tela_vendas():
-    st.header("🧾 Vendas")
-
-    # 🔒 Checa se o caixa está aberto
-    if not st.session_state.get("caixa_aberto", False):
-        st.info("⚠️ Para iniciar as vendas, abra o caixa.")
-        abrir_caixa()
-        return
-
-    operador = st.session_state.get("operador", "—")
-    valor_inicial = st.session_state.get("valor_inicial", 0.0)
-
-    st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
-
-
-# ========================================================
-# ROTEAMENTO PRINCIPAL
-# ========================================================
-def main():
-    view = st.sidebar.selectbox("📌 Selecione a tela", ["Vendas", "Outros"])
-
-    if view == "Vendas":
-        tela_vendas()
-    else:
-        st.write("Outros conteúdos...")
-
-if __name__ == "__main__":
-    main()
 
 
 
