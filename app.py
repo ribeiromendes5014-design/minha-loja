@@ -1401,16 +1401,16 @@ if "dados_fechamento_caixa" in st.session_state:
     st.write("---")
 
 if view == "Vendas":
-# 🔹 Fluxo do Caixa
-if not st.session_state.get("caixa_aberto", False):
-    st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
-    abrir_caixa()
-else:
-    operador = st.session_state.get("operador", "—")
-    valor_inicial = st.session_state.get("valor_inicial", 0.0)
-    st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
+    # 🔹 Fluxo do Caixa
+    if not st.session_state.get("caixa_aberto", False):
+        st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
+        abrir_caixa()
+    else:
+        operador = st.session_state.get("operador", "—")
+        valor_inicial = st.session_state.get("valor_inicial", 0.0)
+        st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
 
-    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+        tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
     # ================= TAB 1 - VENDA DETALHADA =================
     with tab1:
