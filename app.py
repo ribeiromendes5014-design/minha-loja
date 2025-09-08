@@ -1271,40 +1271,6 @@ if view == "Vendas":
                     st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
                     st.rerun()
 
-    # =====================================
-# VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
-# =====================================
-if view == "Vendas":
-    
-    # 🔹 Configuração WhatsApp
-    import requests
-    from datetime import datetime, date
-    import pytz
-
-    WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"  # coloque aqui o token válido da API do WhatsApp Cloud
-    WHATSAPP_PHONE_ID = "823826790806739"
-    WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
-    NUMERO_DESTINO = "5541987876191"
-
-    def enviar_whatsapp(destinatario, mensagem):
-        headers = {
-            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "messaging_product": "whatsapp",
-            "to": destinatario,
-            "type": "text",
-            "text": {"body": mensagem}
-        }
-        try:
-            r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
-            resp = r.json()
-            print("DEBUG WHATSAPP:", resp)
-            if "messages" not in resp:
-                st.error(f"Erro WhatsApp: {resp}")
-        except Exception as e:
-            st.error(f"Erro ao enviar WhatsApp: {e}")
 
     
 
