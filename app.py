@@ -1222,7 +1222,7 @@ if view == "Vendas":
 
     # 🔹 Configuração WhatsApp
     import requests
-    from datetime import datetime
+    from datetime import datetime, date
     import pytz
 
     WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"  # coloque aqui o token válido da API do WhatsApp Cloud
@@ -1323,7 +1323,7 @@ if view == "Vendas":
                         st.success("Item adicionado ao pedido.")
                         st.rerun()
 
-                        # --- POR CÓDIGO DE BARRAS ---
+            # --- POR CÓDIGO DE BARRAS ---
             with sub2:
                 codigo = st.text_input("Digite ou escaneie o código de barras", key="codigo_barras_venda")
                 df_sel = produtos.copy()
@@ -1454,8 +1454,6 @@ if view == "Vendas":
                 st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
         # ================= TAB 2 - ÚLTIMAS VENDAS =================
-
-
         with tab2:
             st.subheader("📊 Últimas Vendas")
             if not vendas.empty:
@@ -1501,53 +1499,53 @@ if view == "Vendas":
                 st.info("Ainda não há vendas registradas.")
 
         # ================= TAB 3 - RECIBOS =================
-    with tab3:
-        import os
-        from PIL import Image, UnidentifiedImageError
+        with tab3:
+            import os
+            from PIL import Image, UnidentifiedImageError
 
-        st.subheader("📄 Recibos de Vendas")
+            st.subheader("📄 Recibos de Vendas")
 
-        if not vendas.empty:
-            datas = sorted(vendas["Data"].unique())
-            data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
-            vendas_dia = vendas[vendas["Data"] == data_sel]
-            ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
-            id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
+            if not vendas.empty:
+                datas = sorted(vendas["Data"].unique())
+                data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
+                vendas_dia = vendas[vendas["Data"] == data_sel]
+                ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
+                id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
 
-            if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
-                caminho_pdf = f"recibo_venda_{id_sel}.pdf"
-                gerar_pdf_venda(id_sel, vendas, caminho_pdf)
+                if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
+                    caminho_pdf = f"recibo_venda_{id_sel}.pdf"
+                    gerar_pdf_venda(id_sel, vendas, caminho_pdf)
 
-                with open(caminho_pdf, "rb") as f:
-                    st.download_button(
-                        label="⬇️ Baixar Recibo",
-                        data=f,
-                        file_name=caminho_pdf,
-                        mime="application/pdf",
-                        key="download_recibo"
-                    )
+                    with open(caminho_pdf, "rb") as f:
+                        st.download_button(
+                            label="⬇️ Baixar Recibo",
+                            data=f,
+                            file_name=caminho_pdf,
+                            mime="application/pdf",
+                            key="download_recibo"
+                        )
 
-                # 🔒 Logo fixo do recibo: logo_docebella.png
-                # Tenta em caminhos comuns para evitar erro de arquivo não encontrado.
-                logo_candidates = [
-                    "logo_docebella.png",
-                    "assets/logo_docebella.png",
-                    "static/logo_docebella.png",
-                    "images/logo_docebella.png",
-                ]
-                logo_path = next((p for p in logo_candidates if os.path.exists(p)), None)
+                    # 🔒 Logo fixo do recibo: logo_docebella.png
+                    logo_candidates = [
+                        "logo_docebella.png",
+                        "assets/logo_docebella.png",
+                        "static/logo_docebella.png",
+                        "images/logo_docebella.png",
+                    ]
+                    logo_path = next((p for p in logo_candidates if os.path.exists(p)), None)
 
-                if logo_path:
-                    try:
-                        img = Image.open(logo_path)
-                        st.image(img, width=200, caption="Doce Bella", use_container_width=False, clamp=False, channels="RGB")
-                    except (UnidentifiedImageError, OSError) as e:
-                        st.warning(f"⚠️ Não foi possível abrir a imagem do logo em '{logo_path}': {e}")
-                else:
-                    st.warning("⚠️ Arquivo 'logo_docebella.png' não foi encontrado. Coloque o arquivo na pasta do app ou em assets/static/images.")
+                    if logo_path:
+                        try:
+                            img = Image.open(logo_path)
+                            st.image(img, width=200, caption="Doce Bella")
+                        except (UnidentifiedImageError, OSError) as e:
+                            st.warning(f"⚠️ Não foi possível abrir a imagem do logo em '{logo_path}': {e}")
+                    else:
+                        st.warning("⚠️ Arquivo 'logo_docebella.png' não foi encontrado. Coloque o arquivo na pasta do app ou em assets/static/images.")
 
-        else:
-            st.info("Nenhuma venda para gerar recibo.")
+            else:
+                st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
