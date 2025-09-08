@@ -1257,7 +1257,7 @@ def abrir_caixa():
                 st.warning("⚠️ Informe o nome do operador para abrir o caixa.")
             else:
                 st.session_state["operador"] = operador
-                st.session_state["valor_inicial"] = valor_inicial
+                st.session_state["valor_inicial"]
                 st.session_state["caixa_aberto"] = True
                 st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
                 st.rerun()
@@ -1267,7 +1267,7 @@ def fechar_caixa():
     if st.session_state.get("caixa_aberto", False):
         operador = st.session_state.get("operador", "—")
         valor_inicial = st.session_state.get("valor_inicial_original", 
-                                             st.session_state.get("valor_inicial", 0.0))
+                                             valor_inicial = st.session_state.get("valor_inicial_original", st.session_state.get("valor_inicial", 0.0))
         hoje = date.today()
 
         # Garantir que a coluna Data é datetime.date
