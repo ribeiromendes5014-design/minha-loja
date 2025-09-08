@@ -1277,7 +1277,8 @@ if view == "Vendas":
     def abrir_caixa(operador, valor_inicial):
         caixas = norm_caixas(pd.DataFrame())
         hoje = str(date.today())
-        if not caixas.empty and (caixas["Data"] == hoje).any():
+        if not caixas.empty and (caixas["Data"] == hoje).any() and \
+           (caixas.loc[caixas["Data"] == hoje, "Status"].values[0] == "Aberto"):
             st.warning("⚠️ Já existe um caixa aberto hoje.")
             return
 
@@ -1305,7 +1306,7 @@ if view == "Vendas":
         st.rerun()
 
     def fechar_caixa():
-        caixas = norm_caixas(pd.DataFrame())
+        caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
         hoje_data = str(date.today())
         if caixas.empty or not (caixas["Data"] == hoje_data).any():
             st.warning("⚠️ Nenhum caixa aberto hoje.")
@@ -1338,8 +1339,9 @@ if view == "Vendas":
             caixas.loc[idx, "Diferenca"] = diff
             caixas.loc[idx, "Status"] = "Fechado"
 
-            save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
+            # 🔹 Atualiza estado e salva
             st.session_state["caixas"] = caixas
+            save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
 
             st.success(f"📦 Caixa do dia {hoje_data} fechado! Diferença em dinheiro: {brl(diff)}")
             st.rerun()
