@@ -1276,7 +1276,6 @@ if view == "Vendas":
     # ================= FUNÇÕES AUXILIARES DE CAIXA =================
     def abrir_caixa(operador, valor_inicial=0.0):
         caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
-        caixas = norm_caixas(caixas)  # ✅ garante estrutura correta
         hoje = str(date.today())
 
         if not caixas.empty and (caixas["Data"] == hoje).any() and \
@@ -1302,16 +1301,13 @@ if view == "Vendas":
         }
 
         caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
-        caixas = norm_caixas(caixas)  # ✅ normaliza antes de salvar
-        st.session_state["caixas"] = caixas
-        save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
+        st.session_state["caixas"] = norm_caixas(caixas)
+        save_csv_github(st.session_state["caixas"], ARQ_CAIXAS, f"Abertura de caixa {hoje}")
         st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f} (troco inicial)")
         st.rerun()
 
-
     def fechar_caixa():
         caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
-        caixas = norm_caixas(caixas)  # ✅ garante estrutura correta
         hoje_data = str(date.today())
 
         if caixas.empty or not (caixas["Data"] == hoje_data).any():
@@ -1346,12 +1342,9 @@ if view == "Vendas":
             caixas.loc[idx, "RealCartao"] = esperado_cart
             caixas.loc[idx, "RealFiado"] = esperado_fiado
             caixas.loc[idx, "Diferenca"] = diff
-            caixas.loc[idx, "Status"] = "Fechado"   # 🔒 garante fechamento
+            caixas.loc[idx, "Status"] = "Fechado"
 
-            caixas = norm_caixas(caixas)  # ✅ normaliza antes de salvar
-            st.session_state["caixas"] = caixas.copy()
-
-            # 🔒 garante sobrescrita no CSV (não acumula registros duplicados)
+            st.session_state["caixas"] = norm_caixas(caixas)
             save_csv_github(st.session_state["caixas"], ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
 
             st.success(f"📦 Caixa do dia {hoje_data} fechado por {operador}! Diferença em dinheiro: {brl(diff)}")
@@ -1361,35 +1354,37 @@ if view == "Vendas":
             st.warning("❌ Fechamento cancelado. O caixa continua aberto.")
             st.stop()
 
-    # (sua função finalizar_venda e demais continuam iguais...)
-    # 🔹 Sub-abas principais (somente 3)
+    # ================= SUB-ABAS =================
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
     # ================= TAB 1 - VENDA DETALHADA =================
-with tab1:
-    st.subheader("🛒 Venda Detalhada")
+    with tab1:
+        st.subheader("🛒 Venda Detalhada")
 
-    if "caixas" not in st.session_state:
-        st.session_state["caixas"] = norm_caixas(pd.DataFrame())
+        if "caixas" not in st.session_state:
+            st.session_state["caixas"] = norm_caixas(pd.DataFrame())
 
-    caixas = st.session_state["caixas"]
-    hoje = str(date.today())
-    tem_caixa_aberto = not caixas.empty and (caixas["Data"] == hoje).any() and \
-                       (caixas.loc[caixas["Data"] == hoje, "Status"].values[0] == "Aberto")
+        caixas = st.session_state["caixas"]
+        hoje = str(date.today())
+        tem_caixa_aberto = (
+            not caixas.empty
+            and (caixas["Data"] == hoje).any()
+            and (caixas.loc[caixas["Data"] == hoje, "Status"].values[0] == "Aberto")
+        )
 
-    if not tem_caixa_aberto:
-        st.warning("⚠️ É necessário abrir o caixa para registrar vendas.")
-        operador = st.text_input("👤 Nome do operador")
-        valor_inicial = st.number_input("💵 Valor inicial (troco)", min_value=0.0, step=1.0)
-        if st.button("🚀 Abrir Caixa"):
-            if operador.strip():
-                abrir_caixa(operador, valor_inicial)
-            else:
-                st.error("Informe o nome do operador.")
-        st.stop()
+        if not tem_caixa_aberto:
+            st.warning("⚠️ É necessário abrir o caixa para registrar vendas.")
+            operador = st.text_input("👤 Nome do operador")
+            valor_inicial = st.number_input("💵 Valor inicial (troco)", min_value=0.0, step=1.0)
+            if st.button("🚀 Abrir Caixa"):
+                if operador.strip():
+                    abrir_caixa(operador, valor_inicial)
+                else:
+                    st.error("Informe o nome do operador.")
+            st.stop()
 
-    # 👉 Se caixa aberto → mostra fluxo de vendas normalmente
-    # (todo o seu código de pesquisa de produto, pedido, pagamento e finalizar_venda vai aqui)
+        # 👉 Se caixa aberto → mostra fluxo de vendas normalmente
+        # (todo o seu código de pesquisa de produto, pedido, pagamento e finalizar_venda vai aqui)
 
 
 
