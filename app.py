@@ -1325,6 +1325,41 @@ def fechar_caixa():
 
 
 # ========================================================
+    # FINALIZAR VENDA (correção do bug IDVenda)
+    # ========================================================
+    def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
+                        nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
+        global vendas, produtos
+
+        if not st.session_state.get("pedido_atual"):
+            st.warning("⚠️ Nenhum item no pedido.")
+            return
+
+        # Garante coluna IDVenda como numérica
+        if not vendas.empty and "IDVenda" in vendas.columns:
+            vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
+            novo_id = int(vendas["IDVenda"].max() + 1)
+        else:
+            novo_id = 1
+
+        df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
+        df_pedido["IDVenda"] = novo_id
+        df_pedido["Data"] = str(date.today())
+        df_pedido["FormaPagamento"] = forma
+        df_pedido["ValorPago1"] = valor1
+        df_pedido["ValorPago2"] = valor2
+        df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
+        df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
+        df_pedido["ValorRecebido"] = valor_recebido
+
+        vendas = pd.concat([vendas, df_pedido], ignore_index=True)
+        save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
+
+        st.session_state["pedido_atual"] = []
+        st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
+
+
+# ========================================================
 # BLOQUEIO DE CAIXA
 # ========================================================
 # Primeiro, verifique e mostre o resumo do último fechamento, se existir
@@ -1369,44 +1404,8 @@ else:
         # if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
         #     fechar_caixa()
         #     st.rerun()
-        # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
-        tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
-
+      
     
-
-    # ========================================================
-    # FINALIZAR VENDA (correção do bug IDVenda)
-    # ========================================================
-    def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
-                        nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
-        global vendas, produtos
-
-        if not st.session_state.get("pedido_atual"):
-            st.warning("⚠️ Nenhum item no pedido.")
-            return
-
-        # Garante coluna IDVenda como numérica
-        if not vendas.empty and "IDVenda" in vendas.columns:
-            vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
-            novo_id = int(vendas["IDVenda"].max() + 1)
-        else:
-            novo_id = 1
-
-        df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
-        df_pedido["IDVenda"] = novo_id
-        df_pedido["Data"] = str(date.today())
-        df_pedido["FormaPagamento"] = forma
-        df_pedido["ValorPago1"] = valor1
-        df_pedido["ValorPago2"] = valor2
-        df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
-        df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
-        df_pedido["ValorRecebido"] = valor_recebido
-
-        vendas = pd.concat([vendas, df_pedido], ignore_index=True)
-        save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
-
-        st.session_state["pedido_atual"] = []
-        st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
 
     # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
         tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
