@@ -1357,35 +1357,28 @@ if view == "Vendas":
     st.header("🧾 Vendas")
 
     # 🔹 Lógica de Bloqueio de Caixa
-if "dados_fechamento_caixa" in st.session_state:
-    st.subheader("📊 Resumo do Último Fechamento de Caixa")
-    dados_caixa = st.session_state.pop("dados_fechamento_caixa")
-    vendas_dia = st.session_state.pop("vendas_dia_fechamento")
-    
-    # Mostrar valores detalhados
-    st.write(f"💵 Valor Inicial do Caixa: {brl(dados_caixa['ValorInicial'])}")
-    st.write(f"💵 Dinheiro recebido hoje: {brl(dados_caixa['Dinheiro'])}")
-    st.write(f"⚡ PIX: {brl(dados_caixa['PIX'])}")
-    st.write(f"💳 Cartão: {brl(dados_caixa['Cartão'])}")
-    st.write(f"📒 Fiado: {brl(dados_caixa['Fiado'])}")
-    st.write(f"📦 Faturamento Total do Dia: {brl(dados_caixa['FaturamentoTotal'])}")
-    
-    # Calcula o valor final esperado no caixa
-    valor_final_caixa = dados_caixa['ValorInicial'] + dados_caixa['FaturamentoTotal']
-    st.write(f"💰 Valor Final esperado no Caixa: {brl(valor_final_caixa)}")
-    
-    # Gera PDF
-    caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
-    gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
-    with open(caminho_pdf, "rb") as f:
-        st.download_button(
-            label=f"⬇️ Baixar Relatório de Caixa ({dados_caixa['Data']})",
-            data=f,
-            file_name=caminho_pdf,
-            mime="application/pdf",
-            key="download_caixa"
-        )
-    st.write("---")
+    if "dados_fechamento_caixa" in st.session_state:
+        st.subheader("📊 Resumo do Último Fechamento de Caixa")
+        dados_caixa = st.session_state.pop("dados_fechamento_caixa")
+        vendas_dia = st.session_state.pop("vendas_dia_fechamento")
+        
+        st.write(f"💵 Dinheiro: {brl(dados_caixa['Dinheiro'])}")
+        st.write(f"⚡ PIX: {brl(dados_caixa['PIX'])}")
+        st.write(f"💳 Cartão: {brl(dados_caixa['Cartão'])}")
+        st.write(f"📒 Fiado: {brl(dados_caixa['Fiado'])}")
+        st.write(f"📦 Total: {brl(dados_caixa['FaturamentoTotal'])}")
+        
+        caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
+        gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
+        with open(caminho_pdf, "rb") as f:
+            st.download_button(
+                label=f"⬇️ Baixar Relatório de Caixa ({dados_caixa['Data']})",
+                data=f,
+                file_name=caminho_pdf,
+                mime="application/pdf",
+                key="download_caixa"
+            )
+        st.write("---")
 
     # 🔹 Bloqueio de vendas se caixa não estiver aberto
     if not st.session_state.get("caixa_aberto", False):
