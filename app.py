@@ -1528,24 +1528,27 @@ if view == "Vendas":
                     colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
 
                 # ================= BOTÕES DE AÇÃO =================
-                b1, b2 = st.columns([1, 1])
-                with b1:
-                    if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
-                        finalizar_venda(
-                            forma, forma1, forma2, valor1, valor2, promocoes,
-                            nome_cliente=nome_cliente, data_pagamento=data_pagamento,
-                            valor_recebido=valor_recebido
-                        )
-                with b2:
-                    if st.button("🆕 Nova Venda", key="btn_nova_venda"):
-                        nova_venda()
+        b1, b2 = st.columns([1, 1])
+        with b1:
+            if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
+                finalizar_venda(
+                    forma, forma1, forma2, valor1, valor2, promocoes,
+                    nome_cliente=nome_cliente, data_pagamento=data_pagamento,
+                    valor_recebido=valor_recebido
+                )
+        with b2:
+            if st.button("🆕 Nova Venda", key="btn_nova_venda"):
+                nova_venda()
 
-                st.markdown("---")
+        st.markdown("---")
 
-                if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
-                    fechar_caixa()
-            else:
-                st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
+    else:
+        st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
+
+    # ================= BOTÃO FECHAR CAIXA =================
+    if st.session_state.get("caixa_aberto", False):
+        if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
+            fechar_caixa()
 
         # ================= TAB 2 - ÚLTIMAS VENDAS =================
         with tab2:
