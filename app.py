@@ -1348,58 +1348,6 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     st.rerun()
 
 
-def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
-                    nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
-    global vendas, produtos
-
-    if not st.session_state.get("pedido_atual"):
-        st.warning("⚠️ Nenhum item no pedido.")
-        return
-
-    if not vendas.empty and "IDVenda" in vendas.columns:
-        vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
-        novo_id = int(vendas["IDVenda"].max() + 1)
-    else:
-        novo_id = 1
-
-    df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
-    df_pedido["IDVenda"] = novo_id
-    df_pedido["Data"] = date.today()
-    df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
-    df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
-    df_pedido["ValorRecebido"] = valor_recebido
-    total_pedido = df_pedido["PrecoVista"].multiply(df_pedido["Quantidade"]).sum()
-
-    if forma == "Misto" and forma1 and forma2:
-        df_vendas_misto = pd.DataFrame()
-
-        # Sempre salva o valor bruto (sem taxa) no CSV
-        df_temp = df_pedido.copy()
-        df_temp["FormaPagamento"] = forma1
-        df_temp["Total"] = valor1 if forma1 != "Cartão" else valor1 * FATOR_CARTAO
-        df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
-
-        df_temp = df_pedido.copy()
-        df_temp["FormaPagamento"] = forma2
-        df_temp["Total"] = valor2 if forma2 != "Cartão" else valor2 * FATOR_CARTAO
-        df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
-
-        vendas = pd.concat([vendas, df_vendas_misto], ignore_index=True)
-    else:
-        df_pedido["FormaPagamento"] = forma
-        # Salvar bruto no cartão também
-        if forma == "Cartão":
-            df_pedido["Total"] = total_pedido  # bruto
-        else:
-            df_pedido["Total"] = total_pedido
-        vendas = pd.concat([vendas, df_pedido], ignore_index=True)
-
-    save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
-    st.session_state["pedido_atual"] = []
-    st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
-    st.rerun()
-
-
 # 🔹 Resumo Último Fechamento
 if "dados_fechamento_caixa" in st.session_state:
     st.subheader("📊 Resumo do Último Fechamento de Caixa")
