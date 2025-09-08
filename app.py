@@ -1401,24 +1401,7 @@ vendas = pd.DataFrame([
 ])
             
             
-            # Salvar CSV
-            filename = "fechamentos.csv"
-            if os.path.exists(filename):
-                df = pd.read_csv(filename)
-                df = pd.concat([df, pd.DataFrame([fechamento])], ignore_index=True)
-            else:
-                df = pd.DataFrame([fechamento])
-            df.to_csv(filename, index=False)
 
-            # Mostrar relatório
-            st.success("✅ Fechamento registrado com sucesso!")
-
-            st.subheader("📊 Relatório de Fechamento")
-            st.table(pd.DataFrame([fechamento]).T.rename(columns={0: "Valor"}))
-
-            # Reset caixa
-            st.session_state["caixa_aberto"] = False
-            st.session_state["fechar_caixa"] = False
         
         # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
         tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
