@@ -1555,9 +1555,13 @@ else:
                     colB.metric("Cliente", nome_cliente if nome_cliente else "—")
                     colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
 
-                st.markdown("---")
+               # ================= MOSTRAR PAGAMENTO SOMENTE SE HOUVER ITENS =================
+if st.session_state.get("pedido_atual"):
+    # --- FORMA DE PAGAMENTO ---
+    st.markdown("### Forma de Pagamento")
+    # ... (todo o fluxo da venda, escolha de pagamento, métricas, etc.)
 
-                 # -- Botões de ação relacionados à venda --
+    # -- Botões de ação relacionados à venda --
     b1, b2 = st.columns([1, 1])
     with b1:
         if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
@@ -1576,6 +1580,7 @@ else:
 st.markdown("---")
 if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
     fechar_caixa()
+
 
         # ================= TAB 2 - ÚLTIMAS VENDAS =================
         with tab2:
