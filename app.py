@@ -1274,7 +1274,7 @@ if view == "Vendas":
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
     # ================= FUNÇÕES AUXILIARES DE CAIXA =================
-    def abrir_caixa(operador, valor_inicial):
+def abrir_caixa(operador, valor_inicial):
     caixas = norm_caixas(pd.DataFrame())
     hoje = str(date.today())
     if not caixas.empty and (caixas["Data"] == hoje).any():
@@ -1303,7 +1303,6 @@ if view == "Vendas":
     save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
     st.session_state["caixas"] = caixas
     st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
-
 
 
 def fechar_caixa():
@@ -1352,14 +1351,6 @@ def fechar_caixa():
     if cancelar:
         st.warning("❌ Fechamento cancelado. O caixa continua aberto.")
         st.stop()
-
-
-
-
-
-
-
-
 
 
 # ================= FUNÇÕES AUXILIARES DE VENDAS =================
