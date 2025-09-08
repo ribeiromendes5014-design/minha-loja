@@ -1387,7 +1387,6 @@ if "dados_fechamento_caixa" in st.session_state:
         )
     st.write("---")
 
-
     # 🔹 Bloqueio de vendas se caixa não estiver aberto
     if not st.session_state.get("caixa_aberto", False):
         st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
