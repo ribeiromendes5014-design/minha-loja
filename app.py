@@ -1237,126 +1237,93 @@ if view == "Produtos":
 
 
 
-# =====================================
-# VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
-# =====================================
-if view == "Vendas":
-    show_logo("main")
-    st.header("🧾 Vendas")
+# ================= FUNÇÕES AUXILIARES DE CAIXA =================
 
-    # 🔹 Configuração WhatsApp
-    import requests
-    from datetime import datetime
-    import pytz
+def abrir_caixa(operador, valor_inicial=0.0):
+    caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
+    caixas = norm_caixas(caixas)
+    hoje = str(date.today())
 
-    WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"
-    WHATSAPP_PHONE_ID = "823826790806739"
-    WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
-    NUMERO_DESTINO = "5541987876191"
+    if not caixas.empty and (caixas["Data"] == hoje).any() and \
+       (caixas.loc[caixas["Data"] == hoje, "Status"].values[0] == "Aberto"):
+        st.warning("⚠️ Já existe um caixa aberto hoje.")
+        return
 
-    def enviar_whatsapp(destinatario, mensagem):
-        headers = {
-            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "messaging_product": "whatsapp",
-            "to": destinatario,
-            "type": "text",
-            "text": {"body": mensagem}
-        }
-        try:
-            r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
-            resp = r.json()
-            if "messages" not in resp:
-                st.error(f"Erro WhatsApp: {resp}")
-        except Exception as e:
-            st.error(f"Erro ao enviar WhatsApp: {e}")
+    novo = {
+        "Data": hoje,
+        "FaturamentoTotal": 0.0,
+        "Dinheiro": 0.0,
+        "PIX": 0.0,
+        "Cartão": 0.0,
+        "Fiado": 0.0,
+        "RealDinheiro": 0.0,
+        "RealPIX": 0.0,
+        "RealCartao": 0.0,
+        "RealFiado": 0.0,
+        "Diferenca": 0.0,
+        "Status": "Aberto",
+        "Operador": operador,
+        "ValorInicial": valor_inicial
+    }
 
-    # ================= FUNÇÕES AUXILIARES DE CAIXA =================
-    def abrir_caixa(operador, valor_inicial=0.0):
-        caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
+    caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
+    caixas = norm_caixas(caixas)
+    st.session_state["caixas"] = caixas
+    save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
+    st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f} (troco inicial)")
+    st.rerun()
+
+
+def fechar_caixa():
+    caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
+    caixas = norm_caixas(caixas)
+    hoje_data = str(date.today())
+
+    if caixas.empty or not (caixas["Data"] == hoje_data).any():
+        st.warning("⚠️ Nenhum caixa aberto hoje.")
+        return
+
+    idx = caixas["Data"] == hoje_data
+    operador = caixas.loc[idx, "Operador"].values[0] if "Operador" in caixas.columns else ""
+
+    st.subheader("📦 Fechamento de Caixa")
+    st.info(f"Operador: {operador}")
+    st.info("Informe o valor real contado em dinheiro:")
+
+    real_din = st.number_input("💵 Dinheiro real", min_value=0.0, step=1.0, key="real_din")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        confirmar = st.button("✅ Confirmar Fechamento")
+    with col2:
+        cancelar = st.button("❌ Cancelar e Voltar")
+
+    if confirmar:
+        esperado_din = caixas.loc[idx, "Dinheiro"].values[0]
+        esperado_pix = caixas.loc[idx, "PIX"].values[0]
+        esperado_cart = caixas.loc[idx, "Cartão"].values[0]
+        esperado_fiado = caixas.loc[idx, "Fiado"].values[0]
+
+        diff = real_din - esperado_din
+
+        caixas.loc[idx, "RealDinheiro"] = real_din
+        caixas.loc[idx, "RealPIX"] = esperado_pix
+        caixas.loc[idx, "RealCartao"] = esperado_cart
+        caixas.loc[idx, "RealFiado"] = esperado_fiado
+        caixas.loc[idx, "Diferenca"] = diff
+        caixas.loc[idx, "Status"] = "Fechado"
+
         caixas = norm_caixas(caixas)
-        hoje = str(date.today())
+        st.session_state["caixas"] = caixas.copy()
+        save_csv_github(st.session_state["caixas"], ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
 
-        if not caixas.empty and (caixas["Data"] == hoje).any() and \
-           (caixas.loc[caixas["Data"] == hoje, "Status"].values[0] == "Aberto"):
-            st.warning("⚠️ Já existe um caixa aberto hoje.")
-            return
-
-        novo = {
-            "Data": hoje,
-            "FaturamentoTotal": 0.0,
-            "Dinheiro": 0.0,
-            "PIX": 0.0,
-            "Cartão": 0.0,
-            "Fiado": 0.0,
-            "RealDinheiro": 0.0,
-            "RealPIX": 0.0,
-            "RealCartao": 0.0,
-            "RealFiado": 0.0,
-            "Diferenca": 0.0,
-            "Status": "Aberto",
-            "Operador": operador,
-            "ValorInicial": valor_inicial
-        }
-
-        caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
-        caixas = norm_caixas(caixas)
-        st.session_state["caixas"] = caixas
-        save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
-        st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f} (troco inicial)")
+        st.success(f"📦 Caixa do dia {hoje_data} fechado por {operador}! Diferença em dinheiro: {brl(diff)}")
         st.rerun()
 
-    def fechar_caixa():
-        caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
-        caixas = norm_caixas(caixas)
-        hoje_data = str(date.today())
+    if cancelar:
+        st.warning("❌ Fechamento cancelado. O caixa continua aberto.")
+        st.stop()
 
-        if caixas.empty or not (caixas["Data"] == hoje_data).any():
-            st.warning("⚠️ Nenhum caixa aberto hoje.")
-            return
-
-        idx = caixas["Data"] == hoje_data
-        operador = caixas.loc[idx, "Operador"].values[0] if "Operador" in caixas.columns else ""
-
-        st.subheader("📦 Fechamento de Caixa")
-        st.info(f"Operador: {operador}")
-        st.info("Informe o valor real contado em dinheiro:")
-
-        real_din = st.number_input("💵 Dinheiro real", min_value=0.0, step=1.0, key="real_din")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            confirmar = st.button("✅ Confirmar Fechamento")
-        with col2:
-            cancelar = st.button("❌ Cancelar e Voltar")
-
-        if confirmar:
-            esperado_din = caixas.loc[idx, "Dinheiro"].values[0]
-            esperado_pix = caixas.loc[idx, "PIX"].values[0]
-            esperado_cart = caixas.loc[idx, "Cartão"].values[0]
-            esperado_fiado = caixas.loc[idx, "Fiado"].values[0]
-
-            diff = real_din - esperado_din
-
-            caixas.loc[idx, "RealDinheiro"] = real_din
-            caixas.loc[idx, "RealPIX"] = esperado_pix
-            caixas.loc[idx, "RealCartao"] = esperado_cart
-            caixas.loc[idx, "RealFiado"] = esperado_fiado
-            caixas.loc[idx, "Diferenca"] = diff
-            caixas.loc[idx, "Status"] = "Fechado"
-
-            caixas = norm_caixas(caixas)
-            st.session_state["caixas"] = caixas.copy()
-            save_csv_github(st.session_state["caixas"], ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
-
-            st.success(f"📦 Caixa do dia {hoje_data} fechado por {operador}! Diferença em dinheiro: {brl(diff)}")
-            st.rerun()
-
-        if cancelar:
-            st.warning("❌ Fechamento cancelado. O caixa continua aberto.")
-            st.stop()
 
     # ================= SUB-ABAS =================
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
