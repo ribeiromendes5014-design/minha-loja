@@ -1668,6 +1668,8 @@ else:
         with tab2:
             st.subheader("📊 Últimas Vendas")
             if not vendas.empty:
+                st.write("Colunas disponíveis em vendas:", vendas.columns.tolist())
+                st.write("Exemplo de dados:", vendas.head())
                 ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
                 colunas = ["IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
                            "Total", "FormaPagamento", "ValorPago1", "ValorPago2"]
