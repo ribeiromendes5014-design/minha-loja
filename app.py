@@ -1300,7 +1300,8 @@ if view == "Vendas":
         save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
         st.session_state["caixas"] = caixas
         st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
-def fechar_caixa():
+
+    def fechar_caixa():
     caixas = norm_caixas(pd.DataFrame())
     hoje_data = str(date.today())
     if caixas.empty or not (caixas["Data"] == hoje_data).any():
@@ -1336,6 +1337,7 @@ def fechar_caixa():
 
         st.success(f"📦 Caixa do dia {hoje_data} fechado! Diferença em dinheiro: {brl(diff)}")
         st.rerun()
+
 
 
 
