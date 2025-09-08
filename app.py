@@ -1280,7 +1280,7 @@ if view == "Vendas":
         if not caixas.empty and (caixas["Data"] == hoje).any():
             st.warning("⚠️ Já existe um caixa aberto hoje.")
             return
-        novo = {
+                novo = {
             "Data": hoje,
             "Operador": operador,
             "ValorInicial": float(valor_inicial),
@@ -1302,43 +1302,43 @@ if view == "Vendas":
         st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
 
 
-
     def fechar_caixa():
-    caixas = norm_caixas(pd.DataFrame())
-    hoje_data = str(date.today())
-    if caixas.empty or not (caixas["Data"] == hoje_data).any():
-        st.warning("⚠️ Nenhum caixa aberto hoje.")
-        return
-    idx = caixas["Data"] == hoje_data
+        caixas = norm_caixas(pd.DataFrame())
+        hoje_data = str(date.today())
+        if caixas.empty or not (caixas["Data"] == hoje_data).any():
+            st.warning("⚠️ Nenhum caixa aberto hoje.")
+            return
+        idx = caixas["Data"] == hoje_data
 
-    st.subheader("📦 Fechamento de Caixa")
-    st.info("Informe o valor real contado em dinheiro:")
+        st.subheader("📦 Fechamento de Caixa")
+        st.info("Informe o valor real contado em dinheiro:")
 
-    # 🔹 Apenas dinheiro contado manualmente
-    real_din = st.number_input("💵 Dinheiro real", min_value=0.0, step=1.0, key="real_din")
+        # 🔹 Apenas dinheiro contado manualmente
+        real_din = st.number_input("💵 Dinheiro real", min_value=0.0, step=1.0, key="real_din")
 
-    if st.button("✅ Confirmar Fechamento"):
-        esperado_din = caixas.loc[idx, "Dinheiro"].values[0] + caixas.loc[idx, "ValorInicial"].values[0]
-        esperado_pix = caixas.loc[idx, "PIX"].values[0]
-        esperado_cart = caixas.loc[idx, "Cartão"].values[0]
-        esperado_fiado = caixas.loc[idx, "Fiado"].values[0]
+        if st.button("✅ Confirmar Fechamento"):
+            esperado_din = caixas.loc[idx, "Dinheiro"].values[0] + caixas.loc[idx, "ValorInicial"].values[0]
+            esperado_pix = caixas.loc[idx, "PIX"].values[0]
+            esperado_cart = caixas.loc[idx, "Cartão"].values[0]
+            esperado_fiado = caixas.loc[idx, "Fiado"].values[0]
 
-        # Diferença só no dinheiro
-        diff = real_din - esperado_din
+            # Diferença só no dinheiro
+            diff = real_din - esperado_din
 
-        # Salva no registro
-        caixas.loc[idx, "RealDinheiro"] = real_din
-        caixas.loc[idx, "RealPIX"] = esperado_pix  # já registrado automaticamente
-        caixas.loc[idx, "RealCartao"] = esperado_cart
-        caixas.loc[idx, "RealFiado"] = esperado_fiado
-        caixas.loc[idx, "Diferenca"] = diff
-        caixas.loc[idx, "Status"] = "Fechado"
+            # Salva no registro
+            caixas.loc[idx, "RealDinheiro"] = real_din
+            caixas.loc[idx, "RealPIX"] = esperado_pix  # já registrado automaticamente
+            caixas.loc[idx, "RealCartao"] = esperado_cart
+            caixas.loc[idx, "RealFiado"] = esperado_fiado
+            caixas.loc[idx, "Diferenca"] = diff
+            caixas.loc[idx, "Status"] = "Fechado"
 
-        save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
-        st.session_state["caixas"] = caixas
+            save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje_data}")
+            st.session_state["caixas"] = caixas
 
-        st.success(f"📦 Caixa do dia {hoje_data} fechado! Diferença em dinheiro: {brl(diff)}")
-        st.rerun()
+            st.success(f"📦 Caixa do dia {hoje_data} fechado! Diferença em dinheiro: {brl(diff)}")
+            st.rerun()
+
 
 
 
