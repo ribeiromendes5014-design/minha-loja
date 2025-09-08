@@ -1207,6 +1207,108 @@ if view == "Produtos":
                         st.rerun()
 
 
+# =====================================
+# Funções de Controle do Caixa
+# =====================================
+
+def norm_caixas(_: pd.DataFrame) -> pd.DataFrame:
+    cols = [
+        "Data","FaturamentoTotal","Dinheiro","PIX","Cartão","Fiado",
+        "RealDinheiro","RealPIX","RealCartao","RealFiado","Diferenca",
+        "Status","Operador","ValorInicial"
+    ]
+    df = load_csv_github(ARQ_CAIXAS)
+    if df is None:
+        df = ensure_csv(ARQ_CAIXAS, cols)
+
+    for c in ["FaturamentoTotal","Dinheiro","PIX","Cartão","Fiado",
+              "RealDinheiro","RealPIX","RealCartao","RealFiado","Diferenca","ValorInicial"]:
+        if c in df.columns:
+            df[c] = df[c].apply(to_float)
+    return df
+
+
+def caixa_aberto() -> bool:
+    caixas = norm_caixas(pd.DataFrame())
+    hoje = str(date.today())
+    if caixas.empty:
+        return False
+    return ((caixas["Data"] == hoje) & (caixas["Status"] == "Aberto")).any()
+
+
+def abrir_caixa():
+    st.subheader("📦 Abrir Caixa")
+    caixas = norm_caixas(pd.DataFrame())
+    hoje = str(date.today())
+
+    if not caixas.empty and (caixas["Data"] == hoje).any():
+        st.info("✅ O caixa de hoje já está registrado.")
+        return
+
+    operador = st.session_state.get("usuario_logado", "admin")
+    valor_inicial = st.number_input("💵 Valor inicial em dinheiro", min_value=0.0, step=1.0, key="valor_inicial_abertura")
+
+    if st.button("🚀 Confirmar Abertura do Caixa", type="primary"):
+        novo = {
+            "Data": hoje,
+            "FaturamentoTotal": 0.0,
+            "Dinheiro": 0.0,
+            "PIX": 0.0,
+            "Cartão": 0.0,
+            "Fiado": 0.0,
+            "RealDinheiro": 0.0,
+            "RealPIX": 0.0,
+            "RealCartao": 0.0,
+            "RealFiado": 0.0,
+            "Diferenca": 0.0,
+            "Status": "Aberto",
+            "Operador": operador,
+            "ValorInicial": valor_inicial
+        }
+        caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
+        save_csv_github(caixas, ARQ_CAIXAS, f"Abrindo caixa {hoje}")
+        st.session_state["caixas"] = caixas
+        st.success(f"📦 Caixa do dia {hoje} aberto com sucesso!")
+        st.rerun()
+
+
+def fechar_caixa():
+    st.subheader("📕 Fechar Caixa")
+    caixas = norm_caixas(pd.DataFrame())
+    hoje = str(date.today())
+
+    if caixas.empty or not (caixas["Data"] == hoje).any():
+        st.warning("⚠️ Nenhum caixa aberto hoje para fechar.")
+        return
+
+    idx = caixas["Data"] == hoje
+    if not (caixas.loc[idx, "Status"] == "Aberto").any():
+        st.info("Caixa de hoje já foi fechado.")
+        return
+
+    st.markdown("### Informe os valores reais conferidos:")
+    real_dinheiro = st.number_input("Dinheiro real", min_value=0.0, step=1.0)
+    real_pix = st.number_input("PIX real", min_value=0.0, step=1.0)
+    real_cartao = st.number_input("Cartão real", min_value=0.0, step=1.0)
+    real_fiado = st.number_input("Fiado real", min_value=0.0, step=1.0)
+
+    if st.button("📕 Confirmar Fechamento do Caixa", type="primary"):
+        caixas.loc[idx, "RealDinheiro"] = real_dinheiro
+        caixas.loc[idx, "RealPIX"] = real_pix
+        caixas.loc[idx, "RealCartao"] = real_cartao
+        caixas.loc[idx, "RealFiado"] = real_fiado
+
+        caixas.loc[idx, "Diferenca"] = (
+            (real_dinheiro + real_pix + real_cartao + real_fiado)
+            - caixas.loc[idx, "FaturamentoTotal"]
+        )
+        caixas.loc[idx, "Status"] = "Fechado"
+
+        save_csv_github(caixas, ARQ_CAIXAS, f"Fechando caixa {hoje}")
+        st.session_state["caixas"] = caixas
+        st.success("✅ Caixa fechado com sucesso!")
+        st.rerun()
+
 
 # =====================================
 # VENDAS (com controle de caixa: abrir/fechar)
