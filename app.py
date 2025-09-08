@@ -1216,12 +1216,6 @@ if view == "Produtos":
 
 
 
-# =====================================
-# VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
-# =====================================
-if view == "Vendas":
-    show_logo("main")
-    st.header("🧾 Vendas")
 
     # 🔹 Configuração WhatsApp
     import requests
@@ -1325,6 +1319,10 @@ def fechar_caixa():
  # ========================================================
 # FUNÇÃO FINALIZAR VENDA
 # ========================================================
+if view == "Vendas":
+    show_logo("main")
+    st.header("🧾 Vendas")
+
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
     global vendas, produtos
