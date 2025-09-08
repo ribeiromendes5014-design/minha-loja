@@ -1274,7 +1274,7 @@ def abrir_caixa():
 def fechar_caixa():
     if st.session_state.get("caixa_aberto", False):
         operador = st.session_state.get("operador", "—")
-        # Corrige a busca do valor inicial: primeiro tenta o original, senão usa o atual
+        # Valor inicial: primeiro tenta o original, senão pega o atual
         valor_inicial = st.session_state.get(
             "valor_inicial_original",
             st.session_state.get("valor_inicial", 0.0)
@@ -1308,7 +1308,7 @@ def fechar_caixa():
             "PIX": total_pix,
             "Cartão": total_cartao_bruto,  # valor bruto da venda no cartão
             "Fiado": total_fiado,
-            "FaturamentoTotalCaixa": faturamento_caixa,
+            "FaturamentoTotalCaixa": faturamento_caixa,  # somente valores que entram no caixa
             "ValorFinalCaixa": valor_final_caixa,
             "Status": "Fechado"
         }
@@ -1326,6 +1326,7 @@ def fechar_caixa():
             f"📦 Caixa fechado! Operador: {operador} | Valor final esperado: {brl(valor_final_caixa)}"
         )
         st.rerun()
+
 
 
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
