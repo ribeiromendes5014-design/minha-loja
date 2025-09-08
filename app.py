@@ -1349,21 +1349,37 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
     df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
     df_pedido["ValorRecebido"] = valor_recebido
-    df_pedido["Total"] = df_pedido["PrecoVista"] * df_pedido["Quantidade"]
+    total_pedido = df_pedido["PrecoVista"].multiply(df_pedido["Quantidade"]).sum()
 
     if forma == "Misto" and forma1 and forma2:
-        # Correção: usamos exatamente os valores informados
-        df_pedido1 = df_pedido.copy()
-        df_pedido1["FormaPagamento"] = forma1
-        df_pedido1["Total"] = valor1
+        # Se houver dinheiro, somamos o valor exato dele para o caixa
+        df_vendas_misto = pd.DataFrame()
+        if forma1 == "Dinheiro":
+            df_temp = df_pedido.copy()
+            df_temp["FormaPagamento"] = forma1
+            df_temp["Total"] = valor1
+            df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
+        else:
+            df_temp = df_pedido.copy()
+            df_temp["FormaPagamento"] = forma1
+            df_temp["Total"] = valor1
+            df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
-        df_pedido2 = df_pedido.copy()
-        df_pedido2["FormaPagamento"] = forma2
-        df_pedido2["Total"] = valor2
+        if forma2 == "Dinheiro":
+            df_temp = df_pedido.copy()
+            df_temp["FormaPagamento"] = forma2
+            df_temp["Total"] = valor2
+            df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
+        else:
+            df_temp = df_pedido.copy()
+            df_temp["FormaPagamento"] = forma2
+            df_temp["Total"] = valor2
+            df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
-        vendas = pd.concat([vendas, df_pedido1, df_pedido2], ignore_index=True)
+        vendas = pd.concat([vendas, df_vendas_misto], ignore_index=True)
     else:
         df_pedido["FormaPagamento"] = forma
+        df_pedido["Total"] = total_pedido
         vendas = pd.concat([vendas, df_pedido], ignore_index=True)
 
     save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
