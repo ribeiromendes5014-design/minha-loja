@@ -681,7 +681,9 @@ if view == "Dashboard":
                             mime="application/pdf"
                         )
 
+---
 ## Produtos
+
 if view == "Produtos":
     show_logo("main")
     st.header("📦 Produtos")
@@ -967,6 +969,7 @@ if view == "Vendas":
             st.write(f"💳 Total em Cartão: {brl(total_cartao)}")
             st.write(f"📒 Total em Fiado: {brl(total_fiado)}")
             st.write(f"**📦 Faturamento Total do Dia:** {brl(faturamento_total)}")
+            
             if st.button("📦 Confirmar Fechamento de Caixa", key="btn_confirmar_fechar_caixa"):
                 dados_caixa = {
                     "Data": hoje,
@@ -1147,7 +1150,6 @@ if view == "Vendas":
     hoje = str(date.today())
     caixas_df = norm_caixas(pd.DataFrame())
     caixa_aberto_hoje = not caixas_df[(caixas_df["Data"] == hoje) & (caixas_df["Status"] == "Fechado")].empty
-
     if not st.session_state.get("caixa_aberto") and not caixa_aberto_hoje:
         st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
         abrir_caixa()
@@ -1560,31 +1562,31 @@ if view == "Clientes":
         st.info("Nenhum cliente cadastrado ainda.")
     else:
         st.dataframe(clientes, use_container_width=True)
-    with st.expander("✏️ Editar cliente", expanded=False):
-        ids = clientes["ID"].astype(str).tolist()
-        sel = st.selectbox("Selecione o cliente", ids, key="cli_edit_sel") if ids else None
-        if sel:
-            linha = clientes[clientes["ID"].astype(str) == sel]
-            if not linha.empty:
-                ln = linha.iloc[0]
-                nome_e = st.text_input("Nome", value=ln["Cliente"], key=f"cli_nome_{sel}")
-                tel_e = st.text_input("Telefone", value=ln.get("Telefone", ""), key=f"cli_tel_{sel}")
-                status_e = st.selectbox("Status", ["Aberto", "Pago"], index=(0 if ln["Status"] == "Aberto" else 1), key=f"cli_status_{sel}")
-                data_prev_e = st.date_input("Data prevista", value=pd.to_datetime(ln.get("DataPrevista", date.today())), key=f"cli_data_{sel}")
-                if st.button("Salvar edição", key=f"cli_btn_edit_{sel}"):
-                    idx = clientes["ID"].astype(str) == sel
-                    clientes.loc[idx, ["Cliente", "Telefone", "Status", "DataPrevista"]] = [
-                        nome_e.strip(), tel_e.strip(), status_e, str(data_prev_e)
-                    ]
-                    save_csv_github(clientes, ARQ_CLIENTES, "Atualizando cliente")
-                    st.session_state["clientes"] = clientes
-                    st.success("Cliente atualizado!")
-                    st.rerun()
-    with st.expander("🗑️ Excluir cliente", expanded=False):
-        del_id = st.selectbox("Selecione ID para excluir", clientes["ID"].astype(str).tolist(), key="cli_del_sel")
-        if st.button("Excluir cliente", key="cli_btn_del"):
-            clientes = clientes[clientes["ID"].astype(str) != del_id]
-            save_csv_github(clientes, ARQ_CLIENTES, "Excluindo cliente")
-            st.session_state["clientes"] = clientes
-            st.warning(f"Cliente {del_id} excluído!")
-            st.rerun()
+        with st.expander("✏️ Editar cliente", expanded=False):
+            ids = clientes["ID"].astype(str).tolist()
+            sel = st.selectbox("Selecione o cliente", ids, key="cli_edit_sel") if ids else None
+            if sel:
+                linha = clientes[clientes["ID"].astype(str) == sel]
+                if not linha.empty:
+                    ln = linha.iloc[0]
+                    nome_e = st.text_input("Nome", value=ln["Cliente"], key=f"cli_nome_{sel}")
+                    tel_e = st.text_input("Telefone", value=ln.get("Telefone", ""), key=f"cli_tel_{sel}")
+                    status_e = st.selectbox("Status", ["Aberto", "Pago"], index=(0 if ln["Status"] == "Aberto" else 1), key=f"cli_status_{sel}")
+                    data_prev_e = st.date_input("Data prevista", value=pd.to_datetime(ln.get("DataPrevista", date.today())), key=f"cli_data_{sel}")
+                    if st.button("Salvar edição", key=f"cli_btn_edit_{sel}"):
+                        idx = clientes["ID"].astype(str) == sel
+                        clientes.loc[idx, ["Cliente", "Telefone", "Status", "DataPrevista"]] = [
+                            nome_e.strip(), tel_e.strip(), status_e, str(data_prev_e)
+                        ]
+                        save_csv_github(clientes, ARQ_CLIENTES, "Atualizando cliente")
+                        st.session_state["clientes"] = clientes
+                        st.success("Cliente atualizado!")
+                        st.rerun()
+        with st.expander("🗑️ Excluir cliente", expanded=False):
+            del_id = st.selectbox("Selecione ID para excluir", clientes["ID"].astype(str).tolist(), key="cli_del_sel")
+            if st.button("Excluir cliente", key="cli_btn_del"):
+                clientes = clientes[clientes["ID"].astype(str) != del_id]
+                save_csv_github(clientes, ARQ_CLIENTES, "Excluindo cliente")
+                st.session_state["clientes"] = clientes
+                st.warning(f"Cliente {del_id} excluído!")
+                st.rerun()
