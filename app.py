@@ -1292,7 +1292,6 @@ def fechar_caixa():
         # 🔹 Sub-abas principais (mantive as suas: Venda Detalhada, Últimas, Recibos)
         tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
-
     # ================= FUNÇÕES AUXILIARES DE VENDAS =================
     def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                         nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
