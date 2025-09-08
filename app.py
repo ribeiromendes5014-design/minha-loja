@@ -1215,37 +1215,87 @@ if view == "Vendas":
     show_logo("main")
     st.header("🧾 Vendas")
 
-    # 🔹 Configuração WhatsApp
     import requests
     from datetime import datetime
     import pytz
 
-    WHATSAPP_TOKEN = "EAALmgS1woeIBPQfGQxOsGaiUsdZBVZBLL7lXnT29GeAF5hcbwBkSXXXe9CMz0LKPMb4dCkH54A738V3OIZBTJxdNuLhWCWCjIHtgtDvTzAYxgRYwdftHsSY7MVBEndXv0tgOKl4sl5ZCGxojh7PktqhbPIAEen5HtIBzmByPLnK28D7XEBxE3OHASB5afwZDZD"  # coloque aqui o token válido da API do WhatsApp Cloud
+    # ================= CONFIGURAÇÃO WHATSAPP =================
+    WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"
     WHATSAPP_PHONE_ID = "823826790806739"
     WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
     NUMERO_DESTINO = "5541987876191"
 
     def enviar_whatsapp(destinatario, mensagem):
-        headers = {
-            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "messaging_product": "whatsapp",
-            "to": destinatario,
-            "type": "text",
-            "text": {"body": mensagem}
-        }
+        headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}
+        data = {"messaging_product": "whatsapp", "to": destinatario, "type": "text", "text": {"body": mensagem}}
         try:
             r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
             resp = r.json()
-            print("DEBUG WHATSAPP:", resp)
             if "messages" not in resp:
                 st.error(f"Erro WhatsApp: {resp}")
         except Exception as e:
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
+    # ================= CONTROLE DE CAIXA =================
+    if "caixa_aberto" not in st.session_state:
+        st.session_state["caixa_aberto"] = False
+    if "operador" not in st.session_state:
+        st.session_state["operador"] = None
+    if "caixa_inicio" not in st.session_state:
+        st.session_state["caixa_inicio"] = 0.0
+    if "caixa_fechado" not in st.session_state:
+        st.session_state["caixa_fechado"] = []
+
+    st.subheader("💵 Controle de Caixa")
+
+    if not st.session_state["caixa_aberto"]:
+        with st.form("abrir_caixa"):
+            operador = st.text_input("👤 Nome do Operador")
+            valor_inicio = st.number_input("💰 Valor Inicial do Caixa", min_value=0.0, step=1.0)
+            abrir = st.form_submit_button("✅ Abrir Caixa")
+
+            if abrir:
+                if operador.strip() == "" or valor_inicio <= 0:
+                    st.warning("Informe nome do operador e valor inicial válido.")
+                else:
+                    st.session_state["operador"] = operador
+                    st.session_state["caixa_inicio"] = valor_inicio
+                    st.session_state["caixa_aberto"] = True
+                    st.success(f"Caixa aberto por {operador} com R$ {valor_inicio:.2f}")
+                    st.rerun()
+    else:
+        st.info(f"📌 Caixa aberto por **{st.session_state['operador']}** | Valor Inicial: R$ {st.session_state['caixa_inicio']:.2f}")
+
+        if st.button("🔒 Fechar Caixa"):
+            with st.form("fechar_caixa"):
+                valor_final = st.number_input("💰 Valor Final em Dinheiro", min_value=0.0, step=1.0)
+                confirmar_fechamento = st.form_submit_button("✅ Confirmar Fechamento")
+
+                if confirmar_fechamento:
+                    diferenca = valor_final - st.session_state["caixa_inicio"]
+                    fechamento = {
+                        "operador": st.session_state["operador"],
+                        "inicio": st.session_state["caixa_inicio"],
+                        "final": valor_final,
+                        "diferenca": diferenca,
+                        "data": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    }
+                    st.session_state["caixa_fechado"].append(fechamento)
+
+                    st.session_state["caixa_aberto"] = False
+                    st.session_state["operador"] = None
+                    st.session_state["caixa_inicio"] = 0.0
+
+                    st.success("✅ Caixa fechado com sucesso! Aba de vendas bloqueada.")
+                    st.rerun()
+
+    # 🔹 BLOQUEIO DA ABA DE VENDAS
+    if not st.session_state["caixa_aberto"]:
+        st.warning("⚠️ Caixa fechado. Abra o caixa para habilitar as vendas.")
+        st.stop()
+
     # ================= FUNÇÕES AUXILIARES DE VENDAS =================
+    
     def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                         nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
         pedido = st.session_state.get("pedido_atual", [])
