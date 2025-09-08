@@ -1535,7 +1535,7 @@ if view == "Vendas":
         if st.button("🆕 Nova Venda", key="btn_nova_venda"):
             nova_venda()
 
-else:  
+else:  # Este else agora está no mesmo nível do 'if' acima
     st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
 # -- Botão de fechar caixa (fora do bloco 'if/else' acima) --
