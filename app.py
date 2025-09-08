@@ -1338,10 +1338,11 @@ if view == "Vendas":
             st.success(f"📦 Caixa do dia {hoje_data} fechado! Diferença: {brl(diff)}")
             st.rerun()
 
+
     # ================= FUNÇÕES AUXILIARES DE VENDAS =================
     # (sua função finalizar_venda e demais continuam iguais...)
 
-    # 🔹 Sub-abas principais
+    # 🔹 Sub-abas principais (somente 3)
     tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
     # ================= TAB 1 - VENDA DETALHADA =================
