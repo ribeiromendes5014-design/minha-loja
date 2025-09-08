@@ -1543,19 +1543,23 @@ else:
                     data_pagamento = st.date_input("📅 Data prevista de pagamento", value=date.today())
 
                 # -- Métricas
-                colA, colB, colC = st.columns(3)
-                colA.metric("Valor Total", brl(valor_total))
-                if forma == "Misto":
-                    colB.metric(f"{forma1}", brl(valor1))
-                    colC.metric(f"{forma2}", brl(valor2))
-                elif forma == "Dinheiro":
-                    colB.metric("Valor Recebido", brl(valor_recebido))
-                    colC.metric("Troco", brl(max(valor_recebido - valor_total, 0.0)))
-                elif forma == "Fiado":
-                    colB.metric("Cliente", nome_cliente if nome_cliente else "—")
-                    colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
+colA, colB, colC = st.columns(3)
+colA.metric("Valor Total", brl(valor_total))
 
-               # ================= MOSTRAR PAGAMENTO SOMENTE SE HOUVER ITENS =================
+if forma == "Misto":
+    colB.metric(f"{forma1}", brl(valor1))
+    colC.metric(f"{forma2}", brl(valor2))
+
+elif forma == "Dinheiro":
+    colB.metric("Valor Recebido", brl(valor_recebido))
+    colC.metric("Troco", brl(max(valor_recebido - valor_total, 0.0)))
+
+elif forma == "Fiado":
+    colB.metric("Cliente", nome_cliente if nome_cliente else "—")
+    colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
+
+
+# ================= MOSTRAR PAGAMENTO SOMENTE SE HOUVER ITENS =================
 if st.session_state.get("pedido_atual"):
     # --- FORMA DE PAGAMENTO ---
     st.markdown("### Forma de Pagamento")
@@ -1576,13 +1580,15 @@ if st.session_state.get("pedido_atual"):
 else:
     st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
+
 # -- Botão de fechar caixa (sempre visível quando o caixa está aberto) --
 st.markdown("---")
 if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
     fechar_caixa()
 
 
-        # ================= TAB 2 - ÚLTIMAS VENDAS =================
+# ================= TAB 2 - ÚLTIMAS VENDAS =================
+
         with tab2:
             st.subheader("📊 Últimas Vendas")
             if not vendas.empty:
