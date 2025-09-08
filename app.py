@@ -1228,15 +1228,16 @@ def norm_caixas(_: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def caixa_aberto() -> bool:
+    def caixa_aberto() -> bool:
     caixas = norm_caixas(pd.DataFrame())
     hoje = str(date.today())
     if caixas.empty:
         return False
-    return ((caixas["Data"] == hoje) & (caixas["Status"] == "Aberto")).any()
+    # Garante que só retorna True se tiver caixa do dia com status Aberto
+    return ((caixas["Data"] == hoje) & (caixas["Status"].str.lower() == "aberto")).any()
 
 
-def abrir_caixa():
+    def abrir_caixa():
     st.subheader("📦 Abrir Caixa")
     caixas = norm_caixas(pd.DataFrame())
     hoje = str(date.today())
