@@ -1228,27 +1228,23 @@ def norm_caixas(_: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-    def caixa_aberto() -> bool:
-    caixas = norm_caixas(pd.DataFrame())
-    hoje = str(date.today())
-    if caixas.empty:
-        return False
-    # Garante que só retorna True se tiver caixa do dia com status Aberto
-    return ((caixas["Data"] == hoje) & (caixas["Status"].str.lower() == "aberto")).any()
-
-
-    def abrir_caixa():
-    st.subheader("📦 Abrir Caixa")
-    caixas = norm_caixas(pd.DataFrame())
-    hoje = str(date.today())
-
-    def caixa_aberto() -> bool:
+def caixa_aberto() -> bool:
     caixas = norm_caixas(pd.DataFrame())
     hoje = str(date.today())
     if caixas.empty:
         return False
     # Só retorna True se o caixa de hoje existe e está "Aberto"
     return ((caixas["Data"] == hoje) & (caixas["Status"].str.lower() == "aberto")).any()
+
+
+def abrir_caixa():
+    st.subheader("📦 Abrir Caixa")
+    caixas = norm_caixas(pd.DataFrame())
+    hoje = str(date.today())
+
+    if not caixas.empty and (caixas["Data"] == hoje).any():
+        st.info("✅ O caixa de hoje já está registrado.")
+        return
 
     operador = st.session_state.get("usuario_logado", "admin")
     valor_inicial = st.number_input("💵 Valor inicial em dinheiro", min_value=0.0, step=1.0, key="valor_inicial_abertura")
@@ -1287,7 +1283,7 @@ def fechar_caixa():
         return
 
     idx = caixas["Data"] == hoje
-    if not (caixas.loc[idx, "Status"] == "Aberto").any():
+    if not (caixas.loc[idx, "Status"].str.lower() == "aberto").any():
         st.info("Caixa de hoje já foi fechado.")
         return
 
@@ -1313,6 +1309,7 @@ def fechar_caixa():
         st.session_state["caixas"] = caixas
         st.success("✅ Caixa fechado com sucesso!")
         st.rerun()
+
 
 
 # =====================================
