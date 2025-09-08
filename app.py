@@ -1319,9 +1319,6 @@ def fechar_caixa():
  # ========================================================
 # FUNÇÃO FINALIZAR VENDA
 # ========================================================
-if view == "Vendas":
-    show_logo("main")
-    st.header("🧾 Vendas")
 
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
@@ -1360,6 +1357,13 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
 # ========================================================
 # BLOQUEIO DE CAIXA
 # ========================================================
+# =====================================
+# VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
+# =====================================
+if view == "Vendas":
+    show_logo("main")
+    st.header("🧾 Vendas")
+
 # Primeiro, verifique e mostre o resumo do último fechamento, se existir
 if "dados_fechamento_caixa" in st.session_state:
     st.subheader("📊 Resumo do Último Fechamento de Caixa")
