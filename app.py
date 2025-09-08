@@ -1366,16 +1366,17 @@ if "dados_fechamento_caixa" in st.session_state:
     # Calcula o valor final esperado no caixa
     valor_final_caixa = dados_caixa['ValorInicial'] + dados_caixa['FaturamentoTotal']
     st.write(f"💰 Valor Final esperado no Caixa: {brl(valor_final_caixa)}")
-        
-        caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
-        gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
-        with open(caminho_pdf, "rb") as f:
-            st.download_button(
-                label=f"⬇️ Baixar Relatório de Caixa ({dados_caixa['Data']})",
-                data=f,
-                file_name=caminho_pdf,
-                mime="application/pdf",
-                key="download_caixa"
+    
+    # Gera PDF
+    caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
+    gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
+    with open(caminho_pdf, "rb") as f:
+        st.download_button(
+            label=f"⬇️ Baixar Relatório de Caixa ({dados_caixa['Data']})",
+            data=f,
+            file_name=caminho_pdf,
+            mime="application/pdf",
+            key="download_caixa"
             )
         st.write("---")
 
