@@ -1352,13 +1352,31 @@ if view == "Vendas":
 
     # ================= FUNÇÕES AUXILIARES DE VENDAS =================
     # 🔹 Bloqueia vendas se não houver caixa aberto
-    caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
-    hoje = str(date.today())
-    if caixas.empty or not (caixas["Data"] == hoje).any() or \
-       caixas.loc[caixas["Data"] == hoje, "Status"].values[0] != "Aberto":
-        st.error("🚫 Nenhum caixa aberto no momento. Abra um caixa para registrar vendas.")
-        st.stop()
+    # ================= FUNÇÕES AUXILIARES DE VENDAS =================
+caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
+hoje = str(date.today())
 
+# 🔹 Verifica se existe caixa aberto
+tem_caixa_aberto = (
+    not caixas.empty and 
+    (caixas["Data"] == hoje).any() and 
+    (caixas.loc[caixas["Data"] == hoje, "Status"].values[0] == "Aberto")
+)
+
+if not tem_caixa_aberto:
+    st.warning("⚠️ Nenhum caixa aberto no momento. Abra um caixa para iniciar as vendas.")
+
+    operador = st.text_input("👤 Nome do operador")
+    valor_inicial = st.number_input("💵 Valor inicial (troco)", min_value=0.0, step=1.0)
+
+    if st.button("🚀 Abrir Caixa"):
+        if operador.strip():
+            abrir_caixa(operador, valor_inicial)
+        else:
+            st.error("Informe o nome do operador.")
+    st.stop()
+
+    
 
     # (sua função finalizar_venda e demais continuam iguais...)
     # 🔹 Sub-abas principais (somente 3)
