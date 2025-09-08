@@ -1235,7 +1235,41 @@ if view == "Produtos":
                         st.info("Edição cancelada.")
                         st.rerun()
 
+        # =====================================
+# VENDAS (com sub-abas: Venda Detalhada, Últimas, Recibos)
+# =====================================
+if view == "Vendas":
+    show_logo("main")
+    st.header("🧾 Vendas")
 
+    # 🔹 Configuração WhatsApp
+    import requests
+    from datetime import datetime
+    import pytz
+
+    WHATSAPP_TOKEN = "SEU_TOKEN_AQUI"
+    WHATSAPP_PHONE_ID = "823826790806739"
+    WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
+    NUMERO_DESTINO = "5541987876191"
+
+    def enviar_whatsapp(destinatario, mensagem):
+        headers = {
+            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "messaging_product": "whatsapp",
+            "to": destinatario,
+            "type": "text",
+            "text": {"body": mensagem}
+        }
+        try:
+            r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
+            resp = r.json()
+            if "messages" not in resp:
+                st.error(f"Erro WhatsApp: {resp}")
+        except Exception as e:
+            st.error(f"Erro ao enviar WhatsApp: {e}")
 
 # ================= FUNÇÕES AUXILIARES DE CAIXA =================
 
