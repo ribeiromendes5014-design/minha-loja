@@ -1351,6 +1351,13 @@ if view == "Vendas":
             st.stop()
 
     # ================= FUNÇÕES AUXILIARES DE VENDAS =================
+    # 🔹 Bloqueia vendas se não houver caixa aberto
+    caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
+    hoje = str(date.today())
+    if caixas.empty or not (caixas["Data"] == hoje).any() or \
+       caixas.loc[caixas["Data"] == hoje, "Status"].values[0] != "Aberto":
+        st.error("🚫 Nenhum caixa aberto no momento. Abra um caixa para registrar vendas.")
+        st.stop()
 
     # (sua função finalizar_venda e demais continuam iguais...)
     # 🔹 Sub-abas principais (somente 3)
