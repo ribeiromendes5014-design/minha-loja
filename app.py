@@ -1398,7 +1398,7 @@ else:
     st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
 
     # 🔹 Sub-abas principais (só aparecem quando o caixa está aberto)
-tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+  tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
     # ================= TAB 1 - VENDA DETALHADA =================
     with tab1:
