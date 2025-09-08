@@ -1427,44 +1427,6 @@ if not st.session_state["caixa_aberto"]:
             st.session_state["operador"] = operador
             st.session_state["valor_inicial"] = valor_inicial
             st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
-
-
-    # =====================================
-    # Fechamento
-    # =====================================
-    if st.session_state.get("fechar_caixa", False):
-        st.subheader("🔐 Fechamento de Caixa")
-
-        # Pergunta valor final (dinheiro físico contado)
-        valor_final = st.number_input("💰 Valor final em dinheiro físico (contado)", min_value=0.0, step=0.01)
-
-        if st.button("Confirmar Fechamento"):
-            # Totais automáticos
-            resumo = vendas.groupby("forma_pagamento")["valor"].sum().to_dict()
-
-            total_dinheiro = resumo.get("Dinheiro", 0) + resumo.get("Misto Dinheiro", 0)
-            total_pix = resumo.get("Pix", 0)
-            total_cartao = resumo.get("Cartão", 0)
-            total_fiado = resumo.get("Fiado", 0)
-            total_misto = resumo.get("Misto", 0)  # caso exista registro separado
-
-            total_vendas = sum(resumo.values())
-
-            # Registro do fechamento
-            fechamento = {
-                "DataHora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "Operador": st.session_state["operador"],
-                "ValorInicial": st.session_state["valor_inicial"],
-                "ValorFinal": valor_final,
-                "Dinheiro": total_dinheiro,
-                "Pix": total_pix,
-                "Cartão": total_cartao,
-                "Fiado": total_fiado,
-                "Misto": total_misto,
-                "TotalVendas": total_vendas,
-                "Diferenca": (total_dinheiro + st.session_state["valor_inicial"]) - valor_final
-            }
-
             # Salvar CSV
             filename = "fechamentos.csv"
             if os.path.exists(filename):
