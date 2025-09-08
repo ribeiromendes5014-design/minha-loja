@@ -1437,7 +1437,7 @@ if view == "Vendas":
                     )
                     qtd_codigo = st.number_input("Quantidade", min_value=1, value=1, step=1, key="qtd_codigo_venda")
                     if st.button("Adicionar ao pedido (código)", key="btn_add_codigo_venda"):
-                        pid = escolha.split(" - ")[0].
+                        pid = escolha.split(" - ")[0]
                         rowp = df_sel[df_sel["ID"].astype(str) == pid].iloc[0]
                         st.session_state["pedido_atual"].append({
                             "IDProduto": pid,
