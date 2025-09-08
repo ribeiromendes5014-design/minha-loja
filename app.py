@@ -1351,17 +1351,21 @@ def finalizar_venda(forma, forma1=None, forma2=None, valor1=0.0, valor2=0.0, pro
     df_pedido["ValorRecebido"] = valor_recebido
     df_pedido["Total"] = df_pedido["PrecoVista"] * df_pedido["Quantidade"]
 
-    # Venda Mista: dinheiro entra integral, cartão ou outra forma só registro bruto
     if forma == "Misto" and forma1 and forma2:
+        # Venda Mista: dinheiro integral no caixa, cartão apenas registro bruto
         df_pedido1 = df_pedido.copy()
         df_pedido1["FormaPagamento"] = forma1
-        # Dinheiro entra integral no caixa
-        df_pedido1["Total"] = valor1 if forma1 != "Cartão" else valor1
+        if forma1 == "Dinheiro":
+            df_pedido1["Total"] = valor1  # Dinheiro entra no caixa
+        else:
+            df_pedido1["Total"] = valor1  # Cartão ou outro, só registro bruto sem alteração
 
         df_pedido2 = df_pedido.copy()
         df_pedido2["FormaPagamento"] = forma2
-        # Cartão entra bruto, sem cálculo extra
-        df_pedido2["Total"] = valor2 if forma2 != "Dinheiro" else valor2
+        if forma2 == "Dinheiro":
+            df_pedido2["Total"] = valor2  # Dinheiro entra no caixa
+        else:
+            df_pedido2["Total"] = valor2  # Cartão ou outro, só registro bruto
 
         vendas = pd.concat([vendas, df_pedido1, df_pedido2], ignore_index=True)
     else:
