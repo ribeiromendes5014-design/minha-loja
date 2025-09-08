@@ -1241,9 +1241,13 @@ def abrir_caixa():
     caixas = norm_caixas(pd.DataFrame())
     hoje = str(date.today())
 
-    if not caixas.empty and (caixas["Data"] == hoje).any():
-        st.info("✅ O caixa de hoje já está registrado.")
-        return
+    def caixa_aberto() -> bool:
+    caixas = norm_caixas(pd.DataFrame())
+    hoje = str(date.today())
+    if caixas.empty:
+        return False
+    # Só retorna True se o caixa de hoje existe e está "Aberto"
+    return ((caixas["Data"] == hoje) & (caixas["Status"].str.lower() == "aberto")).any()
 
     operador = st.session_state.get("usuario_logado", "admin")
     valor_inicial = st.number_input("💵 Valor inicial em dinheiro", min_value=0.0, step=1.0, key="valor_inicial_abertura")
