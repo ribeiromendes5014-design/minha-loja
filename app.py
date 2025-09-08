@@ -1314,6 +1314,11 @@ if view == "Vendas":
                 key="download_caixa"
             )
 
+        # 🔹 Fechar caixa na sessão
+        st.session_state["caixa_aberto"] = False
+        st.success(f"📦 Caixa fechado! Operador: {operador}")
+        st.rerun()
+
 
     # ========================================================
     # BLOQUEIO DE CAIXA
