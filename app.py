@@ -1299,18 +1299,20 @@ def fechar_caixa():
         # Valor final esperado no caixa
         valor_final_caixa = valor_inicial + faturamento_caixa
 
+        # Dados do fechamento do caixa
         dados_caixa = {
-    "Data": hoje.strftime("%Y-%m-%d"),
-    "Operador": operador,
-    "ValorInicial": valor_inicial,
-    "Dinheiro": total_dinheiro,
-    "PIX": total_pix,
-    "Cartão": total_cartao_bruto,
-    "Fiado": total_fiado,
-    "FaturamentoTotal": faturamento_caixa,  # mantém o nome antigo
-    "ValorFinalCaixa": valor_final_caixa,
-    "Status": "Fechado"
-}
+            "Data": hoje.strftime("%Y-%m-%d"),
+            "Operador": operador,
+            "ValorInicial": valor_inicial,
+            "Dinheiro": total_dinheiro,
+            "PIX": total_pix,
+            "Cartão": total_cartao_bruto,  # valor bruto da venda no cartão (informativo)
+            "Fiado": total_fiado,
+            "FaturamentoTotal": faturamento_caixa,  # só valores que entram no caixa
+            "ValorFinalCaixa": valor_final_caixa,
+            "Status": "Fechado"
+        }
+
         # Salvar no CSV e na sessão
         caixas = norm_caixas(pd.DataFrame())
         caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
@@ -1386,12 +1388,8 @@ if "dados_fechamento_caixa" in st.session_state:
     total_cartao_bruto = dados_caixa['Cartão']  # Valor bruto da venda no cartão
     total_fiado = dados_caixa['Fiado']
 
-    # Aplica taxa do cartão apenas para calcular quanto entra no caixa
-    taxa_cartao = 0.8872  # 11,28% de desconto
-    total_cartao_liquido = total_cartao_bruto * taxa_cartao
-
-    # Faturamento total do dia (somente valores que entram no caixa)
-    faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_liquido
+    # Faturamento total do dia que entra no caixa (dinheiro + PIX)
+    faturamento_total_caixa = total_dinheiro + total_pix
 
     # Mostra detalhamento
     st.write(f"💵 Valor Inicial do Caixa: {brl(valor_inicial)}")
