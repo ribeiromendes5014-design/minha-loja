@@ -1331,7 +1331,7 @@ def fechar_caixa():
 
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
-    global vendas, produtos
+    global vendas, produtos, clientes  # <- inclui clientes aqui
 
     if not st.session_state.get("pedido_atual"):
         st.warning("⚠️ Nenhum item no pedido.")
@@ -1375,6 +1375,23 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
             df_pedido["Total"] = total_pedido
         vendas = pd.concat([vendas, df_pedido], ignore_index=True)
 
+    # 🔹 Se a venda for no Fiado, registrar também em clientes.csv
+    if forma == "Fiado":
+        novo_cliente = {
+            "ID": prox_id(clientes, "ID"),
+            "Cliente": nome_cliente.strip() if nome_cliente else "Cliente não informado",
+            "Produto": ", ".join(df_pedido["NomeProduto"].unique()),
+            "CodigoBarras": "",
+            "Valor": total_pedido,
+            "DataPagamento": str(data_pagamento) if data_pagamento else "",
+            "Status": "Aberto",
+            "FormaPagamento": "Fiado"
+        }
+        clientes = pd.concat([clientes, pd.DataFrame([novo_cliente])], ignore_index=True)
+        st.session_state["clientes"] = clientes
+        save_csv_github(clientes, ARQ_CLIENTES, "Novo fiado adicionado")
+
+    # 🔹 Salva a venda normalmente
     save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
     st.session_state["pedido_atual"] = []
     st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
