@@ -1390,7 +1390,48 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
             clientes = pd.concat([clientes, pd.DataFrame([novo_cliente])], ignore_index=True)
             st.session_state["clientes"] = clientes
             save_csv_github(clientes, ARQ_CLIENTES, "Novo fiado adicionado")
-            st.rerun()
+
+    # ========================================================
+    # 🔹 Depois de finalizar a venda:
+    # 1. Limpa o pedido
+    # 2. Esconde a aba de pagamento
+    # ========================================================
+    st.session_state["pedido_atual"] = []
+    st.session_state["mostrar_pagamento"] = False
+    st.rerun()
+
+
+# ========================================================
+# CONTROLE DE VISIBILIDADE - INTERFACE
+# ========================================================
+if "mostrar_pagamento" not in st.session_state:
+    st.session_state["mostrar_pagamento"] = False
+
+# Se tiver produto no pedido, habilitar forma de pagamento
+if st.session_state.get("pedido_atual"):
+    st.session_state["mostrar_pagamento"] = True
+
+st.subheader("🛒 Adicionar Produtos")
+# 🔹 aqui fica seu código de adicionar produto...
+
+# Mostrar pagamento só quando tiver produto
+if st.session_state["mostrar_pagamento"]:
+    st.subheader("💳 Forma de Pagamento")
+    forma = st.radio(
+        "Selecione a forma de pagamento",
+        ["Dinheiro", "Cartão", "Pix", "Fiado", "Misto"],
+        key="radio_forma_pagamento"
+    )
+
+    if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
+        finalizar_venda(
+            forma=forma,
+            forma1=None,  # ajuste se for misto
+            forma2=None,
+            valor1=0,
+            valor2=0,
+            promocoes=[]
+        )
 
 # 🔹 Resumo Último Fechamento
 if "dados_fechamento_caixa" in st.session_state:
