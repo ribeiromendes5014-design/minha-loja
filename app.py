@@ -1252,10 +1252,10 @@ if view == "Vendas":
 
 
     # ========================================================
-    # CONTROLE DE ABERTURA E FECHAMENTO DO CAIXA
-    # ========================================================
-    
-    def abrir_caixa():
+# CONTROLE DE ABERTURA E FECHAMENTO DO CAIXA
+# ========================================================
+
+def abrir_caixa():
     operador = st.text_input("👤 Nome do Operador", key="operador_nome")
     st.number_input("💵 Valor Inicial do Caixa", min_value=0.0, step=1.0, key="valor_inicial")
 
@@ -1270,12 +1270,13 @@ if view == "Vendas":
             st.warning("⚠️ Informe o nome do operador e o valor inicial.")
 
 
-    def fechar_caixa():
-        if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
-            st.session_state["caixa_aberto"] = False
-            operador = st.session_state.get("operador", "—")
-            st.success(f"📦 Caixa fechado! Operador: {operador}")
-            st.rerun()
+def fechar_caixa():
+    if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
+        st.session_state["caixa_aberto"] = False
+        operador = st.session_state.get("operador", "—")
+        st.success(f"📦 Caixa fechado! Operador: {operador}")
+        st.rerun()
+
 
     # ========================================================
     # 🔒 BLOQUEIO: SÓ MOSTRA AS ABAS DE VENDA SE CAIXA ESTIVER ABERTO
