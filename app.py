@@ -681,9 +681,7 @@ if view == "Dashboard":
                             mime="application/pdf"
                         )
 
----
 ## Produtos
-
 if view == "Produtos":
     show_logo("main")
     st.header("📦 Produtos")
