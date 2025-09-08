@@ -1275,7 +1275,7 @@ if view == "Vendas":
 
     # ================= FUNÇÕES AUXILIARES DE CAIXA =================
     def abrir_caixa(operador, valor_inicial):
-        caixas = norm_caixas(pd.DataFrame())
+        caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
         hoje = str(date.today())
         if not caixas.empty and (caixas["Data"] == hoje).any() and \
            (caixas.loc[caixas["Data"] == hoje, "Status"].values[0] == "Aberto"):
@@ -1300,8 +1300,8 @@ if view == "Vendas":
         }
 
         caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
-        save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
         st.session_state["caixas"] = caixas
+        save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
         st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
         st.rerun()
 
@@ -1358,6 +1358,7 @@ if view == "Vendas":
        caixas.loc[caixas["Data"] == hoje, "Status"].values[0] != "Aberto":
         st.error("🚫 Nenhum caixa aberto no momento. Abra um caixa para registrar vendas.")
         st.stop()
+
 
     # (sua função finalizar_venda e demais continuam iguais...)
     # 🔹 Sub-abas principais (somente 3)
