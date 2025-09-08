@@ -1288,10 +1288,6 @@ else:
     valor_inicial = st.session_state.get("valor_inicial", 0.0)
     st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
 
-    # 🔹 Sub-abas principais
-    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
-
-
 
     # ========================================================
     # 🔒 BLOQUEIO: SÓ MOSTRA AS ABAS DE VENDA SE CAIXA ESTIVER ABERTO
