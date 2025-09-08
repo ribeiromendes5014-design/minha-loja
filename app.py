@@ -1251,7 +1251,7 @@ if view == "Vendas":
             st.error(f"Erro ao enviar WhatsApp: {e}")
 
 
-    # ========================================================
+   # ========================================================
 # CONTROLE DE ABERTURA E FECHAMENTO DO CAIXA
 # ========================================================
 
@@ -1269,13 +1269,28 @@ def abrir_caixa():
         else:
             st.warning("⚠️ Informe o nome do operador e o valor inicial.")
 
-
 def fechar_caixa():
     if "caixa_aberto" in st.session_state and st.session_state["caixa_aberto"]:
         st.session_state["caixa_aberto"] = False
         operador = st.session_state.get("operador", "—")
         st.success(f"📦 Caixa fechado! Operador: {operador}")
         st.rerun()
+
+
+# ========================================================
+# BLOQUEIO: MOSTRAR ABRIR CAIXA OU VENDAS
+# ========================================================
+if not st.session_state.get("caixa_aberto", False):
+    st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
+    abrir_caixa()
+else:
+    operador = st.session_state.get("operador", "—")
+    valor_inicial = st.session_state.get("valor_inicial", 0.0)
+    st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
+
+    # 🔹 Sub-abas principais
+    tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
+
 
 
     # ========================================================
