@@ -1544,107 +1544,108 @@ if view == "Vendas":
 
               
                 # ================= TAB 2 - ÚLTIMAS VENDAS =================
-              with tab2:
-                  st.subheader("📊 Últimas Vendas")
-               if not vendas.empty:
-                ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
+with tab2:
+    st.subheader("📊 Últimas Vendas")
+    if not vendas.empty:
+        ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
 
-            colunas = [
-                "IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
-                "Total", "FormaPagamento", "ValorPago1", "ValorPago2"
-            ]
-            colunas = [c for c in colunas if c in ult.columns]
+        colunas = [
+            "IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
+            "Total", "FormaPagamento", "ValorPago1", "ValorPago2"
+        ]
+        colunas = [c for c in colunas if c in ult.columns]
 
-            st.dataframe(ult[colunas], use_container_width=True, key="df_ultimas_vendas")
+        st.dataframe(ult[colunas], use_container_width=True, key="df_ultimas_vendas")
 
-            ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
+        ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
 
-            colx, coly = st.columns([3, 1])
-            with colx:
-                id_excluir = st.selectbox(
-                    "Selecione a venda para excluir (devolve estoque)",
-                    ids if ids else [0],
-                    key="select_excluir_venda"
-                )
-            with coly:
-                if st.button("Excluir venda", key="btn_excluir_venda"):
-                    try:
-                        id_excluir_int = int(id_excluir)
-                    except:
-                        id_excluir_int = None
+        colx, coly = st.columns([3, 1])
+        with colx:
+            id_excluir = st.selectbox(
+                "Selecione a venda para excluir (devolve estoque)",
+                ids if ids else [0],
+                key="select_excluir_venda"
+            )
+        with coly:
+            if st.button("Excluir venda", key="btn_excluir_venda"):
+                try:
+                    id_excluir_int = int(id_excluir)
+                except:
+                    id_excluir_int = None
 
-                    if id_excluir_int and id_excluir_int in ids:
-                        linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
+                if id_excluir_int and id_excluir_int in ids:
+                    linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
 
-                        for _, r in linhas.iterrows():
-                            mask = produtos["ID"].astype(str) == str(r["IDProduto"])
-                            if mask.any():
-                                produtos.loc[mask, "Quantidade"] = (
-                                    produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
-                                ).astype(int)
+                    for _, r in linhas.iterrows():
+                        mask = produtos["ID"].astype(str) == str(r["IDProduto"])
+                        if mask.any():
+                            produtos.loc[mask, "Quantidade"] = (
+                                produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
+                            ).astype(int)
 
-                        vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
+                    vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
 
-                        save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
-                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                    save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
+                    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
 
-                        st.session_state["vendas"] = vendas
-                        st.session_state["produtos"] = produtos
+                    st.session_state["vendas"] = vendas
+                    st.session_state["produtos"] = produtos
 
-                        st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
-                        st.rerun()
-                    else:
-                        st.warning("Venda não encontrada.")
-        else:
-            st.info("Ainda não há vendas registradas.")
-
-    # ================= TAB 3 - RECIBOS =================
-    with tab3:
-        import os
-        from PIL import Image, UnidentifiedImageError
-
-        st.subheader("📄 Recibos de Vendas")
-
-        if not vendas.empty:
-            datas = sorted(vendas["Data"].unique())
-            data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
-            vendas_dia = vendas[vendas["Data"] == data_sel]
-            ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
-            id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
-
-            if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
-                caminho_pdf = f"recibo_venda_{id_sel}.pdf"
-                gerar_pdf_venda(id_sel, vendas, caminho_pdf)
-
-                with open(caminho_pdf, "rb") as f:
-                    st.download_button(
-                        label="⬇️ Baixar Recibo",
-                        data=f,
-                        file_name=caminho_pdf,
-                        mime="application/pdf",
-                        key="download_recibo"
-                    )
-
-                # 🔒 Logo fixo do recibo: logo_docebella.png
-                logo_candidates = [
-                    "logo_docebella.png",
-                    "assets/logo_docebella.png",
-                    "static/logo_docebella.png",
-                    "images/logo_docebella.png",
-                ]
-                logo_path = next((p for p in logo_candidates if os.path.exists(p)), None)
-
-                if logo_path:
-                    try:
-                        img = Image.open(logo_path)
-                        st.image(img, width=200, caption="Doce Bella")
-                    except (UnidentifiedImageError, OSError) as e:
-                        st.warning(f"⚠️ Não foi possível abrir a imagem do logo em '{logo_path}': {e}")
+                    st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
+                    st.rerun()
                 else:
-                    st.warning("⚠️ Arquivo 'logo_docebella.png' não foi encontrado. Coloque o arquivo na pasta do app ou em assets/static/images.")
+                    st.warning("Venda não encontrada.")
+    else:
+        st.info("Ainda não há vendas registradas.")
 
-        else:
-            st.info("Nenhuma venda para gerar recibo.")
+# ================= TAB 3 - RECIBOS =================
+with tab3:
+    import os
+    from PIL import Image, UnidentifiedImageError
+
+    st.subheader("📄 Recibos de Vendas")
+
+    if not vendas.empty:
+        datas = sorted(vendas["Data"].unique())
+        data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
+        vendas_dia = vendas[vendas["Data"] == data_sel]
+        ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
+        id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
+
+        if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
+            caminho_pdf = f"recibo_venda_{id_sel}.pdf"
+            gerar_pdf_venda(id_sel, vendas, caminho_pdf)
+
+            with open(caminho_pdf, "rb") as f:
+                st.download_button(
+                    label="⬇️ Baixar Recibo",
+                    data=f,
+                    file_name=caminho_pdf,
+                    mime="application/pdf",
+                    key="download_recibo"
+                )
+
+            # 🔒 Logo fixo do recibo: logo_docebella.png
+            logo_candidates = [
+                "logo_docebella.png",
+                "assets/logo_docebella.png",
+                "static/logo_docebella.png",
+                "images/logo_docebella.png",
+            ]
+            logo_path = next((p for p in logo_candidates if os.path.exists(p)), None)
+
+            if logo_path:
+                try:
+                    img = Image.open(logo_path)
+                    st.image(img, width=200, caption="Doce Bella")
+                except (UnidentifiedImageError, OSError) as e:
+                    st.warning(f"⚠️ Não foi possível abrir a imagem do logo em '{logo_path}': {e}")
+            else:
+                st.warning("⚠️ Arquivo 'logo_docebella.png' não foi encontrado. Coloque o arquivo na pasta do app ou em assets/static/images.")
+
+    else:
+        st.info("Nenhuma venda para gerar recibo.")
+
 
 
 
