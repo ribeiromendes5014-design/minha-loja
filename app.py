@@ -1323,7 +1323,7 @@ if view == "Vendas":
                         st.success("Item adicionado ao pedido.")
                         st.rerun()
 
-            # --- POR CÓDIGO DE BARRAS ---
+                        # --- POR CÓDIGO DE BARRAS ---
             with sub2:
                 codigo = st.text_input("Digite ou escaneie o código de barras", key="codigo_barras_venda")
                 df_sel = produtos.copy()
@@ -1420,40 +1420,41 @@ if view == "Vendas":
                     nome_cliente = st.text_input("👤 Nome do Cliente")
                     data_pagamento = st.date_input("📅 Data prevista de pagamento", value=date.today())
 
-                            # -- Métricas
-            colA, colB, colC = st.columns(3)
-            colA.metric("Valor Total", brl(valor_total))
-            if forma == "Misto":
-                colB.metric(f"{forma1}", brl(valor1))
-                colC.metric(f"{forma2}", brl(valor2))
-            elif forma == "Dinheiro":
-                colB.metric("Valor Recebido", brl(valor_recebido))
-                colC.metric("Troco", brl(max(valor_recebido - valor_total, 0.0)))
-            elif forma == "Fiado":
-                colB.metric("Cliente", nome_cliente if nome_cliente else "—")
-                colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
+                # -- Métricas
+                colA, colB, colC = st.columns(3)
+                colA.metric("Valor Total", brl(valor_total))
+                if forma == "Misto":
+                    colB.metric(f"{forma1}", brl(valor1))
+                    colC.metric(f"{forma2}", brl(valor2))
+                elif forma == "Dinheiro":
+                    colB.metric("Valor Recebido", brl(valor_recebido))
+                    colC.metric("Troco", brl(max(valor_recebido - valor_total, 0.0)))
+                elif forma == "Fiado":
+                    colB.metric("Cliente", nome_cliente if nome_cliente else "—")
+                    colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
 
-            st.markdown("---")
+                st.markdown("---")
 
-            # -- Botões de ação
-            b1, b2, b4 = st.columns([1, 1, 1])
-            with b1:
-                if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
-                    finalizar_venda(
-                        forma, forma1, forma2, valor1, valor2, promocoes,
-                        nome_cliente=nome_cliente, data_pagamento=data_pagamento,
-                        valor_recebido=valor_recebido
-                    )
-            with b2:
-                if st.button("🆕 Nova Venda", key="btn_nova_venda"):
-                    nova_venda()
-            with b4:
-                if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
-                    fechar_caixa()
-        else:
-            st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
+                # -- Botões de ação
+                b1, b2, b4 = st.columns([1, 1, 1])
+                with b1:
+                    if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
+                        finalizar_venda(
+                            forma, forma1, forma2, valor1, valor2, promocoes,
+                            nome_cliente=nome_cliente, data_pagamento=data_pagamento,
+                            valor_recebido=valor_recebido
+                        )
+                with b2:
+                    if st.button("🆕 Nova Venda", key="btn_nova_venda"):
+                        nova_venda()
+                with b4:
+                    if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
+                        fechar_caixa()
+            else:
+                st.info("⚠️ Adicione um produto ao pedido para escolher a forma de pagamento.")
 
         # ================= TAB 2 - ÚLTIMAS VENDAS =================
+
 
         with tab2:
             st.subheader("📊 Últimas Vendas")
