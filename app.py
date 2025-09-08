@@ -1319,9 +1319,7 @@ def fechar_caixa():
         st.session_state["vendas_dia_fechamento"] = vendas_dia
         st.session_state["caixa_aberto"] = False
         st.success(f"📦 Caixa fechado! Operador: {operador}")
-
-        # Remove o st.rerun() daqui, ele será chamado no botão
-        # st.rerun()
+        st.rerun()
 
 
 # ========================================================
