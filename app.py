@@ -1357,19 +1357,33 @@ if "dados_fechamento_caixa" in st.session_state:
     st.subheader("📊 Resumo do Último Fechamento de Caixa")
     dados_caixa = st.session_state.pop("dados_fechamento_caixa")
     vendas_dia = st.session_state.pop("vendas_dia_fechamento")
-    
-    # Mostrar valores detalhados
-    st.write(f"💵 Valor Inicial do Caixa: {brl(dados_caixa['ValorInicial'])}")
-    st.write(f"💵 Dinheiro recebido hoje: {brl(dados_caixa['Dinheiro'])}")
-    st.write(f"⚡ PIX: {brl(dados_caixa['PIX'])}")
-    st.write(f"💳 Cartão: {brl(dados_caixa['Cartão'])}")
-    st.write(f"📒 Fiado: {brl(dados_caixa['Fiado'])}")
-    st.write(f"📦 Faturamento Total do Dia: {brl(dados_caixa['FaturamentoTotal'])}")
-    
-    # Calcula o valor final esperado no caixa
-    valor_final_caixa = dados_caixa['ValorInicial'] + dados_caixa['FaturamentoTotal']
+
+    # Valores individuais
+    valor_inicial = dados_caixa['ValorInicial']
+    total_dinheiro = dados_caixa['Dinheiro']
+    total_pix = dados_caixa['PIX']
+    total_cartao_bruto = dados_caixa['Cartão']  # valor vendido no cartão
+    total_fiado = dados_caixa['Fiado']
+
+    # Aplica taxa do cartão (se houver)
+    taxa_cartao = 0.8872  # 11,28% de desconto
+    total_cartao_liquido = total_cartao_bruto * taxa_cartao
+
+    # Faturamento total do dia (somente valores que entram no caixa)
+    faturamento_total = total_dinheiro + total_pix + total_cartao_liquido
+
+    # Mostra detalhamento
+    st.write(f"💵 Valor Inicial do Caixa: {brl(valor_inicial)}")
+    st.write(f"💵 Dinheiro recebido hoje: {brl(total_dinheiro)}")
+    st.write(f"⚡ PIX recebido: {brl(total_pix)}")
+    st.write(f"💳 Cartão (líquido após taxa): {brl(total_cartao_liquido)}")
+    st.write(f"📒 Fiado (não entra no caixa): {brl(total_fiado)}")
+    st.write(f"📦 Faturamento Total do Dia (caixa): {brl(faturamento_total)}")
+
+    # Calcula valor final esperado no caixa
+    valor_final_caixa = valor_inicial + faturamento_total
     st.write(f"💰 Valor Final esperado no Caixa: {brl(valor_final_caixa)}")
-    
+
     # Gera PDF
     caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
     gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
