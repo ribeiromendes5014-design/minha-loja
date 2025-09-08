@@ -1543,14 +1543,11 @@ if view == "Vendas":
 
 
               
-
-
-        # ================= TAB 2 - ÚLTIMAS VENDAS =================
-    with tab2:
-        st.subheader("📊 Últimas Vendas")
-
-        if not vendas.empty:
-            ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
+                # ================= TAB 2 - ÚLTIMAS VENDAS =================
+              with tab2:
+                  st.subheader("📊 Últimas Vendas")
+               if not vendas.empty:
+                ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
 
             colunas = [
                 "IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
