@@ -1275,13 +1275,14 @@ if view == "Vendas":
 
     # ================= FUNÇÕES AUXILIARES DE CAIXA =================
     def abrir_caixa(operador, valor_inicial):
-        caixas = norm_caixas(pd.DataFrame())
-        hoje = str(date.today())
-        if not caixas.empty and (caixas["Data"] == hoje).any():
-            st.warning("⚠️ Já existe um caixa aberto hoje.")
-            return 
-        novo = {
-                    "Data": hoje,
+    caixas = norm_caixas(pd.DataFrame())
+    hoje = str(date.today())
+    if not caixas.empty and (caixas["Data"] == hoje).any():
+        st.warning("⚠️ Já existe um caixa aberto hoje.")
+        return
+
+    novo = {
+        "Data": hoje,
         "Operador": operador,
         "ValorInicial": float(valor_inicial),
         "FaturamentoTotal": 0.0,
@@ -1296,10 +1297,13 @@ if view == "Vendas":
         "Diferenca": 0.0,
         "Status": "Aberto"
     }
+
+    # 🔹 Agora sim: tudo dentro da função
     caixas = pd.concat([caixas, pd.DataFrame([novo])], ignore_index=True)
     save_csv_github(caixas, ARQ_CAIXAS, f"Abertura de caixa {hoje}")
     st.session_state["caixas"] = caixas
     st.success(f"✅ Caixa aberto por {operador} com R$ {valor_inicial:.2f}")
+
 
 
 def fechar_caixa():
