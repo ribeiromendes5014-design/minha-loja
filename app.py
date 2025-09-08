@@ -1250,24 +1250,35 @@ def abrir_caixa():
     with st.form("abrir_caixa_form"):
         st.subheader("🟢 Abrir Caixa")
         operador = st.text_input("👤 Nome do Operador", key="input_operador")
-        valor_inicial = st.number_input("💵 Valor Inicial do Caixa", min_value=0.0, step=1.0, key="input_valor_inicial")
+        valor_inicial = st.number_input(
+            "💵 Valor Inicial do Caixa",
+            min_value=0.0,
+            step=1.0,
+            key="input_valor_inicial"
+        )
         submitted = st.form_submit_button("🚀 Abrir Caixa")
         if submitted:
             if not operador:
                 st.warning("⚠️ Informe o nome do operador para abrir o caixa.")
             else:
                 st.session_state["operador"] = operador
-                st.session_state["valor_inicial"]
+                st.session_state["valor_inicial"] = valor_inicial
+                st.session_state["valor_inicial_original"] = valor_inicial  # salva o valor original
                 st.session_state["caixa_aberto"] = True
-                st.success(f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}")
+                st.success(
+                    f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}"
+                )
                 st.rerun()
 
 
 def fechar_caixa():
     if st.session_state.get("caixa_aberto", False):
         operador = st.session_state.get("operador", "—")
-        valor_inicial = st.session_state.get("valor_inicial_original", 
-                                             valor_inicial = st.session_state.get("valor_inicial_original", st.session_state.get("valor_inicial", 0.0))
+        # Corrige a busca do valor inicial: primeiro tenta o original, senão usa o atual
+        valor_inicial = st.session_state.get(
+            "valor_inicial_original",
+            st.session_state.get("valor_inicial", 0.0)
+        )
         hoje = date.today()
 
         # Garantir que a coluna Data é datetime.date
@@ -1315,7 +1326,9 @@ def fechar_caixa():
         st.session_state["vendas_dia_fechamento"] = vendas_dia
         st.session_state["caixa_aberto"] = False
 
-        st.success(f"📦 Caixa fechado! Operador: {operador} | Valor final esperado: {brl(valor_final_caixa)}")
+        st.success(
+            f"📦 Caixa fechado! Operador: {operador} | Valor final esperado: {brl(valor_final_caixa)}"
+        )
         st.rerun()
 
 
