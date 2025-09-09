@@ -57,6 +57,7 @@ ARQ_CLIENTES  = "clientes.csv"
 ARQ_USUARIOS  = "usuarios.csv"
 ARQ_PROMOCOES = "promocoes.csv"
 ARQ_CAIXAS = "caixas.csv"
+ARQ_PRECIFICACAO = "precificacao.csv"
 
 
 FATOR_CARTAO  = 0.8872  # preco_cartao = preco_vista / FATOR_CARTAO
