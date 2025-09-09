@@ -2424,13 +2424,10 @@ import pandas as pd
 import requests
 from io import StringIO
 
-# =====================================
-# Função da aba Papelaria
-# =====================================
 def papelaria_aba():
     st.title("📚 Gerenciador Papelaria Personalizada")
 
-    # URLs dos CSVs no GitHub (altere para seu repositório)
+    # URLs dos CSVs no GitHub (mude para o seu repositório)
     URL_BASE = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/"
     INSUMOS_CSV_URL = URL_BASE + "insumos_papelaria.csv"
     PRODUTOS_CSV_URL = URL_BASE + "produtos_papelaria.csv"
@@ -2453,21 +2450,17 @@ def papelaria_aba():
             st.warning(f"Não foi possível carregar CSV do GitHub ({url}): {e}")
             return pd.DataFrame(columns=colunas)
 
-    # Inicializa os dados na sessão
+    # Carregar dados na sessão
     if "insumos" not in st.session_state:
         st.session_state.insumos = carregar_csv_github(INSUMOS_CSV_URL, COLUNAS_INSUMOS)
-
     if "produtos" not in st.session_state:
         st.session_state.produtos = carregar_csv_github(PRODUTOS_CSV_URL, COLUNAS_PRODUTOS)
-
     if "categorias" not in st.session_state:
         st.session_state.categorias = carregar_csv_github(CATEGORIAS_CSV_URL, COLUNAS_CATEGORIAS)
         if st.session_state.categorias.empty:
-            st.session_state.categorias = pd.DataFrame({
-                "Categoria": ["Papel", "Impressão", "Capa", "Espiral/Wire-o", "Laminação", "Outros"]
-            })
+            st.session_state.categorias = pd.DataFrame({"Categoria": ["Papel", "Impressão", "Capa", "Espiral/Wire-o", "Laminação", "Outros"]})
 
-    # Funções para adicionar, remover dados
+    # Funções para manipular dados
     def adicionar_categoria(nova_cat):
         if nova_cat.strip() == "":
             st.warning("Digite uma categoria válida.")
@@ -2536,7 +2529,7 @@ def papelaria_aba():
         csv = df.to_csv(index=False, encoding="utf-8-sig")
         st.download_button(f"⬇️ Baixar {nome_arquivo}", data=csv, file_name=nome_arquivo, mime="text/csv")
 
-    # Layout com abas
+    # Interface com abas
     aba_categorias, aba_insumos, aba_produtos = st.tabs(["Categorias", "Insumos", "Produtos"])
 
     with aba_categorias:
@@ -2544,15 +2537,12 @@ def papelaria_aba():
         nova_cat = st.text_input("Nova Categoria")
         if st.button("Adicionar Categoria"):
             adicionar_categoria(nova_cat)
-
         st.markdown("### Categorias cadastradas")
         df_cat = st.data_editor(st.session_state.categorias, num_rows="dynamic", use_container_width=True)
         st.session_state.categorias = df_cat.dropna(subset=["Categoria"]).drop_duplicates().reset_index(drop=True)
-
         cat_para_remover = st.selectbox("Selecionar categoria para remover", options=[""] + st.session_state.categorias["Categoria"].tolist())
         if cat_para_remover and st.button("Remover Categoria"):
             remover_categoria(cat_para_remover)
-
         baixar_csv(st.session_state.categorias, "categorias_papelaria.csv")
 
     with aba_insumos:
@@ -2562,19 +2552,15 @@ def papelaria_aba():
             categoria_insumo = st.selectbox("Categoria", st.session_state.categorias["Categoria"].tolist())
             unidade_insumo = st.text_input("Unidade de Medida (ex: un, kg, m)")
             preco_insumo = st.number_input("Preço Unitário (R$)", min_value=0.0, format="%.2f")
-
             adicionar = st.form_submit_button("Adicionar Insumo")
             if adicionar:
                 adicionar_insumo(nome_insumo, categoria_insumo, unidade_insumo, preco_insumo)
-
         st.markdown("### Insumos cadastrados")
         df_insumos = st.data_editor(st.session_state.insumos, num_rows="dynamic", use_container_width=True)
         st.session_state.insumos = df_insumos.dropna(subset=["Nome"]).drop_duplicates().reset_index(drop=True)
-
         insumo_para_remover = st.selectbox("Selecionar insumo para remover", options=[""] + st.session_state.insumos["Nome"].tolist())
         if insumo_para_remover and st.button("Remover Insumo"):
             remover_insumo(insumo_para_remover)
-
         baixar_csv(st.session_state.insumos, "insumos_papelaria.csv")
 
     with aba_produtos:
@@ -2585,20 +2571,17 @@ def papelaria_aba():
             preco_vista = st.number_input("Preço à Vista (R$)", min_value=0.0, format="%.2f")
             preco_cartao = st.number_input("Preço no Cartão (R$)", min_value=0.0, format="%.2f")
             margem = st.number_input("Margem (%)", min_value=0.0, format="%.2f")
-
-            adicionar_produto_submit = st.form_submit_button("Adicionar Produto")
-            if adicionar_produto_submit:
+            adicionar_produto_btn = st.form_submit_button("Adicionar Produto")
+            if adicionar_produto_btn:
                 adicionar_produto(nome_produto, custo_total, preco_vista, preco_cartao, margem)
-
         st.markdown("### Produtos cadastrados")
         df_produtos = st.data_editor(st.session_state.produtos, num_rows="dynamic", use_container_width=True)
         st.session_state.produtos = df_produtos.dropna(subset=["Produto"]).drop_duplicates().reset_index(drop=True)
-
         produto_para_remover = st.selectbox("Selecionar produto para remover", options=[""] + st.session_state.produtos["Produto"].tolist())
         if produto_para_remover and st.button("Remover Produto"):
             remover_produto(produto_para_remover)
-
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
+
 
 
 
