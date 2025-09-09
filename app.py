@@ -2404,6 +2404,9 @@ import requests
 from io import StringIO
 
 
+# =====================================
+# Aba Papelaria (função)
+# =====================================
 def papelaria_aba():
     st.title("📚 Gerenciador Papelaria Personalizada")
 
@@ -2608,12 +2611,3 @@ def papelaria_aba():
             remover_produto(produto_para_remover)
 
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
-
-
-
-
-
-
-
-
-
