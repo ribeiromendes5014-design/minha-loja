@@ -1990,27 +1990,20 @@ if view == "Clientes":
 
 
 
-# ===============================
+# =====================================
 # PRECIFICAÇÃO
-# ===============================
-if view == "Precificação":
+# =====================================
+if view == "precificação":
     st.title("💄 Precificador de Produtos")
-    
-    # Botão para carregar CSV do GitHub
+
+    # URL do CSV de precificação no GitHub (raw link)
+    url_precificacao = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/main/precificacao.csv"
+
     if st.button("📥 Carregar CSV de Precificação do GitHub"):
-        url_precificacao = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/precificacao.csv"
-        df_precificacao = load_csv_github(url_precificacao)
+        df_precificacao = load_csv_from_url(url_precificacao)
 
         if not df_precificacao.empty:
-            df_precificacao["Custos Extras Produto"] = 0.0
-            df_processado = processar_dataframe(
-                df_precificacao,
-                frete=0.0,
-                custos_extras=0.0,
-                modo_margem="Margem fixa",
-                margem_fixa_sidebar=30.0
-            )
-            st.success("✅ CSV carregado e processado com sucesso!")
+            st.success("✅ CSV carregado com sucesso!")
             exibir_resultados(df_processado)
         else:
             st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
