@@ -2390,19 +2390,6 @@ if view == "precificação":
 
 
 
-# =====================================
-# Aba Papelaria (versão final corrigida)
-# =====================================
-# define a função primeiro
-def papelaria_aba():
-    st.title("📚 Gerenciador Papelaria Personalizada")
-    # ... resto da função ...
-
-# e só depois, no bloco das views, você chama
-elif view == "Papelaria":
-    papelaria_aba()
-
-
 import streamlit as st
 import pandas as pd
 import requests
@@ -2616,6 +2603,14 @@ def papelaria_aba():
             remover_produto(produto_para_remover)
 
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
-        # =====================================
+        
+
+# =====================================
+# Aba Papelaria (chamada)
+# =====================================
+elif view == "Papelaria":
+    papelaria_aba()
+
+      
 
 
