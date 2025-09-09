@@ -2566,8 +2566,21 @@ def papelaria_aba():
                 adicionar_produto(nome_produto, custo_total, preco_vista, preco_cartao, margem)
 
         st.markdown("### Produtos cadastrados")
-        df_produtos = st.data_editor(st.session_state.produtos, num_rows="dynamic", use_container_width=True)
-        st.session_state.produtos = df_produtos.dropna(subset=["Produto"]).drop_duplicates().reset_index(drop=True)
+        df_produtos = st.data_editor(
+    st.session_state.produtos.reindex(columns=COLUNAS_PRODUTOS), 
+    num_rows="dynamic", 
+    use_container_width=True
+)
+
+if "Produto" in df_produtos.columns:
+    st.session_state.produtos = (
+        df_produtos.dropna(subset=["Produto"])
+        .drop_duplicates()
+        .reset_index(drop=True)
+    )
+else:
+    st.session_state.produtos = df_produtos
+
 
         produto_para_remover = st.selectbox(
             "Selecionar produto para remover",
