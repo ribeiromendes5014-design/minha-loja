@@ -892,9 +892,9 @@ elif view == "precificação":
     # Aqui você cola o código da aba Precificação que já implementou
     st.write("⚙️ Precificação em construção...")
 
-elif view == "Papelaria":
-    from papelaria_modulo import papelaria_aba
+   elif view == "Papelaria":
     papelaria_aba()
+
 
 elif view == "Vendas":
     st.write("🛒 Vendas em construção...")
