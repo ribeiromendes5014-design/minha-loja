@@ -2423,7 +2423,8 @@ if view == "precificação":
 # Papelaria
 # =====================================
 elif view == "Papelaria":
-    papelaria_aba()
+    # Código da aba Papelaria aqui, ou pelo menos:
+    pass  # Para evitar erro até implementar
 
 
 # aba_papelaria.py
