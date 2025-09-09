@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from PIL import Image, ImageEnhance
 from io import BytesIO
 import requests  
-from papelaria_modulo import papelaria_aba
+
 
 # =====================================
 # Funções auxiliares
@@ -2173,6 +2173,8 @@ if view == "precificação":
     # ===============================
     # Funções de processamento e exibição
     # ===============================
+    from papelaria_modulo import papelaria_aba
+    
     def extrair_produtos_pdf(pdf_file):
         produtos = []
         with pdfplumber.open(pdf_file) as pdf:
