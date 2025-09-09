@@ -1999,26 +1999,7 @@ if view == "precificação":
 
     url_precificacao = "https://raw.githubusercontent.com/ribeiromendes5014-design/minha-loja/main/precificacao.csv"
 
-    if st.button("📥 Carregar CSV de Precificação do GitHub"):
-        df_precificacao = load_csv_from_url(url_precificacao)
-
-        if not df_precificacao.empty:
-            st.success("✅ CSV carregado com sucesso!")
-
-            if "Custos Extras Produto" not in df_precificacao.columns:
-                df_precificacao["Custos Extras Produto"] = 0.0
-
-            df_processado = processar_dataframe(
-                df_precificacao,
-                frete=0.0,
-                custos_extras=0.0,
-                modo_margem="Margem fixa",
-                margem_fixa_sidebar=30.0
-            )
-
-            exibir_resultados(df_processado)
-        else:
-            st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+    
 
     # ===============================
     # Funções de processamento e exibição
