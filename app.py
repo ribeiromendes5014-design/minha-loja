@@ -1979,8 +1979,8 @@ if view == "Clientes":
 # ===============================
 # PRECIFICAÇÃO
 # ===============================
-elif view == "Precificação":
-
+if view == "Precificação":
+    st.title("💄 Precificador de Produtos")
     # ===============================
     # Função para carregar CSV do GitHub
     # ===============================
