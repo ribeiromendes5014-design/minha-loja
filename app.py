@@ -1292,6 +1292,34 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 import requests
+st.markdown("## 🔧 Teste de Envio WhatsApp")
+
+if st.button("🚨 Testar envio de WhatsApp"):
+    st.write("⏳ Enviando mensagem...")
+    try:
+        headers = {
+            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "messaging_product": "whatsapp",
+            "to": NUMERO_DESTINO,
+            "type": "text",
+            "text": {"body": "⚙️ Teste de envio via API WhatsApp"}
+        }
+
+        response = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
+        resp_json = response.json()
+        st.write("🔍 Resposta da API:", resp_json)
+
+        if "messages" in resp_json:
+            st.success("✅ Mensagem enviada com sucesso!")
+        else:
+            st.error(f"❌ Erro no envio: {resp_json.get('error', resp_json)}")
+
+    except Exception as e:
+        st.error(f"⚠️ Erro inesperado: {e}")
+
 
 # Configuração WhatsApp (Variáveis Globais)
 WHATSAPP_TOKEN = "EAALmgS1woeIBPcFcKL1KYJoc9Np31ijd8xu90NZAKJ52K0blD9VJVZBI9b6h4ZA4qAZCEgT0Es4xXVYWvrZBdR1r1uOZC7NStD6HW3JXJyJkDXtGZBV3ZAD6ZCjy5hN86ZBNoSdsrMV9mCv7GPpsvNCO0h6W8kUOFJS6qZCpzG133xedT0lIh0WyvYadUPj4hZBfavpag0m1gEVdK5ZCLtWdpHwLlZCOOwkV0ieNwlvfwD7YtZCPQZDZD"
