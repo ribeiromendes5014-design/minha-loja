@@ -2105,10 +2105,7 @@ if view == "precificação":
     # ===============================
     ARQ_CAIXAS = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/precificacao.csv"
 
-    # ===============================
-    # Interface
-    # ===============================
-    st.title("💄 Doce&Bella - Precificador de Produtos")
+
 
     tab_pdf, tab_manual, tab_github = st.tabs([
         "📄 Precificador PDF",
