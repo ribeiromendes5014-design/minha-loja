@@ -683,8 +683,13 @@ def do_login():
         st.session_state["logado"] = False
         st.session_state["usuario_logado"] = None
 
-    # 🔹 Tenta login automático (se tiver algum usuário marcado como Manter=True no CSV)
     usuarios = norm_usuarios(pd.DataFrame())
+
+    # 🔹 garante que a coluna "Manter" exista
+    if "Manter" not in usuarios.columns:
+        usuarios["Manter"] = False
+
+    # 🔹 Tenta login automático
     manter_auto = usuarios[usuarios["Manter"] == True]
     if not manter_auto.empty:
         user = manter_auto.iloc[0]["Usuario"]
@@ -724,6 +729,7 @@ def do_login():
                 st.error("Usuário ou senha inválidos.")
 
     return st.session_state["logado"]
+
 
 
 
