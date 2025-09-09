@@ -2441,6 +2441,7 @@ def papelaria_aba():
                     ignore_index=True
                 )
                 st.success(f"Categoria '{nova_cat}' adicionada!")
+                st.rerun()
 
         st.markdown("### Categorias cadastradas")
         st.dataframe(st.session_state.categorias, use_container_width=True)
@@ -2454,6 +2455,7 @@ def papelaria_aba():
                 st.session_state.categorias["Categoria"] != cat_para_remover
             ]
             st.success(f"Categoria '{cat_para_remover}' removida!")
+            st.rerun()
 
         baixar_csv(st.session_state.categorias, "categorias_papelaria.csv")
 
@@ -2475,6 +2477,7 @@ def papelaria_aba():
                     }])
                     st.session_state.insumos = pd.concat([st.session_state.insumos, novo], ignore_index=True)
                     st.success(f"Insumo '{nome_insumo}' adicionado!")
+                    st.rerun()
 
         st.markdown("### Insumos cadastrados")
         st.session_state.insumos = st.session_state.insumos.reindex(columns=COLUNAS_INSUMOS, fill_value="")
@@ -2502,6 +2505,7 @@ def papelaria_aba():
                         st.session_state.insumos["Nome"] != insumo_selecionado
                     ]
                     st.success(f"Insumo '{insumo_selecionado}' removido!")
+                    st.rerun()
 
             if acao_insumo == "Editar":
                 insumo_atual = st.session_state.insumos[
@@ -2526,6 +2530,7 @@ def papelaria_aba():
                             ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
                         ] = [novo_nome, nova_categoria, nova_unidade, novo_preco]
                         st.success("Insumo atualizado!")
+                        st.rerun()
 
         baixar_csv(st.session_state.insumos, "insumos_papelaria.csv")
 
@@ -2549,6 +2554,7 @@ def papelaria_aba():
                     }])
                     st.session_state.produtos = pd.concat([st.session_state.produtos, novo], ignore_index=True)
                     st.success(f"Produto '{nome_produto}' adicionado!")
+                    st.rerun()
 
         st.markdown("### Produtos cadastrados")
         st.session_state.produtos = st.session_state.produtos.reindex(columns=COLUNAS_PRODUTOS, fill_value="")
@@ -2576,6 +2582,7 @@ def papelaria_aba():
                         st.session_state.produtos["Produto"] != produto_selecionado
                     ]
                     st.success(f"Produto '{produto_selecionado}' removido!")
+                    st.rerun()
 
             if acao_produto == "Editar":
                 produto_atual = st.session_state.produtos[
@@ -2605,8 +2612,10 @@ def papelaria_aba():
                             ["Produto", "Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"]
                         ] = [novo_nome, novo_custo, novo_vista, novo_cartao, nova_margem]
                         st.success("Produto atualizado!")
+                        st.rerun()
 
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
+
 
 
 
