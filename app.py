@@ -2393,6 +2393,11 @@ if view == "precificação":
 # =====================================
 # Aba Papelaria (versão final corrigida)
 # =====================================
+elif view == "Papelaria":
+    papelaria_aba()
+
+
+
 import streamlit as st
 import pandas as pd
 import requests
