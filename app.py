@@ -1972,11 +1972,7 @@ if view == "Clientes":
 
 
 
-import streamlit as st
-import pdfplumber
-import pandas as pd
-import re
-import datetime
+
 
 st.set_page_config(page_title="Precificador Doce&Bella", layout="wide")
 
