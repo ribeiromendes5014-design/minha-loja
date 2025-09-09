@@ -829,8 +829,11 @@ def desenha_pedido(forma: str, prom_df: pd.DataFrame) -> pd.DataFrame:
 # Guardas
 # =====================================
 if not do_login():
-    st.stop()   # 🔒 para tudo aqui se não estiver logado
+    st.stop()   # 🔒 mostra só tela de login e interrompe aqui
 
+# =====================================
+# Se logou, continua
+# =====================================
 boot_session()
 
 # Carrega dados atuais
@@ -851,7 +854,7 @@ show_logo("sidebar")
 st.sidebar.title("📚 Menu")
 view = st.sidebar.radio(
     "Navegar",
-    ["Dashboard", "Produtos", "Vendas", "Clientes", "Promoções", "precificação", "Sair"],
+    ["Dashboard","Produtos","Vendas","Clientes","Promoções","precificação","Sair"],
     index=0
 )
 st.sidebar.markdown("---")
@@ -864,9 +867,16 @@ st.sidebar.number_input(
 )
 
 if view == "Sair":
+    # 🔹 Limpa sessão e também zera o "Manter"
+    usuarios = norm_usuarios(pd.DataFrame())
+    if "Manter" in usuarios.columns and st.session_state.get("usuario_logado"):
+        usuarios.loc[usuarios["Usuario"] == st.session_state["usuario_logado"], "Manter"] = False
+        save_csv_github(usuarios, ARQ_USUARIOS, "Logout do usuário")
+
     st.session_state.clear()
     st.success("Sessão encerrada.")
     st.stop()
+
 
 
 # =====================================
