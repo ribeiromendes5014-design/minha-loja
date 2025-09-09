@@ -802,7 +802,7 @@ st.session_state["promocoes"] = promocoes
 # =====================================
 show_logo("sidebar")
 st.sidebar.title("📚 Menu")
-view = st.sidebar.radio("Navegar", ["Dashboard","Produtos","Vendas","Clientes","Promoções","Sair"], index=0)
+view = st.sidebar.radio("Navegar", ["Dashboard","Produtos","Vendas","Clientes","Promoções","precificação","Sair"], index=0)
 st.sidebar.markdown("---")
 st.sidebar.number_input("🔔 Estoque mínimo (alerta)", min_value=0, step=1, value=st.session_state["estoque_minimo"], key="estoque_minimo")
 
