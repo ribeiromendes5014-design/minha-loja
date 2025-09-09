@@ -823,18 +823,20 @@ def desenha_pedido(forma: str, prom_df: pd.DataFrame) -> pd.DataFrame:
 # =====================================
 # Guardas
 # =====================================
-do_login()
+if not do_login():
+    st.stop()   # 🔒 para tudo aqui se não estiver logado
+
 boot_session()
 
 # Carrega dados atuais
-produtos = norm_produtos(pd.DataFrame())
-vendas   = norm_vendas(pd.DataFrame())
-clientes = norm_clientes(pd.DataFrame())
+produtos  = norm_produtos(pd.DataFrame())
+vendas    = norm_vendas(pd.DataFrame())
+clientes  = norm_clientes(pd.DataFrame())
 promocoes = norm_promocoes(pd.DataFrame())
 
-st.session_state["produtos"] = produtos
-st.session_state["vendas"] = vendas
-st.session_state["clientes"] = clientes
+st.session_state["produtos"]  = produtos
+st.session_state["vendas"]    = vendas
+st.session_state["clientes"]  = clientes
 st.session_state["promocoes"] = promocoes
 
 # =====================================
@@ -842,14 +844,25 @@ st.session_state["promocoes"] = promocoes
 # =====================================
 show_logo("sidebar")
 st.sidebar.title("📚 Menu")
-view = st.sidebar.radio("Navegar", ["Dashboard","Produtos","Vendas","Clientes","Promoções","precificação","Sair"], index=0)
+view = st.sidebar.radio(
+    "Navegar",
+    ["Dashboard", "Produtos", "Vendas", "Clientes", "Promoções", "precificação", "Sair"],
+    index=0
+)
 st.sidebar.markdown("---")
-st.sidebar.number_input("🔔 Estoque mínimo (alerta)", min_value=0, step=1, value=st.session_state["estoque_minimo"], key="estoque_minimo")
+st.sidebar.number_input(
+    "🔔 Estoque mínimo (alerta)",
+    min_value=0,
+    step=1,
+    value=st.session_state["estoque_minimo"],
+    key="estoque_minimo"
+)
 
 if view == "Sair":
     st.session_state.clear()
     st.success("Sessão encerrada.")
     st.stop()
+
 
 # =====================================
 # DASHBOARD
