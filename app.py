@@ -57,7 +57,7 @@ ARQ_CLIENTES  = "clientes.csv"
 ARQ_USUARIOS  = "usuarios.csv"
 ARQ_PROMOCOES = "promocoes.csv"
 ARQ_CAIXAS = "caixas.csv"
-ARQ_precificacao - "precificacao.csv"
+ARQ_CAIXAS = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/precificacao.csv"
 
 FATOR_CARTAO  = 0.8872  # preco_cartao = preco_vista / FATOR_CARTAO
 ESTOQUE_MINIMO_PADRAO = 5
