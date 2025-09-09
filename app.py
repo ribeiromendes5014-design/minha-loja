@@ -2611,3 +2611,9 @@ def papelaria_aba():
             remover_produto(produto_para_remover)
 
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
+        # =====================================
+# Aba Papelaria (chamada)
+# =====================================
+elif view == "Papelaria":
+    papelaria_aba()
+
