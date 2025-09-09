@@ -892,9 +892,8 @@ elif view == "precificação":
     # Aqui você cola o código da aba Precificação que já implementou
     st.write("⚙️ Precificação em construção...")
 
-   elif view == "Papelaria":
+elif view == "Papelaria":
     papelaria_aba()
-
 
 elif view == "Vendas":
     st.write("🛒 Vendas em construção...")
@@ -904,6 +903,7 @@ elif view == "Clientes":
 
 elif view == "Promoções":
     st.write("🏷️ Promoções em construção...")
+
 
 
 
