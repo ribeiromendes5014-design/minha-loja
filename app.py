@@ -1326,11 +1326,35 @@ if st.button("🚨 Testar envio de WhatsApp"):
 
 
 
-# Configuração WhatsApp (Variáveis Globais)
-WHATSAPP_TOKEN = "EAALmgS1woeIBPcFcKL1KYJoc9Np31ijd8xu90NZAKJ52K0blD9VJVZBI9b6h4ZA4qAZCEgT0Es4xXVYWvrZBdR1r1uOZC7NStD6HW3JXJyJkDXtGZBV3ZAD6ZCjy5hN86ZBNoSdsrMV9mCv7GPpsvNCO0h6W8kUOFJS6qZCpzG133xedT0lIh0WyvYadUPj4hZBfavpag0m1gEVdK5ZCLtWdpHwLlZCOOwkV0ieNwlvfwD7YtZCPQZDZD"  # <- ISSO JÁ ESTÁ CERTO
-WHATSAPP_PHONE_ID = "823826790806739"
-WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
-NUMERO_DESTINO = "5541987876191"
+# 🔹 Configuração WhatsApp
+    import requests
+    from datetime import datetime, date
+    import pytz
+
+    WHATSAPP_TOKEN = "EAALmgS1woeIBPcFcKL1KYJoc9Np31ijd8xu90NZAKJ52K0blD9VJVZBI9b6h4ZA4qAZCEgT0Es4xXVYWvrZBdR1r1uOZC7NStD6HW3JXJyJkDXtGZBV3ZAD6ZCjy5hN86ZBNoSdsrMV9mCv7GPpsvNCO0h6W8kUOFJS6qZCpzG133xedT0lIh0WyvYadUPj4hZBfavpag0m1gEVdK5ZCLtWdpHwLlZCOOwkV0ieNwlvfwD7YtZCPQZDZD"  # coloque aqui o token válido da API do WhatsApp Cloud
+    WHATSAPP_PHONE_ID = "823826790806739"
+    WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
+    NUMERO_DESTINO = "5541987876191"
+
+    def enviar_whatsapp(destinatario, mensagem):
+        headers = {
+            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "messaging_product": "whatsapp",
+            "to": destinatario,
+            "type": "text",
+            "text": {"body": mensagem}
+        }
+        try:
+            r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
+            resp = r.json()
+            print("DEBUG WHATSAPP:", resp)
+            if "messages" not in resp:
+                st.error(f"Erro WhatsApp: {resp}")
+        except Exception as e:
+            st.error(f"Erro ao enviar WhatsApp: {e}")
 
 # ========================================================
 # 2. FUNÇÕES AUXILIARES
