@@ -1461,6 +1461,16 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
 
     save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
     st.session_state["pedido_atual"] = []
+
+    # 🚀 Enviar mensagem no WhatsApp
+    try:
+        msg = f"✅ Nova venda #{novo_id}\nTotal: R$ {total_pedido:.2f}\nForma: {forma}"
+        if nome_cliente:
+            msg += f"\nCliente: {nome_cliente}"
+        enviar_whatsapp(NUMERO_DESTINO, msg)
+    except Exception as e:
+        st.error(f"Erro ao enviar WhatsApp: {e}")
+
     st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
     st.rerun()
 
