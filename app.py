@@ -2385,11 +2385,16 @@ if view == "precificação":
 
 
 
-elif view == "Papelaria":
-    # Função que encapsula o código da aba que criamos
-    def papelaria_aba():
-        st.title("📚 Gerenciador Papelaria Personalizada")
-        ...
+# =====================================
+# Função da aba Papelaria
+# =====================================
+import pandas as pd
+import requests
+from io import StringIO
+
+def papelaria_aba():
+    st.title("📚 Gerenciador Papelaria Personalizada")
+    # ... (todo aquele código grande de categorias, insumos, produtos)
     papelaria_aba()
 
 import streamlit as st
