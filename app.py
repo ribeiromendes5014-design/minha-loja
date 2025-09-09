@@ -679,15 +679,17 @@ def reset_admin_user():
 
 
 def do_login():
-    st.session_state.setdefault("logado", False)
-    st.session_state.setdefault("usuario_logado", None)
-    st.session_state.setdefault("credenciais_salvas", None)
+    # 🔹 sempre começa deslogado
+    if "logado" not in st.session_state:
+        st.session_state["logado"] = False
+        st.session_state["usuario_logado"] = None
+        st.session_state["credenciais_salvas"] = None
+        st.session_state["manter"] = False
 
-    # Logo no topo da tela de login
     show_logo("main")
     st.title("🔐 Login")
 
-    # Apenas preenche os campos, mas não loga sozinho
+    # Só preenche campos, não loga automático
     saved_user, saved_pwd = (None, None)
     if st.session_state.get("credenciais_salvas") and st.session_state.get("manter", False):
         saved_user, saved_pwd = st.session_state["credenciais_salvas"]
@@ -696,7 +698,7 @@ def do_login():
     pwd  = st.text_input("Senha", type="password", value=saved_pwd if saved_pwd else "")
     manter = st.checkbox("Manter conectado", value=st.session_state.get("manter", False))
 
-    _, c2, _ = st.columns([1,2,1])
+    _, c2, _ = st.columns([1, 2, 1])
     with c2:
         if st.button("Entrar", use_container_width=True):
             usuarios = norm_usuarios(pd.DataFrame())
@@ -722,13 +724,9 @@ def do_login():
             else:
                 st.error("Usuário ou senha inválidos.")
 
-        if manter and st.button("Salvar login", use_container_width=True):
-            st.session_state["credenciais_salvas"] = (user, pwd)
-            st.session_state["manter"] = True
-            st.success("Credenciais salvas! Da próxima vez os campos virão preenchidos.")
+    # 🔹 só retorna True se realmente logou nesta sessão
+    return st.session_state["logado"]
 
-    # 🔹 Agora só retorna True se o usuário tiver clicado em "Entrar"
-    return st.session_state.get("logado", False)
 
 
 
