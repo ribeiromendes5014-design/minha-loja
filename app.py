@@ -893,7 +893,7 @@ elif view == "precificação":
     st.write("⚙️ Precificação em construção...")
 
 elif view == "Papelaria":
-    # 🔹 Chama a função completa que criamos
+    from papelaria_modulo import papelaria_aba
     papelaria_aba()
 
 elif view == "Vendas":
