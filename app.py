@@ -2419,26 +2419,10 @@ if view == "precificação":
                 st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
 
 
-# =====================================
-# Papelaria
-# =====================================
-elif view == "Papelaria":
-    # Código da aba Papelaria aqui, ou pelo menos:
-    pass  # Para evitar erro até implementar
-
-
-# aba_papelaria.py
-
 import streamlit as st
 import pandas as pd
 import requests
 from io import StringIO
-
-def papelaria_aba():
-    st.title("📚 Gerenciador Papelaria Personalizada")
-    # Aqui vai o resto do código da aba (carregamento, UI, manipulação dos CSVs etc)
-
-st.set_page_config(page_title="Gerenciador Papelaria Personalizada", layout="wide")
 
 # URLs dos CSVs no GitHub (mude aqui para seu repositório)
 URL_BASE = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/"
@@ -2546,75 +2530,74 @@ def baixar_csv(df, nome_arquivo):
     csv = df.to_csv(index=False, encoding="utf-8-sig")
     st.download_button(f"⬇️ Baixar {nome_arquivo}", data=csv, file_name=nome_arquivo, mime="text/csv")
 
-# UI - layout com abas
+def papelaria_aba():
+    st.title("📚 Gerenciador Papelaria Personalizada")
 
-st.title("📚 Gerenciador Papelaria Personalizada")
+    aba_categorias, aba_insumos, aba_produtos = st.tabs(["Categorias", "Insumos", "Produtos"])
 
-aba_categorias, aba_insumos, aba_produtos = st.tabs(["Categorias", "Insumos", "Produtos"])
+    with aba_categorias:
+        st.header("Categorias")
+        nova_cat = st.text_input("Nova Categoria")
+        if st.button("Adicionar Categoria"):
+            adicionar_categoria(nova_cat)
 
-with aba_categorias:
-    st.header("Categorias")
-    nova_cat = st.text_input("Nova Categoria")
-    if st.button("Adicionar Categoria"):
-        adicionar_categoria(nova_cat)
+        st.markdown("### Categorias cadastradas")
+        df_cat = st.data_editor(st.session_state.categorias, num_rows="dynamic", use_container_width=True)
+        st.session_state.categorias = df_cat.dropna(subset=["Categoria"]).drop_duplicates().reset_index(drop=True)
 
-    st.markdown("### Categorias cadastradas")
-    df_cat = st.data_editor(st.session_state.categorias, num_rows="dynamic", use_container_width=True)
-    st.session_state.categorias = df_cat.dropna(subset=["Categoria"]).drop_duplicates().reset_index(drop=True)
+        # Botão para remover categoria selecionada
+        cat_para_remover = st.selectbox("Selecionar categoria para remover", options=[""] + st.session_state.categorias["Categoria"].tolist())
+        if cat_para_remover and st.button("Remover Categoria"):
+            remover_categoria(cat_para_remover)
 
-    # Botão para remover categoria selecionada
-    cat_para_remover = st.selectbox("Selecionar categoria para remover", options=[""] + st.session_state.categorias["Categoria"].tolist())
-    if cat_para_remover and st.button("Remover Categoria"):
-        remover_categoria(cat_para_remover)
+        baixar_csv(st.session_state.categorias, "categorias_papelaria.csv")
 
-    baixar_csv(st.session_state.categorias, "categorias_papelaria.csv")
+    with aba_insumos:
+        st.header("Insumos")
+        with st.form("form_add_insumo"):
+            nome_insumo = st.text_input("Nome do Insumo")
+            categoria_insumo = st.selectbox("Categoria", st.session_state.categorias["Categoria"].tolist())
+            unidade_insumo = st.text_input("Unidade de Medida (ex: un, kg, m)")
+            preco_insumo = st.number_input("Preço Unitário (R$)", min_value=0.0, format="%.2f")
 
-with aba_insumos:
-    st.header("Insumos")
-    with st.form("form_add_insumo"):
-        nome_insumo = st.text_input("Nome do Insumo")
-        categoria_insumo = st.selectbox("Categoria", st.session_state.categorias["Categoria"].tolist())
-        unidade_insumo = st.text_input("Unidade de Medida (ex: un, kg, m)")
-        preco_insumo = st.number_input("Preço Unitário (R$)", min_value=0.0, format="%.2f")
+            adicionar = st.form_submit_button("Adicionar Insumo")
+            if adicionar:
+                adicionar_insumo(nome_insumo, categoria_insumo, unidade_insumo, preco_insumo)
 
-        adicionar = st.form_submit_button("Adicionar Insumo")
-        if adicionar:
-            adicionar_insumo(nome_insumo, categoria_insumo, unidade_insumo, preco_insumo)
+        st.markdown("### Insumos cadastrados")
+        df_insumos = st.data_editor(st.session_state.insumos, num_rows="dynamic", use_container_width=True)
+        st.session_state.insumos = df_insumos.dropna(subset=["Nome"]).drop_duplicates().reset_index(drop=True)
 
-    st.markdown("### Insumos cadastrados")
-    df_insumos = st.data_editor(st.session_state.insumos, num_rows="dynamic", use_container_width=True)
-    st.session_state.insumos = df_insumos.dropna(subset=["Nome"]).drop_duplicates().reset_index(drop=True)
+        # Remover insumo
+        insumo_para_remover = st.selectbox("Selecionar insumo para remover", options=[""] + st.session_state.insumos["Nome"].tolist())
+        if insumo_para_remover and st.button("Remover Insumo"):
+            remover_insumo(insumo_para_remover)
 
-    # Remover insumo
-    insumo_para_remover = st.selectbox("Selecionar insumo para remover", options=[""] + st.session_state.insumos["Nome"].tolist())
-    if insumo_para_remover and st.button("Remover Insumo"):
-        remover_insumo(insumo_para_remover)
+        baixar_csv(st.session_state.insumos, "insumos_papelaria.csv")
 
-    baixar_csv(st.session_state.insumos, "insumos_papelaria.csv")
+    with aba_produtos:
+        st.header("Produtos")
+        with st.form("form_add_produto"):
+            nome_produto = st.text_input("Nome do Produto")
+            custo_total = st.number_input("Custo Total (R$)", min_value=0.0, format="%.2f")
+            preco_vista = st.number_input("Preço à Vista (R$)", min_value=0.0, format="%.2f")
+            preco_cartao = st.number_input("Preço no Cartão (R$)", min_value=0.0, format="%.2f")
+            margem = st.number_input("Margem (%)", min_value=0.0, format="%.2f")
 
-with aba_produtos:
-    st.header("Produtos")
-    with st.form("form_add_produto"):
-        nome_produto = st.text_input("Nome do Produto")
-        custo_total = st.number_input("Custo Total (R$)", min_value=0.0, format="%.2f")
-        preco_vista = st.number_input("Preço à Vista (R$)", min_value=0.0, format="%.2f")
-        preco_cartao = st.number_input("Preço no Cartão (R$)", min_value=0.0, format="%.2f")
-        margem = st.number_input("Margem (%)", min_value=0.0, format="%.2f")
+            adicionar_produto = st.form_submit_button("Adicionar Produto")
+            if adicionar_produto:
+                adicionar_produto(nome_produto, custo_total, preco_vista, preco_cartao, margem)
 
-        adicionar_produto = st.form_submit_button("Adicionar Produto")
-        if adicionar_produto:
-            adicionar_produto(nome_produto, custo_total, preco_vista, preco_cartao, margem)
+        st.markdown("### Produtos cadastrados")
+        df_produtos = st.data_editor(st.session_state.produtos, num_rows="dynamic", use_container_width=True)
+        st.session_state.produtos = df_produtos.dropna(subset=["Produto"]).drop_duplicates().reset_index(drop=True)
 
-    st.markdown("### Produtos cadastrados")
-    df_produtos = st.data_editor(st.session_state.produtos, num_rows="dynamic", use_container_width=True)
-    st.session_state.produtos = df_produtos.dropna(subset=["Produto"]).drop_duplicates().reset_index(drop=True)
+        # Remover produto
+        produto_para_remover = st.selectbox("Selecionar produto para remover", options=[""] + st.session_state.produtos["Produto"].tolist())
+        if produto_para_remover and st.button("Remover Produto"):
+            remover_produto(produto_para_remover)
 
-    # Remover produto
-    produto_para_remover = st.selectbox("Selecionar produto para remover", options=[""] + st.session_state.produtos["Produto"].tolist())
-    if produto_para_remover and st.button("Remover Produto"):
-        remover_produto(produto_para_remover)
-
-    baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
+        baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
 
 
 
