@@ -2393,6 +2393,9 @@ if view == "precificação":
 # =====================================
 # Aba Papelaria (versão final corrigida)
 # =====================================
+def papelaria_aba():
+    st.title("📚 Gerenciador Papelaria Personalizada")
+
 import streamlit as st
 import pandas as pd
 import requests
