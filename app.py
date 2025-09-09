@@ -2422,8 +2422,9 @@ if view == "precificação":
 # =====================================
 # Papelaria
 # =====================================
-if view == "precificação":
-    st.title("Papelaria")
+elif view == "Papelaria":
+    papelaria_aba()
+
 
 # aba_papelaria.py
 
