@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from PIL import Image, ImageEnhance
 from io import BytesIO
 import requests  
-
+from papelaria_modulo import papelaria_aba
 
 # =====================================
 # Funções auxiliares
