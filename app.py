@@ -2477,9 +2477,17 @@ def papelaria_aba():
                     st.success(f"Insumo '{nome_insumo}' adicionado!")
 
         st.markdown("### Insumos cadastrados")
+        st.session_state.insumos = st.session_state.insumos.reindex(columns=COLUNAS_INSUMOS, fill_value="")
         st.dataframe(st.session_state.insumos, use_container_width=True)
 
-        insumo_selecionado = st.selectbox("Selecione um insumo", [""] + st.session_state.insumos["Nome"].tolist())
+        if not st.session_state.insumos.empty and "Nome" in st.session_state.insumos.columns:
+            insumo_selecionado = st.selectbox(
+                "Selecione um insumo",
+                [""] + st.session_state.insumos["Nome"].dropna().astype(str).tolist()
+            )
+        else:
+            insumo_selecionado = None
+
         acao_insumo = st.radio("Ação", ["Nenhuma", "Editar", "Excluir"], horizontal=True)
 
         if insumo_selecionado and acao_insumo == "Excluir":
@@ -2495,11 +2503,17 @@ def papelaria_aba():
             ].iloc[0]
             with st.form("form_edit_insumo"):
                 novo_nome = st.text_input("Nome do Insumo", insumo_atual["Nome"])
-                nova_categoria = st.selectbox("Categoria", st.session_state.categorias["Categoria"].tolist(),
-                                              index=st.session_state.categorias["Categoria"].tolist().index(insumo_atual["Categoria"]))
+                nova_categoria = st.selectbox(
+                    "Categoria",
+                    st.session_state.categorias["Categoria"].tolist(),
+                    index=st.session_state.categorias["Categoria"].tolist().index(insumo_atual["Categoria"])
+                    if insumo_atual["Categoria"] in st.session_state.categorias["Categoria"].tolist() else 0
+                )
                 nova_unidade = st.text_input("Unidade", insumo_atual["Unidade"])
-                novo_preco = st.number_input("Preço Unitário (R$)", min_value=0.0, format="%.2f",
-                                             value=float(insumo_atual["Preço Unitário (R$)"]))
+                novo_preco = st.number_input(
+                    "Preço Unitário (R$)", min_value=0.0, format="%.2f",
+                    value=float(insumo_atual["Preço Unitário (R$)"]) if pd.notna(insumo_atual["Preço Unitário (R$)"]) else 0.0
+                )
                 if st.form_submit_button("Salvar Alterações"):
                     st.session_state.insumos.loc[
                         st.session_state.insumos["Nome"] == insumo_selecionado,
@@ -2531,9 +2545,17 @@ def papelaria_aba():
                     st.success(f"Produto '{nome_produto}' adicionado!")
 
         st.markdown("### Produtos cadastrados")
+        st.session_state.produtos = st.session_state.produtos.reindex(columns=COLUNAS_PRODUTOS, fill_value="")
         st.dataframe(st.session_state.produtos, use_container_width=True)
 
-        produto_selecionado = st.selectbox("Selecione um produto", [""] + st.session_state.produtos["Produto"].tolist())
+        if not st.session_state.produtos.empty and "Produto" in st.session_state.produtos.columns:
+            produto_selecionado = st.selectbox(
+                "Selecione um produto",
+                [""] + st.session_state.produtos["Produto"].dropna().astype(str).tolist()
+            )
+        else:
+            produto_selecionado = None
+
         acao_produto = st.radio("Ação", ["Nenhuma", "Editar", "Excluir"], horizontal=True)
 
         if produto_selecionado and acao_produto == "Excluir":
@@ -2549,14 +2571,22 @@ def papelaria_aba():
             ].iloc[0]
             with st.form("form_edit_produto"):
                 novo_nome = st.text_input("Nome do Produto", produto_atual["Produto"])
-                novo_custo = st.number_input("Custo Total (R$)", min_value=0.0, format="%.2f",
-                                             value=float(produto_atual["Custo Total"]))
-                novo_vista = st.number_input("Preço à Vista (R$)", min_value=0.0, format="%.2f",
-                                             value=float(produto_atual["Preço à Vista"]))
-                novo_cartao = st.number_input("Preço no Cartão (R$)", min_value=0.0, format="%.2f",
-                                              value=float(produto_atual["Preço no Cartão"]))
-                nova_margem = st.number_input("Margem (%)", min_value=0.0, format="%.2f",
-                                              value=float(produto_atual["Margem (%)"]))
+                novo_custo = st.number_input(
+                    "Custo Total (R$)", min_value=0.0, format="%.2f",
+                    value=float(produto_atual["Custo Total"]) if pd.notna(produto_atual["Custo Total"]) else 0.0
+                )
+                novo_vista = st.number_input(
+                    "Preço à Vista (R$)", min_value=0.0, format="%.2f",
+                    value=float(produto_atual["Preço à Vista"]) if pd.notna(produto_atual["Preço à Vista"]) else 0.0
+                )
+                novo_cartao = st.number_input(
+                    "Preço no Cartão (R$)", min_value=0.0, format="%.2f",
+                    value=float(produto_atual["Preço no Cartão"]) if pd.notna(produto_atual["Preço no Cartão"]) else 0.0
+                )
+                nova_margem = st.number_input(
+                    "Margem (%)", min_value=0.0, format="%.2f",
+                    value=float(produto_atual["Margem (%)"]) if pd.notna(produto_atual["Margem (%)"]) else 0.0
+                )
                 if st.form_submit_button("Salvar Alterações"):
                     st.session_state.produtos.loc[
                         st.session_state.produtos["Produto"] == produto_selecionado,
