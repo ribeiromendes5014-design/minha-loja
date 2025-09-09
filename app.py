@@ -1981,17 +1981,25 @@ if view == "Clientes":
 # ===============================
 if view == "Precificação":
     st.title("💄 Precificador de Produtos")
-    # ===============================
-    # Função para carregar CSV do GitHub
-    # ===============================
-    def load_csv_github(url: str) -> pd.DataFrame:
-        try:
-            df = pd.read_csv(url)
-            return df
-        except Exception as e:
-            st.error(f"Erro ao carregar CSV do GitHub: {e}")
-            return pd.DataFrame()
+    
+    # Botão para carregar CSV do GitHub
+    if st.button("📥 Carregar CSV de Precificação do GitHub"):
+        url_precificacao = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/precificacao.csv"
+        df_precificacao = load_csv_github(url_precificacao)
 
+        if not df_precificacao.empty:
+            df_precificacao["Custos Extras Produto"] = 0.0
+            df_processado = processar_dataframe(
+                df_precificacao,
+                frete=0.0,
+                custos_extras=0.0,
+                modo_margem="Margem fixa",
+                margem_fixa_sidebar=30.0
+            )
+            st.success("✅ CSV carregado e processado com sucesso!")
+            exibir_resultados(df_processado)
+        else:
+            st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
     # ===============================
     # Funções de processamento e exibição
     # ===============================
