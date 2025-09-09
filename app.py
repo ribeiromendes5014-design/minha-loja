@@ -2413,88 +2413,8 @@ def papelaria_aba():
                 {"Categoria": ["Papel", "Impressão", "Capa", "Espiral/Wire-o", "Laminação", "Outros"]}
             )
 
-    # -------------------------
-    # Manipulação de Categorias
-    # -------------------------
-    def adicionar_categoria(nova_cat):
-        if not nova_cat.strip():
-            st.warning("Digite uma categoria válida.")
-            return
-        if nova_cat in st.session_state.categorias["Categoria"].values:
-            st.warning("Categoria já existe.")
-            return
-        st.session_state.categorias = pd.concat(
-            [st.session_state.categorias, pd.DataFrame([{"Categoria": nova_cat}])],
-            ignore_index=True
-        )
-        st.success(f"Categoria '{nova_cat}' adicionada!")
-
-    def remover_categoria(cat):
-        if cat in st.session_state.categorias["Categoria"].values:
-            st.session_state.categorias = st.session_state.categorias[
-                st.session_state.categorias["Categoria"] != cat
-            ]
-            st.success(f"Categoria '{cat}' removida!")
-        else:
-            st.warning("Categoria não encontrada.")
-
     # ---------------------
-    # Manipulação de Insumos
-    # ---------------------
-    def adicionar_insumo(nome, categoria, unidade, preco):
-        if not nome or not categoria or not unidade or preco is None:
-            st.warning("Preencha todos os campos para adicionar insumo.")
-            return
-        if nome in st.session_state.insumos["Nome"].values:
-            st.warning("Insumo já cadastrado.")
-            return
-        novo = pd.DataFrame([{
-            "Nome": nome,
-            "Categoria": categoria,
-            "Unidade": unidade,
-            "Preço Unitário (R$)": preco
-        }])
-        st.session_state.insumos = pd.concat([st.session_state.insumos, novo], ignore_index=True)
-        st.success(f"Insumo '{nome}' adicionado!")
-
-    def remover_insumo(nome):
-        if nome in st.session_state.insumos["Nome"].values:
-            st.session_state.insumos = st.session_state.insumos[st.session_state.insumos["Nome"] != nome]
-            st.success(f"Insumo '{nome}' removido!")
-        else:
-            st.warning("Insumo não encontrado.")
-
-    # ---------------------
-    # Manipulação de Produtos
-    # ---------------------
-    def adicionar_produto(produto, custo, preco_vista, preco_cartao, margem):
-        if not produto or custo is None or preco_vista is None or preco_cartao is None or margem is None:
-            st.warning("Preencha todos os campos para adicionar produto.")
-            return
-        if produto in st.session_state.produtos["Produto"].values:
-            st.warning("Produto já cadastrado.")
-            return
-        novo = pd.DataFrame([{
-            "Produto": produto,
-            "Custo Total": custo,
-            "Preço à Vista": preco_vista,
-            "Preço no Cartão": preco_cartao,
-            "Margem (%)": margem
-        }])
-        st.session_state.produtos = pd.concat([st.session_state.produtos, novo], ignore_index=True)
-        st.success(f"Produto '{produto}' adicionado!")
-
-    def remover_produto(produto):
-        if produto in st.session_state.produtos["Produto"].values:
-            st.session_state.produtos = st.session_state.produtos[
-                st.session_state.produtos["Produto"] != produto
-            ]
-            st.success(f"Produto '{produto}' removido!")
-        else:
-            st.warning("Produto não encontrado.")
-
-    # ---------------------
-    # Exportação de CSV
+    # Funções utilitárias
     # ---------------------
     def baixar_csv(df, nome_arquivo):
         csv = df.to_csv(index=False, encoding="utf-8-sig")
@@ -2515,25 +2435,25 @@ def papelaria_aba():
         st.header("Categorias")
         nova_cat = st.text_input("Nova Categoria")
         if st.button("Adicionar Categoria"):
-            adicionar_categoria(nova_cat)
+            if nova_cat and nova_cat not in st.session_state.categorias["Categoria"].values:
+                st.session_state.categorias = pd.concat(
+                    [st.session_state.categorias, pd.DataFrame([{"Categoria": nova_cat}])],
+                    ignore_index=True
+                )
+                st.success(f"Categoria '{nova_cat}' adicionada!")
 
         st.markdown("### Categorias cadastradas")
-        df_cat = st.data_editor(
-            st.session_state.categorias.reindex(columns=COLUNAS_CATEGORIAS),
-            num_rows="dynamic",
-            use_container_width=True
-        )
-        if "Categoria" in df_cat.columns:
-            st.session_state.categorias = df_cat.dropna(subset=["Categoria"]).drop_duplicates().reset_index(drop=True)
-        else:
-            st.session_state.categorias = df_cat
+        st.dataframe(st.session_state.categorias, use_container_width=True)
 
         cat_para_remover = st.selectbox(
             "Selecionar categoria para remover",
             options=[""] + st.session_state.categorias["Categoria"].tolist()
         )
         if cat_para_remover and st.button("Remover Categoria"):
-            remover_categoria(cat_para_remover)
+            st.session_state.categorias = st.session_state.categorias[
+                st.session_state.categorias["Categoria"] != cat_para_remover
+            ]
+            st.success(f"Categoria '{cat_para_remover}' removida!")
 
         baixar_csv(st.session_state.categorias, "categorias_papelaria.csv")
 
@@ -2545,27 +2465,47 @@ def papelaria_aba():
             categoria_insumo = st.selectbox("Categoria", st.session_state.categorias["Categoria"].tolist())
             unidade_insumo = st.text_input("Unidade de Medida (ex: un, kg, m)")
             preco_insumo = st.number_input("Preço Unitário (R$)", min_value=0.0, format="%.2f")
-            adicionar = st.form_submit_button("Adicionar Insumo")
-            if adicionar:
-                adicionar_insumo(nome_insumo, categoria_insumo, unidade_insumo, preco_insumo)
+            if st.form_submit_button("Adicionar Insumo"):
+                if nome_insumo and categoria_insumo and unidade_insumo:
+                    novo = pd.DataFrame([{
+                        "Nome": nome_insumo,
+                        "Categoria": categoria_insumo,
+                        "Unidade": unidade_insumo,
+                        "Preço Unitário (R$)": preco_insumo
+                    }])
+                    st.session_state.insumos = pd.concat([st.session_state.insumos, novo], ignore_index=True)
+                    st.success(f"Insumo '{nome_insumo}' adicionado!")
 
         st.markdown("### Insumos cadastrados")
-        df_insumos = st.data_editor(
-            st.session_state.insumos.reindex(columns=COLUNAS_INSUMOS),
-            num_rows="dynamic",
-            use_container_width=True
-        )
-        if "Nome" in df_insumos.columns:
-            st.session_state.insumos = df_insumos.dropna(subset=["Nome"]).drop_duplicates().reset_index(drop=True)
-        else:
-            st.session_state.insumos = df_insumos
+        st.dataframe(st.session_state.insumos, use_container_width=True)
 
-        insumo_para_remover = st.selectbox(
-            "Selecionar insumo para remover",
-            options=[""] + st.session_state.insumos["Nome"].tolist()
-        )
-        if insumo_para_remover and st.button("Remover Insumo"):
-            remover_insumo(insumo_para_remover)
+        insumo_selecionado = st.selectbox("Selecione um insumo", [""] + st.session_state.insumos["Nome"].tolist())
+        acao_insumo = st.radio("Ação", ["Nenhuma", "Editar", "Excluir"], horizontal=True)
+
+        if insumo_selecionado and acao_insumo == "Excluir":
+            if st.button("Confirmar Exclusão"):
+                st.session_state.insumos = st.session_state.insumos[
+                    st.session_state.insumos["Nome"] != insumo_selecionado
+                ]
+                st.success(f"Insumo '{insumo_selecionado}' removido!")
+
+        if insumo_selecionado and acao_insumo == "Editar":
+            insumo_atual = st.session_state.insumos[
+                st.session_state.insumos["Nome"] == insumo_selecionado
+            ].iloc[0]
+            with st.form("form_edit_insumo"):
+                novo_nome = st.text_input("Nome do Insumo", insumo_atual["Nome"])
+                nova_categoria = st.selectbox("Categoria", st.session_state.categorias["Categoria"].tolist(),
+                                              index=st.session_state.categorias["Categoria"].tolist().index(insumo_atual["Categoria"]))
+                nova_unidade = st.text_input("Unidade", insumo_atual["Unidade"])
+                novo_preco = st.number_input("Preço Unitário (R$)", min_value=0.0, format="%.2f",
+                                             value=float(insumo_atual["Preço Unitário (R$)"]))
+                if st.form_submit_button("Salvar Alterações"):
+                    st.session_state.insumos.loc[
+                        st.session_state.insumos["Nome"] == insumo_selecionado,
+                        ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
+                    ] = [novo_nome, nova_categoria, nova_unidade, novo_preco]
+                    st.success("Insumo atualizado!")
 
         baixar_csv(st.session_state.insumos, "insumos_papelaria.csv")
 
@@ -2578,33 +2518,54 @@ def papelaria_aba():
             preco_vista = st.number_input("Preço à Vista (R$)", min_value=0.0, format="%.2f")
             preco_cartao = st.number_input("Preço no Cartão (R$)", min_value=0.0, format="%.2f")
             margem = st.number_input("Margem (%)", min_value=0.0, format="%.2f")
-            adicionar_produto_btn = st.form_submit_button("Adicionar Produto")
-            if adicionar_produto_btn:
-                adicionar_produto(nome_produto, custo_total, preco_vista, preco_cartao, margem)
+            if st.form_submit_button("Adicionar Produto"):
+                if nome_produto:
+                    novo = pd.DataFrame([{
+                        "Produto": nome_produto,
+                        "Custo Total": custo_total,
+                        "Preço à Vista": preco_vista,
+                        "Preço no Cartão": preco_cartao,
+                        "Margem (%)": margem
+                    }])
+                    st.session_state.produtos = pd.concat([st.session_state.produtos, novo], ignore_index=True)
+                    st.success(f"Produto '{nome_produto}' adicionado!")
 
         st.markdown("### Produtos cadastrados")
-        df_produtos = st.data_editor(
-            st.session_state.produtos.reindex(columns=COLUNAS_PRODUTOS),
-            num_rows="dynamic",
-            use_container_width=True
-        )
-        if "Produto" in df_produtos.columns:
-            st.session_state.produtos = (
-                df_produtos.dropna(subset=["Produto"])
-                .drop_duplicates()
-                .reset_index(drop=True)
-            )
-        else:
-            st.session_state.produtos = df_produtos
+        st.dataframe(st.session_state.produtos, use_container_width=True)
 
-        produto_para_remover = st.selectbox(
-            "Selecionar produto para remover",
-            options=[""] + st.session_state.produtos["Produto"].tolist()
-        )
-        if produto_para_remover and st.button("Remover Produto"):
-            remover_produto(produto_para_remover)
+        produto_selecionado = st.selectbox("Selecione um produto", [""] + st.session_state.produtos["Produto"].tolist())
+        acao_produto = st.radio("Ação", ["Nenhuma", "Editar", "Excluir"], horizontal=True)
+
+        if produto_selecionado and acao_produto == "Excluir":
+            if st.button("Confirmar Exclusão"):
+                st.session_state.produtos = st.session_state.produtos[
+                    st.session_state.produtos["Produto"] != produto_selecionado
+                ]
+                st.success(f"Produto '{produto_selecionado}' removido!")
+
+        if produto_selecionado and acao_produto == "Editar":
+            produto_atual = st.session_state.produtos[
+                st.session_state.produtos["Produto"] == produto_selecionado
+            ].iloc[0]
+            with st.form("form_edit_produto"):
+                novo_nome = st.text_input("Nome do Produto", produto_atual["Produto"])
+                novo_custo = st.number_input("Custo Total (R$)", min_value=0.0, format="%.2f",
+                                             value=float(produto_atual["Custo Total"]))
+                novo_vista = st.number_input("Preço à Vista (R$)", min_value=0.0, format="%.2f",
+                                             value=float(produto_atual["Preço à Vista"]))
+                novo_cartao = st.number_input("Preço no Cartão (R$)", min_value=0.0, format="%.2f",
+                                              value=float(produto_atual["Preço no Cartão"]))
+                nova_margem = st.number_input("Margem (%)", min_value=0.0, format="%.2f",
+                                              value=float(produto_atual["Margem (%)"]))
+                if st.form_submit_button("Salvar Alterações"):
+                    st.session_state.produtos.loc[
+                        st.session_state.produtos["Produto"] == produto_selecionado,
+                        ["Produto", "Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"]
+                    ] = [novo_nome, novo_custo, novo_vista, novo_cartao, nova_margem]
+                    st.success("Produto atualizado!")
 
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
+
 
         
 
