@@ -13,3 +13,4 @@ pyzxing
 PyGithub
 pyzbar
 Pillow
+pdfplumber
