@@ -2380,7 +2380,8 @@ def papelaria_aba():
     URL_BASE = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/"
     INSUMOS_CSV_URL = URL_BASE + "insumos_papelaria.csv"
     PRODUTOS_CSV_URL = URL_BASE + "produtos_papelaria.csv"
-    CATEGORIAS_CSV_URL = URL_BASE + "categorias_papelaria.csv"
+    CATEGORIAS_INSUMOS_CSV_URL = URL_BASE + "categorias_insumos.csv"
+    CATEGORIAS_PRODUTOS_CSV_URL = URL_BASE + "categorias_produtos.csv"
 
     # Estrutura esperada dos CSVs
     COLUNAS_INSUMOS = ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
@@ -2406,11 +2407,17 @@ def papelaria_aba():
         st.session_state.insumos = carregar_csv_github(INSUMOS_CSV_URL, COLUNAS_INSUMOS)
     if "produtos" not in st.session_state:
         st.session_state.produtos = carregar_csv_github(PRODUTOS_CSV_URL, COLUNAS_PRODUTOS)
-    if "categorias" not in st.session_state:
-        st.session_state.categorias = carregar_csv_github(CATEGORIAS_CSV_URL, COLUNAS_CATEGORIAS)
-        if st.session_state.categorias.empty:
-            st.session_state.categorias = pd.DataFrame(
-                {"Categoria": ["Papel", "Impressão", "Capa", "Espiral/Wire-o", "Laminação", "Outros"]}
+    if "categorias_insumos" not in st.session_state:
+        st.session_state.categorias_insumos = carregar_csv_github(CATEGORIAS_INSUMOS_CSV_URL, COLUNAS_CATEGORIAS)
+        if st.session_state.categorias_insumos.empty:
+            st.session_state.categorias_insumos = pd.DataFrame(
+                {"Categoria": ["Papel", "Impressão", "Laminação", "Outros"]}
+            )
+    if "categorias_produtos" not in st.session_state:
+        st.session_state.categorias_produtos = carregar_csv_github(CATEGORIAS_PRODUTOS_CSV_URL, COLUNAS_CATEGORIAS)
+        if st.session_state.categorias_produtos.empty:
+            st.session_state.categorias_produtos = pd.DataFrame(
+                {"Categoria": ["Capa", "Espiral/Wire-o", "Kits", "Outros"]}
             )
 
     # ---------------------
@@ -2434,37 +2441,63 @@ def papelaria_aba():
     with aba_categorias:
         st.header("Categorias")
         nova_cat = st.text_input("Nova Categoria")
+        destino = st.radio("Adicionar categoria para:", ["Insumos", "Produtos"], horizontal=True)
+
         if st.button("Adicionar Categoria"):
-            if nova_cat and nova_cat not in st.session_state.categorias["Categoria"].values:
-                st.session_state.categorias = pd.concat(
-                    [st.session_state.categorias, pd.DataFrame([{"Categoria": nova_cat}])],
-                    ignore_index=True
-                )
-                st.success(f"Categoria '{nova_cat}' adicionada!")
-                st.rerun()
+            if destino == "Insumos":
+                if nova_cat and nova_cat not in st.session_state.categorias_insumos["Categoria"].values:
+                    st.session_state.categorias_insumos = pd.concat(
+                        [st.session_state.categorias_insumos, pd.DataFrame([{"Categoria": nova_cat}])],
+                        ignore_index=True
+                    )
+                    st.success(f"Categoria '{nova_cat}' adicionada em Insumos!")
+                    st.rerun()
+            elif destino == "Produtos":
+                if nova_cat and nova_cat not in st.session_state.categorias_produtos["Categoria"].values:
+                    st.session_state.categorias_produtos = pd.concat(
+                        [st.session_state.categorias_produtos, pd.DataFrame([{"Categoria": nova_cat}])],
+                        ignore_index=True
+                    )
+                    st.success(f"Categoria '{nova_cat}' adicionada em Produtos!")
+                    st.rerun()
 
-        st.markdown("### Categorias cadastradas")
-        st.dataframe(st.session_state.categorias, use_container_width=True)
-
-        cat_para_remover = st.selectbox(
-            "Selecionar categoria para remover",
-            options=[""] + st.session_state.categorias["Categoria"].tolist()
+        st.subheader("Categorias de Insumos")
+        st.dataframe(st.session_state.categorias_insumos, use_container_width=True)
+        cat_insumo_remover = st.selectbox(
+            "Remover categoria de Insumos",
+            [""] + st.session_state.categorias_insumos["Categoria"].tolist(),
+            key="remover_cat_insumos"
         )
-        if cat_para_remover and st.button("Remover Categoria"):
-            st.session_state.categorias = st.session_state.categorias[
-                st.session_state.categorias["Categoria"] != cat_para_remover
+        if cat_insumo_remover and st.button("Remover Categoria de Insumos"):
+            st.session_state.categorias_insumos = st.session_state.categorias_insumos[
+                st.session_state.categorias_insumos["Categoria"] != cat_insumo_remover
             ]
-            st.success(f"Categoria '{cat_para_remover}' removida!")
+            st.success(f"Categoria '{cat_insumo_remover}' removida de Insumos!")
             st.rerun()
 
-        baixar_csv(st.session_state.categorias, "categorias_papelaria.csv")
+        st.subheader("Categorias de Produtos")
+        st.dataframe(st.session_state.categorias_produtos, use_container_width=True)
+        cat_produto_remover = st.selectbox(
+            "Remover categoria de Produtos",
+            [""] + st.session_state.categorias_produtos["Categoria"].tolist(),
+            key="remover_cat_produtos"
+        )
+        if cat_produto_remover and st.button("Remover Categoria de Produtos"):
+            st.session_state.categorias_produtos = st.session_state.categorias_produtos[
+                st.session_state.categorias_produtos["Categoria"] != cat_produto_remover
+            ]
+            st.success(f"Categoria '{cat_produto_remover}' removida de Produtos!")
+            st.rerun()
+
+        baixar_csv(st.session_state.categorias_insumos, "categorias_insumos.csv")
+        baixar_csv(st.session_state.categorias_produtos, "categorias_produtos.csv")
 
     # Insumos
     with aba_insumos:
         st.header("Insumos")
         with st.form("form_add_insumo"):
             nome_insumo = st.text_input("Nome do Insumo")
-            categoria_insumo = st.selectbox("Categoria", st.session_state.categorias["Categoria"].tolist())
+            categoria_insumo = st.selectbox("Categoria", st.session_state.categorias_insumos["Categoria"].tolist())
             unidade_insumo = st.text_input("Unidade de Medida (ex: un, kg, m)")
             preco_insumo = st.number_input("Preço Unitário (R$)", min_value=0.0, format="%.2f")
             if st.form_submit_button("Adicionar Insumo"):
@@ -2483,62 +2516,12 @@ def papelaria_aba():
         st.session_state.insumos = st.session_state.insumos.reindex(columns=COLUNAS_INSUMOS, fill_value="")
         st.dataframe(st.session_state.insumos, use_container_width=True)
 
-        if not st.session_state.insumos.empty and "Nome" in st.session_state.insumos.columns:
-            insumo_selecionado = st.selectbox(
-                "Selecione um insumo",
-                [""] + st.session_state.insumos["Nome"].dropna().astype(str).tolist()
-            )
-        else:
-            insumo_selecionado = None
-
-        if insumo_selecionado:
-            acao_insumo = st.radio(
-                f"Ação para o insumo '{insumo_selecionado}'",
-                ["Nenhuma", "Editar", "Excluir"],
-                horizontal=True,
-                key=f"acao_insumo_{insumo_selecionado}"
-            )
-
-            if acao_insumo == "Excluir":
-                if st.button("Confirmar Exclusão", key=f"excluir_insumo_{insumo_selecionado}"):
-                    st.session_state.insumos = st.session_state.insumos[
-                        st.session_state.insumos["Nome"] != insumo_selecionado
-                    ]
-                    st.success(f"Insumo '{insumo_selecionado}' removido!")
-                    st.rerun()
-
-            if acao_insumo == "Editar":
-                insumo_atual = st.session_state.insumos[
-                    st.session_state.insumos["Nome"] == insumo_selecionado
-                ].iloc[0]
-                with st.form(f"form_edit_insumo_{insumo_selecionado}"):
-                    novo_nome = st.text_input("Nome do Insumo", insumo_atual["Nome"])
-                    nova_categoria = st.selectbox(
-                        "Categoria",
-                        st.session_state.categorias["Categoria"].tolist(),
-                        index=st.session_state.categorias["Categoria"].tolist().index(insumo_atual["Categoria"])
-                        if insumo_atual["Categoria"] in st.session_state.categorias["Categoria"].tolist() else 0
-                    )
-                    nova_unidade = st.text_input("Unidade", insumo_atual["Unidade"])
-                    novo_preco = st.number_input(
-                        "Preço Unitário (R$)", min_value=0.0, format="%.2f",
-                        value=float(insumo_atual["Preço Unitário (R$)"]) if pd.notna(insumo_atual["Preço Unitário (R$)"]) else 0.0
-                    )
-                    if st.form_submit_button("Salvar Alterações", key=f"salvar_insumo_{insumo_selecionado}"):
-                        st.session_state.insumos.loc[
-                            st.session_state.insumos["Nome"] == insumo_selecionado,
-                            ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
-                        ] = [novo_nome, nova_categoria, nova_unidade, novo_preco]
-                        st.success("Insumo atualizado!")
-                        st.rerun()
-
-        baixar_csv(st.session_state.insumos, "insumos_papelaria.csv")
-
     # Produtos
     with aba_produtos:
         st.header("Produtos")
         with st.form("form_add_produto"):
             nome_produto = st.text_input("Nome do Produto")
+            categoria_produto = st.selectbox("Categoria", st.session_state.categorias_produtos["Categoria"].tolist())
             custo_total = st.number_input("Custo Total (R$)", min_value=0.0, format="%.2f")
             preco_vista = st.number_input("Preço à Vista (R$)", min_value=0.0, format="%.2f")
             preco_cartao = st.number_input("Preço no Cartão (R$)", min_value=0.0, format="%.2f")
@@ -2547,6 +2530,7 @@ def papelaria_aba():
                 if nome_produto:
                     novo = pd.DataFrame([{
                         "Produto": nome_produto,
+                        "Categoria": categoria_produto,
                         "Custo Total": custo_total,
                         "Preço à Vista": preco_vista,
                         "Preço no Cartão": preco_cartao,
@@ -2557,64 +2541,9 @@ def papelaria_aba():
                     st.rerun()
 
         st.markdown("### Produtos cadastrados")
-        st.session_state.produtos = st.session_state.produtos.reindex(columns=COLUNAS_PRODUTOS, fill_value="")
+        st.session_state.produtos = st.session_state.produtos.reindex(columns=COLUNAS_PRODUTOS + ["Categoria"], fill_value="")
         st.dataframe(st.session_state.produtos, use_container_width=True)
 
-        if not st.session_state.produtos.empty and "Produto" in st.session_state.produtos.columns:
-            produto_selecionado = st.selectbox(
-                "Selecione um produto",
-                [""] + st.session_state.produtos["Produto"].dropna().astype(str).tolist()
-            )
-        else:
-            produto_selecionado = None
-
-        if produto_selecionado:
-            acao_produto = st.radio(
-                f"Ação para o produto '{produto_selecionado}'",
-                ["Nenhuma", "Editar", "Excluir"],
-                horizontal=True,
-                key=f"acao_produto_{produto_selecionado}"
-            )
-
-            if acao_produto == "Excluir":
-                if st.button("Confirmar Exclusão", key=f"excluir_produto_{produto_selecionado}"):
-                    st.session_state.produtos = st.session_state.produtos[
-                        st.session_state.produtos["Produto"] != produto_selecionado
-                    ]
-                    st.success(f"Produto '{produto_selecionado}' removido!")
-                    st.rerun()
-
-            if acao_produto == "Editar":
-                produto_atual = st.session_state.produtos[
-                    st.session_state.produtos["Produto"] == produto_selecionado
-                ].iloc[0]
-                with st.form(f"form_edit_produto_{produto_selecionado}"):
-                    novo_nome = st.text_input("Nome do Produto", produto_atual["Produto"])
-                    novo_custo = st.number_input(
-                        "Custo Total (R$)", min_value=0.0, format="%.2f",
-                        value=float(produto_atual["Custo Total"]) if pd.notna(produto_atual["Custo Total"]) else 0.0
-                    )
-                    novo_vista = st.number_input(
-                        "Preço à Vista (R$)", min_value=0.0, format="%.2f",
-                        value=float(produto_atual["Preço à Vista"]) if pd.notna(produto_atual["Preço à Vista"]) else 0.0
-                    )
-                    novo_cartao = st.number_input(
-                        "Preço no Cartão (R$)", min_value=0.0, format="%.2f",
-                        value=float(produto_atual["Preço no Cartão"]) if pd.notna(produto_atual["Preço no Cartão"]) else 0.0
-                    )
-                    nova_margem = st.number_input(
-                        "Margem (%)", min_value=0.0, format="%.2f",
-                        value=float(produto_atual["Margem (%)"]) if pd.notna(produto_atual["Margem (%)"]) else 0.0
-                    )
-                    if st.form_submit_button("Salvar Alterações", key=f"salvar_produto_{produto_selecionado}"):
-                        st.session_state.produtos.loc[
-                            st.session_state.produtos["Produto"] == produto_selecionado,
-                            ["Produto", "Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"]
-                        ] = [novo_nome, novo_custo, novo_vista, novo_cartao, nova_margem]
-                        st.success("Produto atualizado!")
-                        st.rerun()
-
-        baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
 
 
 
