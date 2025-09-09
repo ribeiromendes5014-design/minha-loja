@@ -2419,6 +2419,17 @@ if view == "precificação":
                 st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
 
 
+
+
+
+
+elif view == "Papelaria":
+    # Função que encapsula o código da aba que criamos
+    def papelaria_aba():
+        st.title("📚 Gerenciador Papelaria Personalizada")
+        ...
+    papelaria_aba()
+
 import streamlit as st
 import pandas as pd
 import requests
