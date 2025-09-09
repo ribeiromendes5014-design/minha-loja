@@ -57,6 +57,7 @@ ARQ_CLIENTES  = "clientes.csv"
 ARQ_USUARIOS  = "usuarios.csv"
 ARQ_PROMOCOES = "promocoes.csv"
 ARQ_CAIXAS = "caixas.csv"
+ARQ_precificacao - "precificacao.csv"
 
 FATOR_CARTAO  = 0.8872  # preco_cartao = preco_vista / FATOR_CARTAO
 ESTOQUE_MINIMO_PADRAO = 5
@@ -1975,14 +1976,14 @@ if view == "Clientes":
 
 
 
+if view == "Precificação":
+    import pdfplumber
+    import pandas as pd
+    import re
+    import datetime
 
-import streamlit as st
-import pdfplumber
-import pandas as pd
-import re
-import datetime
+    st.set_page_config(page_title="Precificador Doce&Bella", layout="wide")
 
-st.set_page_config(page_title="Precificador Doce&Bella", layout="wide")
 
 # ===============================
 # Função para carregar CSV do GitHub
