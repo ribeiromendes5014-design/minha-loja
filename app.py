@@ -2419,7 +2419,11 @@ if view == "precificação":
                 st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
 
 
-
+# =====================================
+# Papelaria
+# =====================================
+if view == "precificação":
+    st.title("Papelaria")
 
 # aba_papelaria.py
 
