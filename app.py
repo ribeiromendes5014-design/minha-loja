@@ -2386,6 +2386,16 @@ if view == "precificação":
 
 
 
+    # =====================================
+# PROMOÇÕES
+# =====================================
+if view == "Papelaria":
+    show_logo("main")
+    st.header("🏷️ Papelaria")
+    papelaria = norm_papelaria(pd.DataFrame())
+
+
+
 # =====================================
 # Aba Papelaria
 # =====================================
