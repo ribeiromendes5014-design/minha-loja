@@ -2398,6 +2398,7 @@ import pandas as pd
 import requests
 from io import StringIO
 
+
 def papelaria_aba():
     st.title("📚 Gerenciador Papelaria Personalizada")
 
