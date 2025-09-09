@@ -683,9 +683,11 @@ def do_login():
         st.session_state["logado"] = False
         st.session_state["usuario_logado"] = None
 
-    usuarios = norm_usuarios(pd.DataFrame())
+    # 🔹 Se já estiver logado, não mostra tela de login de novo
+    if st.session_state["logado"]:
+        return True
 
-    # 🔹 garante que a coluna "Manter" exista
+    usuarios = norm_usuarios(pd.DataFrame())
     if "Manter" not in usuarios.columns:
         usuarios["Manter"] = False
 
@@ -719,7 +721,6 @@ def do_login():
                 st.session_state["logado"] = True
                 st.session_state["usuario_logado"] = user
 
-                # Atualiza a coluna "Manter" no CSV
                 usuarios["Manter"] = False
                 usuarios.loc[usuarios["Usuario"] == user, "Manter"] = manter
                 save_csv_github(usuarios, ARQ_USUARIOS, "Atualizando preferências de login")
@@ -728,7 +729,7 @@ def do_login():
             else:
                 st.error("Usuário ou senha inválidos.")
 
-    return st.session_state["logado"]
+    return False
 
 
 
