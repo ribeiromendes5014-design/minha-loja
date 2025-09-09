@@ -679,30 +679,36 @@ def reset_admin_user():
 
 
 def do_login():
-    # 🔹 sempre começa deslogado
     if "logado" not in st.session_state:
         st.session_state["logado"] = False
         st.session_state["usuario_logado"] = None
         st.session_state["credenciais_salvas"] = None
         st.session_state["manter"] = False
 
+    # 🔹 login automático se já tiver credenciais salvas + manter=True
+    if st.session_state.get("credenciais_salvas") and st.session_state.get("manter", False):
+        user, pwd = st.session_state["credenciais_salvas"]
+        usuarios = norm_usuarios(pd.DataFrame())
+        cred_ok = (
+            not usuarios[(usuarios["Usuario"] == user) & (usuarios["Senha"] == pwd)].empty
+        ) or (user == "admin" and pwd == "123")
+        if cred_ok:
+            st.session_state["logado"] = True
+            st.session_state["usuario_logado"] = user
+            return True   # 🔐 entra direto
+
+    # --- se não logou automático, mostra tela de login normal ---
     show_logo("main")
     st.title("🔐 Login")
 
-    # Só preenche campos, não loga automático
-    saved_user, saved_pwd = (None, None)
-    if st.session_state.get("credenciais_salvas") and st.session_state.get("manter", False):
-        saved_user, saved_pwd = st.session_state["credenciais_salvas"]
-
-    user = st.text_input("Usuário", value=saved_user if saved_user else "")
-    pwd  = st.text_input("Senha", type="password", value=saved_pwd if saved_pwd else "")
+    user = st.text_input("Usuário")
+    pwd  = st.text_input("Senha", type="password")
     manter = st.checkbox("Manter conectado", value=st.session_state.get("manter", False))
 
     _, c2, _ = st.columns([1, 2, 1])
     with c2:
         if st.button("Entrar", use_container_width=True):
             usuarios = norm_usuarios(pd.DataFrame())
-
             cred_ok = (
                 not usuarios[(usuarios["Usuario"] == user) & (usuarios["Senha"] == pwd)].empty
             ) or (user == "admin" and pwd == "123")
@@ -724,8 +730,8 @@ def do_login():
             else:
                 st.error("Usuário ou senha inválidos.")
 
-    # 🔹 só retorna True se realmente logou nesta sessão
     return st.session_state["logado"]
+
 
 
 
