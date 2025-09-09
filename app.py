@@ -2414,7 +2414,7 @@ def papelaria_aba():
             )
 
     # ---------------------
-    # Funções utilitárias
+    # Função para exportar CSV
     # ---------------------
     def baixar_csv(df, nome_arquivo):
         csv = df.to_csv(index=False, encoding="utf-8-sig")
@@ -2488,43 +2488,44 @@ def papelaria_aba():
         else:
             insumo_selecionado = None
 
-        acao_insumo = st.radio(
-            "Ação para insumo",
-            ["Nenhuma", "Editar", "Excluir"],
-            horizontal=True,
-            key="acao_insumo"
-        )
+        if insumo_selecionado:
+            acao_insumo = st.radio(
+                f"Ação para o insumo '{insumo_selecionado}'",
+                ["Nenhuma", "Editar", "Excluir"],
+                horizontal=True,
+                key=f"acao_insumo_{insumo_selecionado}"
+            )
 
-        if insumo_selecionado and acao_insumo == "Excluir":
-            if st.button("Confirmar Exclusão", key="excluir_insumo"):
-                st.session_state.insumos = st.session_state.insumos[
-                    st.session_state.insumos["Nome"] != insumo_selecionado
-                ]
-                st.success(f"Insumo '{insumo_selecionado}' removido!")
+            if acao_insumo == "Excluir":
+                if st.button("Confirmar Exclusão", key=f"excluir_insumo_{insumo_selecionado}"):
+                    st.session_state.insumos = st.session_state.insumos[
+                        st.session_state.insumos["Nome"] != insumo_selecionado
+                    ]
+                    st.success(f"Insumo '{insumo_selecionado}' removido!")
 
-        if insumo_selecionado and acao_insumo == "Editar":
-            insumo_atual = st.session_state.insumos[
-                st.session_state.insumos["Nome"] == insumo_selecionado
-            ].iloc[0]
-            with st.form("form_edit_insumo"):
-                novo_nome = st.text_input("Nome do Insumo", insumo_atual["Nome"])
-                nova_categoria = st.selectbox(
-                    "Categoria",
-                    st.session_state.categorias["Categoria"].tolist(),
-                    index=st.session_state.categorias["Categoria"].tolist().index(insumo_atual["Categoria"])
-                    if insumo_atual["Categoria"] in st.session_state.categorias["Categoria"].tolist() else 0
-                )
-                nova_unidade = st.text_input("Unidade", insumo_atual["Unidade"])
-                novo_preco = st.number_input(
-                    "Preço Unitário (R$)", min_value=0.0, format="%.2f",
-                    value=float(insumo_atual["Preço Unitário (R$)"]) if pd.notna(insumo_atual["Preço Unitário (R$)"]) else 0.0
-                )
-                if st.form_submit_button("Salvar Alterações", key="salvar_insumo"):
-                    st.session_state.insumos.loc[
-                        st.session_state.insumos["Nome"] == insumo_selecionado,
-                        ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
-                    ] = [novo_nome, nova_categoria, nova_unidade, novo_preco]
-                    st.success("Insumo atualizado!")
+            if acao_insumo == "Editar":
+                insumo_atual = st.session_state.insumos[
+                    st.session_state.insumos["Nome"] == insumo_selecionado
+                ].iloc[0]
+                with st.form(f"form_edit_insumo_{insumo_selecionado}"):
+                    novo_nome = st.text_input("Nome do Insumo", insumo_atual["Nome"])
+                    nova_categoria = st.selectbox(
+                        "Categoria",
+                        st.session_state.categorias["Categoria"].tolist(),
+                        index=st.session_state.categorias["Categoria"].tolist().index(insumo_atual["Categoria"])
+                        if insumo_atual["Categoria"] in st.session_state.categorias["Categoria"].tolist() else 0
+                    )
+                    nova_unidade = st.text_input("Unidade", insumo_atual["Unidade"])
+                    novo_preco = st.number_input(
+                        "Preço Unitário (R$)", min_value=0.0, format="%.2f",
+                        value=float(insumo_atual["Preço Unitário (R$)"]) if pd.notna(insumo_atual["Preço Unitário (R$)"]) else 0.0
+                    )
+                    if st.form_submit_button("Salvar Alterações", key=f"salvar_insumo_{insumo_selecionado}"):
+                        st.session_state.insumos.loc[
+                            st.session_state.insumos["Nome"] == insumo_selecionado,
+                            ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
+                        ] = [novo_nome, nova_categoria, nova_unidade, novo_preco]
+                        st.success("Insumo atualizado!")
 
         baixar_csv(st.session_state.insumos, "insumos_papelaria.csv")
 
@@ -2561,50 +2562,52 @@ def papelaria_aba():
         else:
             produto_selecionado = None
 
-        acao_produto = st.radio(
-            "Ação para produto",
-            ["Nenhuma", "Editar", "Excluir"],
-            horizontal=True,
-            key="acao_produto"
-        )
+        if produto_selecionado:
+            acao_produto = st.radio(
+                f"Ação para o produto '{produto_selecionado}'",
+                ["Nenhuma", "Editar", "Excluir"],
+                horizontal=True,
+                key=f"acao_produto_{produto_selecionado}"
+            )
 
-        if produto_selecionado and acao_produto == "Excluir":
-            if st.button("Confirmar Exclusão", key="excluir_produto"):
-                st.session_state.produtos = st.session_state.produtos[
-                    st.session_state.produtos["Produto"] != produto_selecionado
-                ]
-                st.success(f"Produto '{produto_selecionado}' removido!")
+            if acao_produto == "Excluir":
+                if st.button("Confirmar Exclusão", key=f"excluir_produto_{produto_selecionado}"):
+                    st.session_state.produtos = st.session_state.produtos[
+                        st.session_state.produtos["Produto"] != produto_selecionado
+                    ]
+                    st.success(f"Produto '{produto_selecionado}' removido!")
 
-        if produto_selecionado and acao_produto == "Editar":
-            produto_atual = st.session_state.produtos[
-                st.session_state.produtos["Produto"] == produto_selecionado
-            ].iloc[0]
-            with st.form("form_edit_produto"):
-                novo_nome = st.text_input("Nome do Produto", produto_atual["Produto"])
-                novo_custo = st.number_input(
-                    "Custo Total (R$)", min_value=0.0, format="%.2f",
-                    value=float(produto_atual["Custo Total"]) if pd.notna(produto_atual["Custo Total"]) else 0.0
-                )
-                novo_vista = st.number_input(
-                    "Preço à Vista (R$)", min_value=0.0, format="%.2f",
-                    value=float(produto_atual["Preço à Vista"]) if pd.notna(produto_atual["Preço à Vista"]) else 0.0
-                )
-                novo_cartao = st.number_input(
-                    "Preço no Cartão (R$)", min_value=0.0, format="%.2f",
-                    value=float(produto_atual["Preço no Cartão"]) if pd.notna(produto_atual["Preço no Cartão"]) else 0.0
-                )
-                nova_margem = st.number_input(
-                    "Margem (%)", min_value=0.0, format="%.2f",
-                    value=float(produto_atual["Margem (%)"]) if pd.notna(produto_atual["Margem (%)"]) else 0.0
-                )
-                if st.form_submit_button("Salvar Alterações", key="salvar_produto"):
-                    st.session_state.produtos.loc[
-                        st.session_state.produtos["Produto"] == produto_selecionado,
-                        ["Produto", "Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"]
-                    ] = [novo_nome, novo_custo, novo_vista, novo_cartao, nova_margem]
-                    st.success("Produto atualizado!")
+            if acao_produto == "Editar":
+                produto_atual = st.session_state.produtos[
+                    st.session_state.produtos["Produto"] == produto_selecionado
+                ].iloc[0]
+                with st.form(f"form_edit_produto_{produto_selecionado}"):
+                    novo_nome = st.text_input("Nome do Produto", produto_atual["Produto"])
+                    novo_custo = st.number_input(
+                        "Custo Total (R$)", min_value=0.0, format="%.2f",
+                        value=float(produto_atual["Custo Total"]) if pd.notna(produto_atual["Custo Total"]) else 0.0
+                    )
+                    novo_vista = st.number_input(
+                        "Preço à Vista (R$)", min_value=0.0, format="%.2f",
+                        value=float(produto_atual["Preço à Vista"]) if pd.notna(produto_atual["Preço à Vista"]) else 0.0
+                    )
+                    novo_cartao = st.number_input(
+                        "Preço no Cartão (R$)", min_value=0.0, format="%.2f",
+                        value=float(produto_atual["Preço no Cartão"]) if pd.notna(produto_atual["Preço no Cartão"]) else 0.0
+                    )
+                    nova_margem = st.number_input(
+                        "Margem (%)", min_value=0.0, format="%.2f",
+                        value=float(produto_atual["Margem (%)"]) if pd.notna(produto_atual["Margem (%)"]) else 0.0
+                    )
+                    if st.form_submit_button("Salvar Alterações", key=f"salvar_produto_{produto_selecionado}"):
+                        st.session_state.produtos.loc[
+                            st.session_state.produtos["Produto"] == produto_selecionado,
+                            ["Produto", "Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"]
+                        ] = [novo_nome, novo_custo, novo_vista, novo_cartao, nova_margem]
+                        st.success("Produto atualizado!")
 
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
+
 
 
 
