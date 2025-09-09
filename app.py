@@ -680,6 +680,8 @@ def reset_admin_user():
 def do_login():
     st.session_state.setdefault("logado", False)
     st.session_state.setdefault("usuario_logado", None)
+    st.session_state.setdefault("credenciais_salvas", None)
+
     if st.session_state.get("logado"):
         return True
 
@@ -687,36 +689,47 @@ def do_login():
     show_logo("main")
     st.title("🔐 Login")
 
-    user = st.text_input("Usuário")
-    pwd  = st.text_input("Senha", type="password")
-    manter = st.checkbox("Manter conectado", value=False)
+    # Se credenciais foram salvas e "manter conectado" está ativo → preencher os campos
+    saved_user, saved_pwd = (None, None)
+    if st.session_state.get("credenciais_salvas") and st.session_state.get("manter", False):
+        saved_user, saved_pwd = st.session_state["credenciais_salvas"]
+
+    user = st.text_input("Usuário", value=saved_user if saved_user else "")
+    pwd  = st.text_input("Senha", type="password", value=saved_pwd if saved_pwd else "")
+    manter = st.checkbox("Manter conectado", value=st.session_state.get("manter", False))
 
     _, c2, _ = st.columns([1,2,1])
     with c2:
         if st.button("Entrar", use_container_width=True):
             usuarios = norm_usuarios(pd.DataFrame())
 
-            # Aceita admin/123 como fallback mesmo se não estiver no CSV
             cred_ok = (
-                not usuarios[
-                    (usuarios["Usuario"] == user) & (usuarios["Senha"] == pwd)
-                ].empty
+                not usuarios[(usuarios["Usuario"] == user) & (usuarios["Senha"] == pwd)].empty
             ) or (user == "admin" and pwd == "123")
 
             if cred_ok:
-                # Garante que admin/123 esteja no CSV se foi usado como fallback
                 if user == "admin" and pwd == "123":
                     reset_admin_user()
 
                 st.session_state["logado"] = True
-                st.session_state["usuario_logado"] = user if manter else None
+                st.session_state["usuario_logado"] = user
+                st.session_state["manter"] = manter
 
-                # Atualiza a página para refletir o login
+                if manter:
+                    st.session_state["credenciais_salvas"] = (user, pwd)
+                else:
+                    st.session_state["credenciais_salvas"] = None
+
                 st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
             else:
                 st.error("Usuário ou senha inválidos.")
 
-    st.stop()
+        # Botão extra: salvar login sem logar
+        if manter and st.button("Salvar login", use_container_width=True):
+            st.session_state["credenciais_salvas"] = (user, pwd)
+            st.session_state["manter"] = True
+            st.success("Credenciais salvas! Da próxima vez já virão preenchidas.")
+
 
 # =====================================
 # Carregar dados na sessão
