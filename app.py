@@ -878,32 +878,6 @@ if view == "Sair":
     st.success("Sessão encerrada.")
     st.stop()
 
-# =====================================
-# Views principais
-# =====================================
-
-if view == "Dashboard":
-    st.write("🏠 Dashboard em construção...")
-
-elif view == "Produtos":
-    st.write("📦 Produtos em construção...")
-
-elif view == "precificação":
-    # Aqui você cola o código da aba Precificação que já implementou
-    st.write("⚙️ Precificação em construção...")
-
-elif view == "Papelaria":
-    papelaria_aba()
-
-elif view == "Vendas":
-    st.write("🛒 Vendas em construção...")
-
-elif view == "Clientes":
-    st.write("👥 Clientes em construção...")
-
-elif view == "Promoções":
-    st.write("🏷️ Promoções em construção...")
-
 
 
 
@@ -2605,12 +2579,32 @@ def papelaria_aba():
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
         
 
+
 # =====================================
-# Aba Papelaria (chamada)
+# Views principais
 # =====================================
+
+if view == "Dashboard":
+    st.write("🏠 Dashboard em construção...")
+
+elif view == "Produtos":
+    st.write("📦 Produtos em construção...")
+
+elif view == "precificação":
+    # Aqui você cola o código da aba Precificação que já implementou
+    st.write("⚙️ Precificação em construção...")
+
 elif view == "Papelaria":
     papelaria_aba()
 
+elif view == "Vendas":
+    st.write("🛒 Vendas em construção...")
+
+elif view == "Clientes":
+    st.write("👥 Clientes em construção...")
+
+elif view == "Promoções":
+    st.write("🏷️ Promoções em construção...")
       
 
 
