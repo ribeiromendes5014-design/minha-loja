@@ -2424,115 +2424,119 @@ import pandas as pd
 import requests
 from io import StringIO
 
-# URLs dos CSVs no GitHub (mude aqui para seu repositório)
-URL_BASE = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/"
-INSUMOS_CSV_URL = URL_BASE + "insumos_papelaria.csv"
-PRODUTOS_CSV_URL = URL_BASE + "produtos_papelaria.csv"
-CATEGORIAS_CSV_URL = URL_BASE + "categorias_papelaria.csv"
-
-# Colunas para cada CSV
-COLUNAS_INSUMOS = ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
-COLUNAS_PRODUTOS = ["Produto", "Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"]
-COLUNAS_CATEGORIAS = ["Categoria"]
-
-def carregar_csv_github(url, colunas):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        df = pd.read_csv(StringIO(response.text))
-        for col in colunas:
-            if col not in df.columns:
-                df[col] = None
-        return df[colunas]
-    except Exception as e:
-        st.warning(f"Não foi possível carregar CSV do GitHub ({url}): {e}")
-        return pd.DataFrame(columns=colunas)
-
-# Inicializa os dados na sessão
-if "insumos" not in st.session_state:
-    st.session_state.insumos = carregar_csv_github(INSUMOS_CSV_URL, COLUNAS_INSUMOS)
-
-if "produtos" not in st.session_state:
-    st.session_state.produtos = carregar_csv_github(PRODUTOS_CSV_URL, COLUNAS_PRODUTOS)
-
-if "categorias" not in st.session_state:
-    st.session_state.categorias = carregar_csv_github(CATEGORIAS_CSV_URL, COLUNAS_CATEGORIAS)
-    if st.session_state.categorias.empty:
-        st.session_state.categorias = pd.DataFrame({"Categoria": ["Papel", "Impressão", "Capa", "Espiral/Wire-o", "Laminação", "Outros"]})
-
-# Funções para adicionar, editar e remover dados
-
-def adicionar_categoria(nova_cat):
-    if nova_cat.strip() == "":
-        st.warning("Digite uma categoria válida.")
-        return
-    if nova_cat in st.session_state.categorias["Categoria"].values:
-        st.warning("Categoria já existe.")
-        return
-    st.session_state.categorias = pd.concat([st.session_state.categorias, pd.DataFrame([{"Categoria": nova_cat}])], ignore_index=True)
-    st.success(f"Categoria '{nova_cat}' adicionada!")
-
-def remover_categoria(cat):
-    if cat in st.session_state.categorias["Categoria"].values:
-        st.session_state.categorias = st.session_state.categorias[st.session_state.categorias["Categoria"] != cat]
-        st.success(f"Categoria '{cat}' removida!")
-    else:
-        st.warning("Categoria não encontrada.")
-
-def adicionar_insumo(nome, categoria, unidade, preco):
-    if not nome or not categoria or not unidade or preco is None:
-        st.warning("Preencha todos os campos para adicionar insumo.")
-        return
-    if nome in st.session_state.insumos["Nome"].values:
-        st.warning("Insumo já cadastrado.")
-        return
-    novo = pd.DataFrame([{
-        "Nome": nome,
-        "Categoria": categoria,
-        "Unidade": unidade,
-        "Preço Unitário (R$)": preco
-    }])
-    st.session_state.insumos = pd.concat([st.session_state.insumos, novo], ignore_index=True)
-    st.success(f"Insumo '{nome}' adicionado!")
-
-def remover_insumo(nome):
-    if nome in st.session_state.insumos["Nome"].values:
-        st.session_state.insumos = st.session_state.insumos[st.session_state.insumos["Nome"] != nome]
-        st.success(f"Insumo '{nome}' removido!")
-    else:
-        st.warning("Insumo não encontrado.")
-
-def adicionar_produto(produto, custo, preco_vista, preco_cartao, margem):
-    if not produto or custo is None or preco_vista is None or preco_cartao is None or margem is None:
-        st.warning("Preencha todos os campos para adicionar produto.")
-        return
-    if produto in st.session_state.produtos["Produto"].values:
-        st.warning("Produto já cadastrado.")
-        return
-    novo = pd.DataFrame([{
-        "Produto": produto,
-        "Custo Total": custo,
-        "Preço à Vista": preco_vista,
-        "Preço no Cartão": preco_cartao,
-        "Margem (%)": margem
-    }])
-    st.session_state.produtos = pd.concat([st.session_state.produtos, novo], ignore_index=True)
-    st.success(f"Produto '{produto}' adicionado!")
-
-def remover_produto(produto):
-    if produto in st.session_state.produtos["Produto"].values:
-        st.session_state.produtos = st.session_state.produtos[st.session_state.produtos["Produto"] != produto]
-        st.success(f"Produto '{produto}' removido!")
-    else:
-        st.warning("Produto não encontrado.")
-
-def baixar_csv(df, nome_arquivo):
-    csv = df.to_csv(index=False, encoding="utf-8-sig")
-    st.download_button(f"⬇️ Baixar {nome_arquivo}", data=csv, file_name=nome_arquivo, mime="text/csv")
-
+# =====================================
+# Função da aba Papelaria
+# =====================================
 def papelaria_aba():
     st.title("📚 Gerenciador Papelaria Personalizada")
 
+    # URLs dos CSVs no GitHub (altere para seu repositório)
+    URL_BASE = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/"
+    INSUMOS_CSV_URL = URL_BASE + "insumos_papelaria.csv"
+    PRODUTOS_CSV_URL = URL_BASE + "produtos_papelaria.csv"
+    CATEGORIAS_CSV_URL = URL_BASE + "categorias_papelaria.csv"
+
+    COLUNAS_INSUMOS = ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
+    COLUNAS_PRODUTOS = ["Produto", "Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"]
+    COLUNAS_CATEGORIAS = ["Categoria"]
+
+    def carregar_csv_github(url, colunas):
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            df = pd.read_csv(StringIO(response.text))
+            for col in colunas:
+                if col not in df.columns:
+                    df[col] = None
+            return df[colunas]
+        except Exception as e:
+            st.warning(f"Não foi possível carregar CSV do GitHub ({url}): {e}")
+            return pd.DataFrame(columns=colunas)
+
+    # Inicializa os dados na sessão
+    if "insumos" not in st.session_state:
+        st.session_state.insumos = carregar_csv_github(INSUMOS_CSV_URL, COLUNAS_INSUMOS)
+
+    if "produtos" not in st.session_state:
+        st.session_state.produtos = carregar_csv_github(PRODUTOS_CSV_URL, COLUNAS_PRODUTOS)
+
+    if "categorias" not in st.session_state:
+        st.session_state.categorias = carregar_csv_github(CATEGORIAS_CSV_URL, COLUNAS_CATEGORIAS)
+        if st.session_state.categorias.empty:
+            st.session_state.categorias = pd.DataFrame({
+                "Categoria": ["Papel", "Impressão", "Capa", "Espiral/Wire-o", "Laminação", "Outros"]
+            })
+
+    # Funções para adicionar, remover dados
+    def adicionar_categoria(nova_cat):
+        if nova_cat.strip() == "":
+            st.warning("Digite uma categoria válida.")
+            return
+        if nova_cat in st.session_state.categorias["Categoria"].values:
+            st.warning("Categoria já existe.")
+            return
+        st.session_state.categorias = pd.concat([st.session_state.categorias, pd.DataFrame([{"Categoria": nova_cat}])], ignore_index=True)
+        st.success(f"Categoria '{nova_cat}' adicionada!")
+
+    def remover_categoria(cat):
+        if cat in st.session_state.categorias["Categoria"].values:
+            st.session_state.categorias = st.session_state.categorias[st.session_state.categorias["Categoria"] != cat]
+            st.success(f"Categoria '{cat}' removida!")
+        else:
+            st.warning("Categoria não encontrada.")
+
+    def adicionar_insumo(nome, categoria, unidade, preco):
+        if not nome or not categoria or not unidade or preco is None:
+            st.warning("Preencha todos os campos para adicionar insumo.")
+            return
+        if nome in st.session_state.insumos["Nome"].values:
+            st.warning("Insumo já cadastrado.")
+            return
+        novo = pd.DataFrame([{
+            "Nome": nome,
+            "Categoria": categoria,
+            "Unidade": unidade,
+            "Preço Unitário (R$)": preco
+        }])
+        st.session_state.insumos = pd.concat([st.session_state.insumos, novo], ignore_index=True)
+        st.success(f"Insumo '{nome}' adicionado!")
+
+    def remover_insumo(nome):
+        if nome in st.session_state.insumos["Nome"].values:
+            st.session_state.insumos = st.session_state.insumos[st.session_state.insumos["Nome"] != nome]
+            st.success(f"Insumo '{nome}' removido!")
+        else:
+            st.warning("Insumo não encontrado.")
+
+    def adicionar_produto(produto, custo, preco_vista, preco_cartao, margem):
+        if not produto or custo is None or preco_vista is None or preco_cartao is None or margem is None:
+            st.warning("Preencha todos os campos para adicionar produto.")
+            return
+        if produto in st.session_state.produtos["Produto"].values:
+            st.warning("Produto já cadastrado.")
+            return
+        novo = pd.DataFrame([{
+            "Produto": produto,
+            "Custo Total": custo,
+            "Preço à Vista": preco_vista,
+            "Preço no Cartão": preco_cartao,
+            "Margem (%)": margem
+        }])
+        st.session_state.produtos = pd.concat([st.session_state.produtos, novo], ignore_index=True)
+        st.success(f"Produto '{produto}' adicionado!")
+
+    def remover_produto(produto):
+        if produto in st.session_state.produtos["Produto"].values:
+            st.session_state.produtos = st.session_state.produtos[st.session_state.produtos["Produto"] != produto]
+            st.success(f"Produto '{produto}' removido!")
+        else:
+            st.warning("Produto não encontrado.")
+
+    def baixar_csv(df, nome_arquivo):
+        csv = df.to_csv(index=False, encoding="utf-8-sig")
+        st.download_button(f"⬇️ Baixar {nome_arquivo}", data=csv, file_name=nome_arquivo, mime="text/csv")
+
+    # Layout com abas
     aba_categorias, aba_insumos, aba_produtos = st.tabs(["Categorias", "Insumos", "Produtos"])
 
     with aba_categorias:
@@ -2545,7 +2549,6 @@ def papelaria_aba():
         df_cat = st.data_editor(st.session_state.categorias, num_rows="dynamic", use_container_width=True)
         st.session_state.categorias = df_cat.dropna(subset=["Categoria"]).drop_duplicates().reset_index(drop=True)
 
-        # Botão para remover categoria selecionada
         cat_para_remover = st.selectbox("Selecionar categoria para remover", options=[""] + st.session_state.categorias["Categoria"].tolist())
         if cat_para_remover and st.button("Remover Categoria"):
             remover_categoria(cat_para_remover)
@@ -2568,7 +2571,6 @@ def papelaria_aba():
         df_insumos = st.data_editor(st.session_state.insumos, num_rows="dynamic", use_container_width=True)
         st.session_state.insumos = df_insumos.dropna(subset=["Nome"]).drop_duplicates().reset_index(drop=True)
 
-        # Remover insumo
         insumo_para_remover = st.selectbox("Selecionar insumo para remover", options=[""] + st.session_state.insumos["Nome"].tolist())
         if insumo_para_remover and st.button("Remover Insumo"):
             remover_insumo(insumo_para_remover)
@@ -2584,15 +2586,14 @@ def papelaria_aba():
             preco_cartao = st.number_input("Preço no Cartão (R$)", min_value=0.0, format="%.2f")
             margem = st.number_input("Margem (%)", min_value=0.0, format="%.2f")
 
-            adicionar_produto = st.form_submit_button("Adicionar Produto")
-            if adicionar_produto:
+            adicionar_produto_submit = st.form_submit_button("Adicionar Produto")
+            if adicionar_produto_submit:
                 adicionar_produto(nome_produto, custo_total, preco_vista, preco_cartao, margem)
 
         st.markdown("### Produtos cadastrados")
         df_produtos = st.data_editor(st.session_state.produtos, num_rows="dynamic", use_container_width=True)
         st.session_state.produtos = df_produtos.dropna(subset=["Produto"]).drop_duplicates().reset_index(drop=True)
 
-        # Remover produto
         produto_para_remover = st.selectbox("Selecionar produto para remover", options=[""] + st.session_state.produtos["Produto"].tolist())
         if produto_para_remover and st.button("Remover Produto"):
             remover_produto(produto_para_remover)
