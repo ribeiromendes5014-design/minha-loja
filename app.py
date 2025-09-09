@@ -683,7 +683,7 @@ def do_login():
     user = st.text_input("Usuário")
     pwd  = st.text_input("Senha", type="password")
     manter = st.checkbox("Manter conectado", value=False)
-    rec  = st.checkbox("⚙️ Recuperar acesso (recriar admin/123)", value=False)
+   
 
     _, c2, _ = st.columns([1,2,1])
     with c2:
