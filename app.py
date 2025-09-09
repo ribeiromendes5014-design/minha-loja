@@ -677,6 +677,7 @@ def reset_admin_user():
     save_csv(df, ARQ_USUARIOS)
     return True
 
+
 def do_login():
     st.session_state.setdefault("logado", False)
     st.session_state.setdefault("usuario_logado", None)
@@ -686,7 +687,7 @@ def do_login():
     show_logo("main")
     st.title("🔐 Login")
 
-    # Carregar credenciais salvas apenas para preencher os campos
+    # Apenas preenche os campos, mas não loga sozinho
     saved_user, saved_pwd = (None, None)
     if st.session_state.get("credenciais_salvas") and st.session_state.get("manter", False):
         saved_user, saved_pwd = st.session_state["credenciais_salvas"]
@@ -724,9 +725,9 @@ def do_login():
         if manter and st.button("Salvar login", use_container_width=True):
             st.session_state["credenciais_salvas"] = (user, pwd)
             st.session_state["manter"] = True
-            st.success("Credenciais salvas! Da próxima vez já virão preenchidas.")
+            st.success("Credenciais salvas! Da próxima vez os campos virão preenchidos.")
 
-    # 🔹 Somente retorna True se realmente logou
+    # 🔹 Agora só retorna True se o usuário tiver clicado em "Entrar"
     return st.session_state.get("logado", False)
 
 
