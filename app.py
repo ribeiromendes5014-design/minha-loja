@@ -2488,10 +2488,15 @@ def papelaria_aba():
         else:
             insumo_selecionado = None
 
-        acao_insumo = st.radio("Ação", ["Nenhuma", "Editar", "Excluir"], horizontal=True)
+        acao_insumo = st.radio(
+            "Ação para insumo",
+            ["Nenhuma", "Editar", "Excluir"],
+            horizontal=True,
+            key="acao_insumo"
+        )
 
         if insumo_selecionado and acao_insumo == "Excluir":
-            if st.button("Confirmar Exclusão"):
+            if st.button("Confirmar Exclusão", key="excluir_insumo"):
                 st.session_state.insumos = st.session_state.insumos[
                     st.session_state.insumos["Nome"] != insumo_selecionado
                 ]
@@ -2514,7 +2519,7 @@ def papelaria_aba():
                     "Preço Unitário (R$)", min_value=0.0, format="%.2f",
                     value=float(insumo_atual["Preço Unitário (R$)"]) if pd.notna(insumo_atual["Preço Unitário (R$)"]) else 0.0
                 )
-                if st.form_submit_button("Salvar Alterações"):
+                if st.form_submit_button("Salvar Alterações", key="salvar_insumo"):
                     st.session_state.insumos.loc[
                         st.session_state.insumos["Nome"] == insumo_selecionado,
                         ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
@@ -2556,10 +2561,15 @@ def papelaria_aba():
         else:
             produto_selecionado = None
 
-        acao_produto = st.radio("Ação", ["Nenhuma", "Editar", "Excluir"], horizontal=True)
+        acao_produto = st.radio(
+            "Ação para produto",
+            ["Nenhuma", "Editar", "Excluir"],
+            horizontal=True,
+            key="acao_produto"
+        )
 
         if produto_selecionado and acao_produto == "Excluir":
-            if st.button("Confirmar Exclusão"):
+            if st.button("Confirmar Exclusão", key="excluir_produto"):
                 st.session_state.produtos = st.session_state.produtos[
                     st.session_state.produtos["Produto"] != produto_selecionado
                 ]
@@ -2587,7 +2597,7 @@ def papelaria_aba():
                     "Margem (%)", min_value=0.0, format="%.2f",
                     value=float(produto_atual["Margem (%)"]) if pd.notna(produto_atual["Margem (%)"]) else 0.0
                 )
-                if st.form_submit_button("Salvar Alterações"):
+                if st.form_submit_button("Salvar Alterações", key="salvar_produto"):
                     st.session_state.produtos.loc[
                         st.session_state.produtos["Produto"] == produto_selecionado,
                         ["Produto", "Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"]
@@ -2595,6 +2605,7 @@ def papelaria_aba():
                     st.success("Produto atualizado!")
 
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
+
 
 
         
