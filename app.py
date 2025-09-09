@@ -461,17 +461,24 @@ def do_login(usuarios: pd.DataFrame) -> bool:
     user = st.text_input("Usuário")
     pwd = st.text_input("Senha", type="password")
 
+    manter = st.checkbox("Manter conectado", value=False)
+
     if st.button("Entrar"):
         if ((usuarios["Usuario"] == user) & (usuarios["Senha"] == pwd)).any():
             st.session_state["logado"] = True
             st.session_state["usuario"] = user
+            st.session_state["manter"] = manter   # <<< salva preferencia
             st.success(f"Bem-vindo, {user}!")
             return True
         else:
             st.error("Usuário ou senha inválidos.")
             return False
 
-    return st.session_state.get("logado", False)
+    # Se já está logado e marcou "manter conectado", mantém ativo
+    if st.session_state.get("logado", False) and st.session_state.get("manter", False):
+        return True
+
+    return False
 
 # =====================================
 # Salvar CSV no GitHub (somente produtos)
