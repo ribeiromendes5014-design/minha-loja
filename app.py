@@ -2386,6 +2386,21 @@ if view == "precificação":
 
 
 
+# =====================================
+# Aba Papelaria
+# =====================================
+def papelaria_aba():
+    st.header("📝 Papelaria")
+    st.write("Aqui você pode gerenciar os itens de papelaria.")
+    # Exemplo simples de tabela
+    data = {
+        "Produto": ["Caderno", "Caneta", "Lápis", "Borracha"],
+        "Estoque": [20, 50, 100, 30],
+        "Preço": [10.0, 2.5, 1.5, 0.8],
+    }
+    df = pd.DataFrame(data)
+    st.dataframe(df, use_container_width=True)
+
 
 
 # =====================================
