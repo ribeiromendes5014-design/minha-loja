@@ -2385,18 +2385,12 @@ if view == "precificação":
 
 
 
+
+
+
 # =====================================
 # Função da aba Papelaria
 # =====================================
-import pandas as pd
-import requests
-from io import StringIO
-
-def papelaria_aba():
-    st.title("📚 Gerenciador Papelaria Personalizada")
-    # ... (todo aquele código grande de categorias, insumos, produtos)
-    papelaria_aba()
-
 import streamlit as st
 import pandas as pd
 import requests
@@ -2436,7 +2430,9 @@ def papelaria_aba():
     if "categorias" not in st.session_state:
         st.session_state.categorias = carregar_csv_github(CATEGORIAS_CSV_URL, COLUNAS_CATEGORIAS)
         if st.session_state.categorias.empty:
-            st.session_state.categorias = pd.DataFrame({"Categoria": ["Papel", "Impressão", "Capa", "Espiral/Wire-o", "Laminação", "Outros"]})
+            st.session_state.categorias = pd.DataFrame(
+                {"Categoria": ["Papel", "Impressão", "Capa", "Espiral/Wire-o", "Laminação", "Outros"]}
+            )
 
     # Funções para manipular dados
     def adicionar_categoria(nova_cat):
@@ -2446,12 +2442,17 @@ def papelaria_aba():
         if nova_cat in st.session_state.categorias["Categoria"].values:
             st.warning("Categoria já existe.")
             return
-        st.session_state.categorias = pd.concat([st.session_state.categorias, pd.DataFrame([{"Categoria": nova_cat}])], ignore_index=True)
+        st.session_state.categorias = pd.concat(
+            [st.session_state.categorias, pd.DataFrame([{"Categoria": nova_cat}])],
+            ignore_index=True
+        )
         st.success(f"Categoria '{nova_cat}' adicionada!")
 
     def remover_categoria(cat):
         if cat in st.session_state.categorias["Categoria"].values:
-            st.session_state.categorias = st.session_state.categorias[st.session_state.categorias["Categoria"] != cat]
+            st.session_state.categorias = st.session_state.categorias[
+                st.session_state.categorias["Categoria"] != cat
+            ]
             st.success(f"Categoria '{cat}' removida!")
         else:
             st.warning("Categoria não encontrada.")
@@ -2498,14 +2499,21 @@ def papelaria_aba():
 
     def remover_produto(produto):
         if produto in st.session_state.produtos["Produto"].values:
-            st.session_state.produtos = st.session_state.produtos[st.session_state.produtos["Produto"] != produto]
+            st.session_state.produtos = st.session_state.produtos[
+                st.session_state.produtos["Produto"] != produto
+            ]
             st.success(f"Produto '{produto}' removido!")
         else:
             st.warning("Produto não encontrado.")
 
     def baixar_csv(df, nome_arquivo):
         csv = df.to_csv(index=False, encoding="utf-8-sig")
-        st.download_button(f"⬇️ Baixar {nome_arquivo}", data=csv, file_name=nome_arquivo, mime="text/csv")
+        st.download_button(
+            f"⬇️ Baixar {nome_arquivo}",
+            data=csv,
+            file_name=nome_arquivo,
+            mime="text/csv"
+        )
 
     # Interface com abas
     aba_categorias, aba_insumos, aba_produtos = st.tabs(["Categorias", "Insumos", "Produtos"])
@@ -2518,7 +2526,10 @@ def papelaria_aba():
         st.markdown("### Categorias cadastradas")
         df_cat = st.data_editor(st.session_state.categorias, num_rows="dynamic", use_container_width=True)
         st.session_state.categorias = df_cat.dropna(subset=["Categoria"]).drop_duplicates().reset_index(drop=True)
-        cat_para_remover = st.selectbox("Selecionar categoria para remover", options=[""] + st.session_state.categorias["Categoria"].tolist())
+        cat_para_remover = st.selectbox(
+            "Selecionar categoria para remover",
+            options=[""] + st.session_state.categorias["Categoria"].tolist()
+        )
         if cat_para_remover and st.button("Remover Categoria"):
             remover_categoria(cat_para_remover)
         baixar_csv(st.session_state.categorias, "categorias_papelaria.csv")
@@ -2536,7 +2547,10 @@ def papelaria_aba():
         st.markdown("### Insumos cadastrados")
         df_insumos = st.data_editor(st.session_state.insumos, num_rows="dynamic", use_container_width=True)
         st.session_state.insumos = df_insumos.dropna(subset=["Nome"]).drop_duplicates().reset_index(drop=True)
-        insumo_para_remover = st.selectbox("Selecionar insumo para remover", options=[""] + st.session_state.insumos["Nome"].tolist())
+        insumo_para_remover = st.selectbox(
+            "Selecionar insumo para remover",
+            options=[""] + st.session_state.insumos["Nome"].tolist()
+        )
         if insumo_para_remover and st.button("Remover Insumo"):
             remover_insumo(insumo_para_remover)
         baixar_csv(st.session_state.insumos, "insumos_papelaria.csv")
@@ -2555,10 +2569,14 @@ def papelaria_aba():
         st.markdown("### Produtos cadastrados")
         df_produtos = st.data_editor(st.session_state.produtos, num_rows="dynamic", use_container_width=True)
         st.session_state.produtos = df_produtos.dropna(subset=["Produto"]).drop_duplicates().reset_index(drop=True)
-        produto_para_remover = st.selectbox("Selecionar produto para remover", options=[""] + st.session_state.produtos["Produto"].tolist())
+        produto_para_remover = st.selectbox(
+            "Selecionar produto para remover",
+            options=[""] + st.session_state.produtos["Produto"].tolist()
+        )
         if produto_para_remover and st.button("Remover Produto"):
             remover_produto(produto_para_remover)
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
+
 
 
 
