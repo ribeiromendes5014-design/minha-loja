@@ -391,7 +391,7 @@ def save_csv_github(df: pd.DataFrame, path: str, mensagem: str):
         st.error(f"❌ Erro ao salvar no GitHub: {e}")
 
 # =====================================
-# Carregar do GitHub
+# Carregar do GitHub (usando token/secret - privado)
 # =====================================
 def load_csv_github(path: str) -> pd.DataFrame | None:
     """Carrega CSV do GitHub (se existir)."""
@@ -409,6 +409,20 @@ def load_csv_github(path: str) -> pd.DataFrame | None:
         return pd.read_csv(io.StringIO(contents.decoded_content.decode()), dtype=str)
     except Exception:
         return None
+
+
+# =====================================
+# Carregar CSV direto de URL (raw GitHub - público)
+# =====================================
+def load_csv_from_url(url: str) -> pd.DataFrame:
+    """Carrega CSV diretamente de uma URL raw do GitHub."""
+    try:
+        return pd.read_csv(url)
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar CSV do GitHub (URL): {e}")
+        return pd.DataFrame()
+
+        
 
 # =====================================
 # Usuários e Login
