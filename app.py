@@ -2371,7 +2371,7 @@ from io import StringIO
 
 
 # =====================================
-# Aba Papelaria (função)
+# Aba Papelaria (função completa)
 # =====================================
 def papelaria_aba():
     st.title("📚 Gerenciador Papelaria Personalizada")
@@ -2510,6 +2510,7 @@ def papelaria_aba():
     # ---------------------
     aba_categorias, aba_insumos, aba_produtos = st.tabs(["Categorias", "Insumos", "Produtos"])
 
+    # Categorias
     with aba_categorias:
         st.header("Categorias")
         nova_cat = st.text_input("Nova Categoria")
@@ -2517,8 +2518,15 @@ def papelaria_aba():
             adicionar_categoria(nova_cat)
 
         st.markdown("### Categorias cadastradas")
-        df_cat = st.data_editor(st.session_state.categorias, num_rows="dynamic", use_container_width=True)
-        st.session_state.categorias = df_cat.dropna(subset=["Categoria"]).drop_duplicates().reset_index(drop=True)
+        df_cat = st.data_editor(
+            st.session_state.categorias.reindex(columns=COLUNAS_CATEGORIAS),
+            num_rows="dynamic",
+            use_container_width=True
+        )
+        if "Categoria" in df_cat.columns:
+            st.session_state.categorias = df_cat.dropna(subset=["Categoria"]).drop_duplicates().reset_index(drop=True)
+        else:
+            st.session_state.categorias = df_cat
 
         cat_para_remover = st.selectbox(
             "Selecionar categoria para remover",
@@ -2529,6 +2537,7 @@ def papelaria_aba():
 
         baixar_csv(st.session_state.categorias, "categorias_papelaria.csv")
 
+    # Insumos
     with aba_insumos:
         st.header("Insumos")
         with st.form("form_add_insumo"):
@@ -2541,8 +2550,15 @@ def papelaria_aba():
                 adicionar_insumo(nome_insumo, categoria_insumo, unidade_insumo, preco_insumo)
 
         st.markdown("### Insumos cadastrados")
-        df_insumos = st.data_editor(st.session_state.insumos, num_rows="dynamic", use_container_width=True)
-        st.session_state.insumos = df_insumos.dropna(subset=["Nome"]).drop_duplicates().reset_index(drop=True)
+        df_insumos = st.data_editor(
+            st.session_state.insumos.reindex(columns=COLUNAS_INSUMOS),
+            num_rows="dynamic",
+            use_container_width=True
+        )
+        if "Nome" in df_insumos.columns:
+            st.session_state.insumos = df_insumos.dropna(subset=["Nome"]).drop_duplicates().reset_index(drop=True)
+        else:
+            st.session_state.insumos = df_insumos
 
         insumo_para_remover = st.selectbox(
             "Selecionar insumo para remover",
@@ -2553,6 +2569,7 @@ def papelaria_aba():
 
         baixar_csv(st.session_state.insumos, "insumos_papelaria.csv")
 
+    # Produtos
     with aba_produtos:
         st.header("Produtos")
         with st.form("form_add_produto"):
@@ -2567,20 +2584,18 @@ def papelaria_aba():
 
         st.markdown("### Produtos cadastrados")
         df_produtos = st.data_editor(
-    st.session_state.produtos.reindex(columns=COLUNAS_PRODUTOS), 
-    num_rows="dynamic", 
-    use_container_width=True
-)
-
-if "Produto" in df_produtos.columns:
-    st.session_state.produtos = (
-        df_produtos.dropna(subset=["Produto"])
-        .drop_duplicates()
-        .reset_index(drop=True)
-    )
-else:
-    st.session_state.produtos = df_produtos
-
+            st.session_state.produtos.reindex(columns=COLUNAS_PRODUTOS),
+            num_rows="dynamic",
+            use_container_width=True
+        )
+        if "Produto" in df_produtos.columns:
+            st.session_state.produtos = (
+                df_produtos.dropna(subset=["Produto"])
+                .drop_duplicates()
+                .reset_index(drop=True)
+            )
+        else:
+            st.session_state.produtos = df_produtos
 
         produto_para_remover = st.selectbox(
             "Selecionar produto para remover",
@@ -2590,6 +2605,7 @@ else:
             remover_produto(produto_para_remover)
 
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
+
         
 
 
