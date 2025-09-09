@@ -883,65 +883,27 @@ if view == "Sair":
 # =====================================
 
 if view == "Dashboard":
-    # Seu código para dashboard aqui
     st.write("🏠 Dashboard em construção...")
 
 elif view == "Produtos":
-    # Seu código Produtos aqui
     st.write("📦 Produtos em construção...")
 
 elif view == "precificação":
-    # Seu código atual da aba precificação (o que você já tem)
-    # <COLE AQUI O CÓDIGO QUE VOCÊ ME ENVIOU DA ABA precificação>
+    # Aqui você cola o código da aba Precificação que já implementou
+    st.write("⚙️ Precificação em construção...")
 
 elif view == "Papelaria":
-    # Função que encapsula o código da aba que criamos
-    def papelaria_aba():
-        import pandas as pd
-        import requests
-        from io import StringIO
-
-        st.title("📚 Gerenciador Papelaria Personalizada")
-
-        # URLs dos CSVs no GitHub (mude aqui para seu repositório)
-        URL_BASE = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/"
-        INSUMOS_CSV_URL = URL_BASE + "insumos_papelaria.csv"
-        PRODUTOS_CSV_URL = URL_BASE + "produtos_papelaria.csv"
-        CATEGORIAS_CSV_URL = URL_BASE + "categorias_papelaria.csv"
-
-        COLUNAS_INSUMOS = ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
-        COLUNAS_PRODUTOS = ["Produto", "Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"]
-        COLUNAS_CATEGORIAS = ["Categoria"]
-
-        def carregar_csv_github(url, colunas):
-            try:
-                response = requests.get(url)
-                response.raise_for_status()
-                df = pd.read_csv(StringIO(response.text))
-                for col in colunas:
-                    if col not in df.columns:
-                        df[col] = None
-                return df[colunas]
-            except Exception as e:
-                st.warning(f"Não foi possível carregar CSV do GitHub ({url}): {e}")
-                return pd.DataFrame(columns=colunas)
-
-        if "insumos" not in st.session_state:
-            st.session_state.insumos = carregar_csv_github(INSUMOS_CSV_URL, COLUNAS_INSUMOS)
-        if "produtos" not in st.session_state:
-            st.session_state.produtos = carregar_csv_github(PRODUTOS_CSV_URL, COLUNAS_PRODUTOS)
-        if "categorias" not in st.session_state:
-            st.session_state.categorias = carregar_csv_github(CATEGORIAS_CSV_URL, COLUNAS_CATEGORIAS)
-            if st.session_state.categorias.empty:
-                st.session_state.categorias = pd.DataFrame({"Categoria": ["Papel", "Impressão", "Capa", "Espiral/Wire-o", "Laminação", "Outros"]})
-
-        # (inclua aqui as funções de adicionar/remover e a UI que te enviei antes)
-
-        # --- UI simplificada só para exemplo ---
-        st.write("Aqui entra a interface que você já tem, com abas Categorias, Insumos, Produtos...")
-        # Para evitar código gigante aqui, recomendo importar a função de um arquivo externo.
-
+    # 🔹 Chama a função completa que criamos
     papelaria_aba()
+
+elif view == "Vendas":
+    st.write("🛒 Vendas em construção...")
+
+elif view == "Clientes":
+    st.write("👥 Clientes em construção...")
+
+elif view == "Promoções":
+    st.write("🏷️ Promoções em construção...")
 
 
 
