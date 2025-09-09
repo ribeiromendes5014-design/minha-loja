@@ -689,7 +689,7 @@ def do_login():
     show_logo("main")
     st.title("🔐 Login")
 
-    # Se credenciais foram salvas e "manter conectado" está ativo → preencher os campos
+    # Carregar credenciais salvas apenas para preencher os campos
     saved_user, saved_pwd = (None, None)
     if st.session_state.get("credenciais_salvas") and st.session_state.get("manter", False):
         saved_user, saved_pwd = st.session_state["credenciais_salvas"]
@@ -724,11 +724,12 @@ def do_login():
             else:
                 st.error("Usuário ou senha inválidos.")
 
-        # Botão extra: salvar login sem logar
+        # Salvar login para preencher depois (mas sem logar)
         if manter and st.button("Salvar login", use_container_width=True):
             st.session_state["credenciais_salvas"] = (user, pwd)
             st.session_state["manter"] = True
             st.success("Credenciais salvas! Da próxima vez já virão preenchidas.")
+
 
 
 # =====================================
