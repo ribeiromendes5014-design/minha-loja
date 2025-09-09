@@ -682,9 +682,6 @@ def do_login():
     st.session_state.setdefault("usuario_logado", None)
     st.session_state.setdefault("credenciais_salvas", None)
 
-    if st.session_state.get("logado"):
-        return True
-
     # Logo no topo da tela de login
     show_logo("main")
     st.title("🔐 Login")
@@ -724,11 +721,14 @@ def do_login():
             else:
                 st.error("Usuário ou senha inválidos.")
 
-        # Salvar login para preencher depois (mas sem logar)
         if manter and st.button("Salvar login", use_container_width=True):
             st.session_state["credenciais_salvas"] = (user, pwd)
             st.session_state["manter"] = True
             st.success("Credenciais salvas! Da próxima vez já virão preenchidas.")
+
+    # 🔹 Somente retorna True se realmente logou
+    return st.session_state.get("logado", False)
+
 
 
 
