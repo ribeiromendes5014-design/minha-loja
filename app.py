@@ -1974,6 +1974,8 @@ if view == "Clientes":
 
 
 
+
+
 st.set_page_config(page_title="Precificador Doce&Bella", layout="wide")
 
 # ===============================
@@ -2077,8 +2079,12 @@ ARQ_CAIXAS = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main
 # ===============================
 st.title("💄 Doce&Bella - Precificador de Produtos")
 
-# === Abas ===
-tab_pdf, tab_manual = st.tabs(["📄 Precificador PDF", "✍️ Precificador Manual"])
+# === Abas principais ===
+tab_pdf, tab_manual, tab_github = st.tabs([
+    "📄 Precificador PDF",
+    "✍️ Precificador Manual",
+    "📥 Carregar CSV do GitHub"
+])
 
 # === Tab Precificador PDF ===
 with tab_pdf:
@@ -2142,21 +2148,17 @@ with tab_manual:
             valor_default_rateio = st.session_state.get("rateio_manual", 0.0)
             custo_extra_produto = st.number_input("💰 Custos extras do Produto (R$)", min_value=0.0, step=0.01, value=valor_default_rateio)
 
-            # Nova funcionalidade: preço final sugerido ou margem
             preco_final_sugerido = st.number_input("💸 Valor Final Sugerido (Preço à Vista) (R$)", min_value=0.0, step=0.01)
 
-            # Calcula a margem automaticamente se preco_final_sugerido > 0
             margem_manual = 0.0
             if preco_final_sugerido > 0:
                 custo_total_unitario = valor_pago + custo_extra_produto
-                # Evita divisão por zero e margens negativas
                 margem_calculada = max(0.0, (preco_final_sugerido / custo_total_unitario - 1) * 100) if custo_total_unitario > 0 else 0.0
                 margem_manual = round(margem_calculada, 2)
                 st.info(f"🧮 Margem calculada automaticamente: {margem_manual:.2f}%")
             else:
                 margem_manual = st.number_input("🧮 Margem de Lucro (%)", min_value=0.0, value=30.0)
 
-        # Usa margem_manual e calcula os preços
         custo_total_unitario = valor_pago + custo_extra_produto
         preco_a_vista_calc = custo_total_unitario * (1 + margem_manual / 100)
         preco_no_cartao_calc = preco_a_vista_calc / 0.8872
@@ -2193,6 +2195,23 @@ with tab_manual:
                 margem_fixa_sidebar
             )
             exibir_resultados(st.session_state.df_produtos_geral)
+
+# === Tab Carregar CSV do GitHub (nova aba exclusiva) ===
+with tab_github:
+    st.markdown("---")
+    st.header("📥 Carregar CSV de Precificação do GitHub")
+    st.write("Clique para carregar o arquivo CSV hospedado no GitHub e processar os dados.")
+
+    if st.button("🔄 Carregar CSV do GitHub"):
+        df_exemplo = load_csv_github(ARQ_CAIXAS)
+        if not df_exemplo.empty:
+            df_exemplo["Custos Extras Produto"] = 0.0
+            df_processado = processar_dataframe(df_exemplo, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar)
+            st.success("✅ CSV carregado e processado com sucesso!")
+            exibir_resultados(df_processado)
+        else:
+            st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+
 
 
 
