@@ -682,33 +682,27 @@ def do_login():
     if "logado" not in st.session_state:
         st.session_state["logado"] = False
         st.session_state["usuario_logado"] = None
-        st.session_state["credenciais_salvas"] = None
-        st.session_state["manter"] = False
 
-    # 🔹 login automático se já tiver credenciais salvas + manter=True
-    if st.session_state.get("credenciais_salvas") and st.session_state.get("manter", False):
-        user, pwd = st.session_state["credenciais_salvas"]
-        usuarios = norm_usuarios(pd.DataFrame())
-        cred_ok = (
-            not usuarios[(usuarios["Usuario"] == user) & (usuarios["Senha"] == pwd)].empty
-        ) or (user == "admin" and pwd == "123")
-        if cred_ok:
-            st.session_state["logado"] = True
-            st.session_state["usuario_logado"] = user
-            return True   # 🔐 entra direto
+    # 🔹 Tenta login automático (se tiver algum usuário marcado como Manter=True no CSV)
+    usuarios = norm_usuarios(pd.DataFrame())
+    manter_auto = usuarios[usuarios["Manter"] == True]
+    if not manter_auto.empty:
+        user = manter_auto.iloc[0]["Usuario"]
+        st.session_state["logado"] = True
+        st.session_state["usuario_logado"] = user
+        return True
 
-    # --- se não logou automático, mostra tela de login normal ---
+    # --- Tela de login normal ---
     show_logo("main")
     st.title("🔐 Login")
 
     user = st.text_input("Usuário")
     pwd  = st.text_input("Senha", type="password")
-    manter = st.checkbox("Manter conectado", value=st.session_state.get("manter", False))
+    manter = st.checkbox("Manter conectado")
 
     _, c2, _ = st.columns([1, 2, 1])
     with c2:
         if st.button("Entrar", use_container_width=True):
-            usuarios = norm_usuarios(pd.DataFrame())
             cred_ok = (
                 not usuarios[(usuarios["Usuario"] == user) & (usuarios["Senha"] == pwd)].empty
             ) or (user == "admin" and pwd == "123")
@@ -719,12 +713,11 @@ def do_login():
 
                 st.session_state["logado"] = True
                 st.session_state["usuario_logado"] = user
-                st.session_state["manter"] = manter
 
-                if manter:
-                    st.session_state["credenciais_salvas"] = (user, pwd)
-                else:
-                    st.session_state["credenciais_salvas"] = None
+                # Atualiza a coluna "Manter" no CSV
+                usuarios["Manter"] = False
+                usuarios.loc[usuarios["Usuario"] == user, "Manter"] = manter
+                save_csv_github(usuarios, ARQ_USUARIOS, "Atualizando preferências de login")
 
                 st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
             else:
