@@ -1292,6 +1292,10 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 import requests
+# ========================================================
+# TESTE DE ENVIO WHATSAPP
+# ========================================================
+
 st.markdown("## 🔧 Teste de Envio WhatsApp")
 
 if st.button("🚨 Testar envio de WhatsApp"):
@@ -1319,6 +1323,7 @@ if st.button("🚨 Testar envio de WhatsApp"):
 
     except Exception as e:
         st.error(f"⚠️ Erro inesperado: {e}")
+
 
 
 # Configuração WhatsApp (Variáveis Globais)
