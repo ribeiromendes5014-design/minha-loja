@@ -1426,7 +1426,18 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
     df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
     df_pedido["ValorRecebido"] = valor_recebido
-    total_pedido = df_pedido["PrecoVista"].multiply(df_pedido["Quantidade"]).sum()
+
+    # Calcula o preço com promoção, se existir
+    def preco_com_promocao(row):
+        preco = row["PrecoVista"]
+        if "Promocao" in row and row["Promocao"]:
+            desconto = row["Promocao"] / 100  # Ex: 10 para 10%
+            preco = preco * (1 - desconto)
+        return preco
+
+    df_pedido["PrecoComDesconto"] = df_pedido.apply(preco_com_promocao, axis=1)
+
+    total_pedido = df_pedido["PrecoComDesconto"].multiply(df_pedido["Quantidade"]).sum()
 
     if forma == "Misto" and forma1 and forma2:
         df_vendas_misto = pd.DataFrame()
@@ -1455,7 +1466,7 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                 "Cliente": nome_cliente,
                 "Produto": row["NomeProduto"],
                 "CodigoBarras": row.get("CodigoBarras", ""),
-                "Valor": float(row["PrecoVista"]) * int(row["Quantidade"]),
+                "Valor": float(row["PrecoComDesconto"]) * int(row["Quantidade"]),  # valor com desconto
                 "DataPagamento": str(data_pagamento) if data_pagamento else "",
                 "Status": "Aberto",
                 "FormaPagamento": "Fiado",
