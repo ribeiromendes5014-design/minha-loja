@@ -1410,7 +1410,7 @@ def fechar_caixa():
 # 🔧 Configurações (supondo que já esteja no seu código)
 # =====================
 TELEGRAM_TOKEN = "8366173640:AAHECvJBn_1jN_OsX8BXBGuMw9XE_angTKc"  # Seu token do bot aqui
-TELEGRAM_CHAT_ID = "1016030298"  # ID do grupo onde estão os tópicos
+TELEGRAM_CHAT_ID = "-1003030758192"  # ID do grupo onde estão os tópicos
 
 # =====================
 # 📤 Função para enviar mensagem no Telegram (ajustada para tópicos)
