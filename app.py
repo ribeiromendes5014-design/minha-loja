@@ -1603,7 +1603,7 @@ def brl(valor):
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # Função para enviar relatório de fechamento de caixa pelo Telegram
-def enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=None):
+def enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=ID_DO_TOPICO_CAIXA)
     try:
         import pytz
         from datetime import datetime
@@ -1678,7 +1678,7 @@ if "dados_fechamento_caixa" in st.session_state:
         )
 
     # Enviar relatório para o Telegram no tópico com thread_id=2 (altere se necessário)
-    enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=2)
+    enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=ID_DO_TOPICO_CAIXA)
 
     st.write("---")
 
