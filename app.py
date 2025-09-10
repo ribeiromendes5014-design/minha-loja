@@ -1470,7 +1470,7 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
 
 
     # 🚀 Enviar mensagem no Telegram (com data/hora BR e produtos)
-   try:
+try:
     import pytz
     from datetime import datetime
 
