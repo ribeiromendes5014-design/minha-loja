@@ -1307,7 +1307,7 @@ import pytz
 from datetime import datetime
 
 TELEGRAM_TOKEN = "8366173640:AAHECvJBn_1jN_OsX8BXBGuMw9XE_angTKc"
-TELEGRAM_CHAT_ID = "1016030298"
+TELEGRAM_CHAT_ID = "1003030758192"
 
 # =====================
 # 📤 Função para enviar mensagem
