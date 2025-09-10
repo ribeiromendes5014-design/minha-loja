@@ -1570,7 +1570,74 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     st.rerun()
 
 
-# 🔹 Resumo Último Fechamento
+# Função para enviar mensagens no Telegram (supondo que já exista)
+def enviar_telegram(mensagem, thread_id=None):
+    import requests
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    data = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": mensagem,
+        "parse_mode": "HTML"
+    }
+    if thread_id is not None:
+        data["message_thread_id"] = thread_id
+
+    try:
+        r = requests.post(url, json=data)
+        resp = r.json()
+        print("DEBUG TELEGRAM:", resp)
+        if not resp.get("ok"):
+            print(f"Erro Telegram: {resp}")
+    except Exception as e:
+        print(f"Erro ao enviar Telegram: {e}")
+
+# Função para formatar valores em reais (supondo que já exista)
+def brl(valor):
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+# Função para enviar relatório de fechamento de caixa pelo Telegram
+def enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=None):
+    try:
+        import pytz
+        from datetime import datetime
+
+        tz = pytz.timezone("America/Sao_Paulo")
+        agora = datetime.now(tz)
+        data_str = agora.strftime("%d/%m/%Y")
+        hora_str = agora.strftime("%H:%M:%S")
+
+        valor_inicial = dados_caixa['ValorInicial']
+        total_dinheiro = dados_caixa['Dinheiro']
+        total_pix = dados_caixa['PIX']
+        total_cartao_bruto = dados_caixa['Cartão']
+        total_fiado = dados_caixa['Fiado']
+
+        faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_bruto + total_fiado
+        valor_final_caixa = valor_inicial + total_dinheiro
+
+        msg = (
+            f"📊 <b>Relatório de Fechamento de Caixa</b>\n"
+            f"📅 Data: {data_str}\n"
+            f"⏰ Hora: {hora_str}\n\n"
+            f"💵 Valor Inicial do Caixa: {brl(valor_inicial)}\n"
+            f"💵 Dinheiro recebido hoje: {brl(total_dinheiro)}\n"
+            f"⚡ PIX recebido: {brl(total_pix)}\n"
+            f"💳 Cartão (valor bruto da venda): {brl(total_cartao_bruto)}\n"
+            f"📒 Fiado (não entra no caixa): {brl(total_fiado)}\n"
+            f"📦 Faturamento Total do Dia: {brl(faturamento_total_caixa)}\n"
+            f"💰 Valor Final esperado no Caixa: {brl(valor_final_caixa)}\n\n"
+            f"🛒 Total de vendas no dia: {len(vendas_dia)}"
+        )
+
+        enviar_telegram(msg, thread_id=thread_id)
+    except Exception as e:
+        print(f"Erro ao enviar relatório de fechamento: {e}")
+
+# ===========================
+# Trecho do seu código principal que mostra o resumo do fechamento de caixa
+# ===========================
+
 if "dados_fechamento_caixa" in st.session_state:
     st.subheader("📊 Resumo do Último Fechamento de Caixa")
     dados_caixa = st.session_state.pop("dados_fechamento_caixa")
@@ -1582,9 +1649,7 @@ if "dados_fechamento_caixa" in st.session_state:
     total_cartao_bruto = dados_caixa['Cartão']
     total_fiado = dados_caixa['Fiado']
 
-    # Faturamento total inclui todas as formas
     faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_bruto + total_fiado
-    # Valor final do caixa: somente dinheiro + valor inicial
     valor_final_caixa = valor_inicial + total_dinheiro
 
     st.write(f"💵 Valor Inicial do Caixa: {brl(valor_inicial)}")
@@ -1605,6 +1670,10 @@ if "dados_fechamento_caixa" in st.session_state:
             mime="application/pdf",
             key="download_caixa"
         )
+
+    # Enviar relatório para o Telegram no tópico com thread_id=2 (altere se necessário)
+    enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=2)
+
     st.write("---")
 
 
