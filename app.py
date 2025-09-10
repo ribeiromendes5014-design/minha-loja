@@ -1570,6 +1570,12 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     st.rerun()
 
 
+# =====================
+# 🔧 relatório caixa (supondo que já esteja no seu código)
+# =====================
+TELEGRAM_TOKEN = "8106907671:AAFoh0TfADdyP-NWasS2BQu4BkfG9ez-Smw"  # Seu token do bot aqui
+TELEGRAM_CHAT_ID = "-1003030758192"  # ID do grupo onde estão os tópicos
+
 # Função para enviar mensagens no Telegram (supondo que já exista)
 def enviar_telegram(mensagem, thread_id=None):
     import requests
