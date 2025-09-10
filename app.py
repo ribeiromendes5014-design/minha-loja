@@ -1294,93 +1294,33 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 import requests
-# ========================================================
-# TESTE DE ENVIO WHATSAPP
-# ========================================================
-
-st.markdown("## 🔧 Teste de Envio WhatsApp")
-
-if st.button("🚨 Testar envio de WhatsApp"):
-    st.write("⏳ Enviando mensagem...")
-    try:
-        headers = {
-            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "messaging_product": "whatsapp",
-            "to": NUMERO_DESTINO,
-            "type": "text",
-            "text": {"body": "⚙️ Teste de envio via API WhatsApp"}
-        }
-
-        response = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
-        resp_json = response.json()
-        st.write("🔍 Resposta da API:", resp_json)
-
-        if "messages" in resp_json:
-            st.success("✅ Mensagem enviada com sucesso!")
-        else:
-            st.error(f"❌ Erro no envio: {resp_json.get('error', resp_json)}")
-
-    except Exception as e:
-        st.error(f"⚠️ Erro inesperado: {e}")
 
 
 
-# 🔹 Configuração WhatsApp
-    import requests
-    from datetime import datetime, date
-    import pytz
 
-    WHATSAPP_TOKEN = "EAALmgS1woeIBPcFcKL1KYJoc9Np31ijd8xu90NZAKJ52K0blD9VJVZBI9b6h4ZA4qAZCEgT0Es4xXVYWvrZBdR1r1uOZC7NStD6HW3JXJyJkDXtGZBV3ZAD6ZCjy5hN86ZBNoSdsrMV9mCv7GPpsvNCO0h6W8kUOFJS6qZCpzG133xedT0lIh0WyvYadUPj4hZBfavpag0m1gEVdK5ZCLtWdpHwLlZCOOwkV0ieNwlvfwD7YtZCPQZDZD"  # coloque aqui o token válido da API do WhatsApp Cloud
-    WHATSAPP_PHONE_ID = "823826790806739"
-    WHATSAPP_API_URL = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
-    NUMERO_DESTINO = "5541987876191"
 
-    def enviar_whatsapp(destinatario, mensagem):
-        headers = {
-            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "messaging_product": "whatsapp",
-            "to": destinatario,
-            "type": "text",
-            "text": {"body": mensagem}
-        }
-        try:
-            r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
-            resp = r.json()
-            print("DEBUG WHATSAPP:", resp)
-            if "messages" not in resp:
-                st.error(f"Erro WhatsApp: {resp}")
-        except Exception as e:
-            st.error(f"Erro ao enviar WhatsApp: {e}")
+# 🔹 Configuração Telegram
+import requests
 
-# ========================================================
-# 2. FUNÇÕES AUXILIARES
-# ========================================================
+TELEGRAM_TOKEN = "8366173640:AAHECvJBn_1jN_OsX8BXBGuMw9XE_angTKc"  # exemplo: 123456789:ABCdEfghIjKlmNoPQRstuVwxyz
+TELEGRAM_CHAT_ID = "1016030298"     # exemplo: 123456789
 
-def enviar_whatsapp(destinatario, mensagem):
-    headers = {
-        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
-        "Content-Type": "application/json"
-    }
+def enviar_telegram(mensagem):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     data = {
-        "messaging_product": "whatsapp",
-        "to": destinatario,
-        "type": "text",
-        "text": {"body": mensagem}
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": mensagem,
+        "parse_mode": "HTML"
     }
     try:
-        r = requests.post(WHATSAPP_API_URL, headers=headers, json=data)
+        r = requests.post(url, json=data)
         resp = r.json()
-        print("DEBUG WHATSAPP:", resp)
-        if "messages" not in resp:
-            st.error(f"Erro WhatsApp: {resp}")
+        print("DEBUG TELEGRAM:", resp)
+        if not resp.get("ok"):
+            print(f"Erro Telegram: {resp}")
     except Exception as e:
-        st.error(f"Erro ao enviar WhatsApp: {e}")
+        print(f"Erro ao enviar Telegram: {e}")
+
 
 
 def abrir_caixa():
@@ -1521,37 +1461,37 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
     st.session_state["pedido_atual"] = []
 
-    # 🚀 Enviar mensagem no WhatsApp (com data/hora BR e produtos)
-    try:
-        import pytz
-        from datetime import datetime
+    # 🚀 Enviar mensagem no Telegram (com data/hora BR e produtos)
+try:
+    import pytz
+    from datetime import datetime
 
-        tz = pytz.timezone("America/Sao_Paulo")
-        agora = datetime.now(tz)
-        data_str = agora.strftime("%Y-%m-%d")
-        hora_str = agora.strftime("%H:%M:%S")
+    tz = pytz.timezone("America/Sao_Paulo")
+    agora = datetime.now(tz)
+    data_str = agora.strftime("%Y-%m-%d")
+    hora_str = agora.strftime("%H:%M:%S")
 
-        produtos_txt = "\n".join([
-            f"- {row['NomeProduto']} x{row['Quantidade']}"
-            for _, row in df_pedido.iterrows()
-        ])
+    produtos_txt = "\n".join([
+        f"• <b>{row['NomeProduto']}</b> x{row['Quantidade']}"
+        for _, row in df_pedido.iterrows()
+    ])
 
-        msg = (
-            f"🛒 Nova Venda Realizada!\n\n"
-            f"📅 Data: {data_str}\n"
-            f"⏰ Hora: {hora_str}\n"
-            f"🆔 Venda: {novo_id}\n"
-            f"💳 Pagamento: {forma}\n"
-            f"💰 Total: {brl(total_pedido)}\n\n"
-            f"📦 Produtos:\n{produtos_txt}"
-        )
+    msg = (
+        f"🛒 <b>Nova Venda Realizada!</b>\n\n"
+        f"📅 <b>Data:</b> {data_str}\n"
+        f"⏰ <b>Hora:</b> {hora_str}\n"
+        f"🆔 <b>Venda:</b> {novo_id}\n"
+        f"💳 <b>Pagamento:</b> {forma}\n"
+        f"💰 <b>Total:</b> {brl(total_pedido)}\n\n"
+        f"📦 <b>Produtos:</b>\n{produtos_txt}"
+    )
 
-        enviar_whatsapp(NUMERO_DESTINO, msg)
-    except Exception as e:
-        st.error(f"Erro ao enviar WhatsApp: {e}")
+    enviar_telegram(msg)
+except Exception as e:
+    st.error(f"Erro ao enviar Telegram: {e}")
 
-    st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
-    st.rerun()
+st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
+st.rerun()
 
 
 # 🔹 Resumo Último Fechamento
