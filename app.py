@@ -1408,7 +1408,7 @@ def fechar_caixa():
 
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
-    global vendas, produtos, clientes   # 🔹 inclui clientes aqui
+    global vendas, produtos, clientes
 
     if not st.session_state.get("pedido_atual"):
         st.warning("⚠️ Nenhum item no pedido.")
@@ -1447,7 +1447,6 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
         df_pedido["Total"] = total_pedido
         vendas = pd.concat([vendas, df_pedido], ignore_index=True)
 
-    # 🔹 Se for FIADO, registrar também no CSV de clientes
     if forma == "Fiado" and nome_cliente:
         novos_registros = []
         for _, row in df_pedido.iterrows():
@@ -1470,36 +1469,36 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     st.session_state["pedido_atual"] = []
 
     # 🚀 Enviar mensagem no Telegram (com data/hora BR e produtos)
-try:
-    import pytz
-    from datetime import datetime
+    try:
+        import pytz
+        from datetime import datetime
 
-    tz = pytz.timezone("America/Sao_Paulo")
-    agora = datetime.now(tz)
-    data_str = agora.strftime("%Y-%m-%d")
-    hora_str = agora.strftime("%H:%M:%S")
+        tz = pytz.timezone("America/Sao_Paulo")
+        agora = datetime.now(tz)
+        data_str = agora.strftime("%Y-%m-%d")
+        hora_str = agora.strftime("%H:%M:%S")
 
-    produtos_txt = "\n".join([
-        f"• <b>{row['NomeProduto']}</b> x{row['Quantidade']}"
-        for _, row in df_pedido.iterrows()
-    ])
+        produtos_txt = "\n".join([
+            f"• <b>{row['NomeProduto']}</b> x{row['Quantidade']}"
+            for _, row in df_pedido.iterrows()
+        ])
 
-    msg = (
-        f"🛒 <b>Nova Venda Realizada!</b>\n\n"
-        f"📅 <b>Data:</b> {data_str}\n"
-        f"⏰ <b>Hora:</b> {hora_str}\n"
-        f"🆔 <b>Venda:</b> {novo_id}\n"
-        f"💳 <b>Pagamento:</b> {forma}\n"
-        f"💰 <b>Total:</b> {brl(total_pedido)}\n\n"
-        f"📦 <b>Produtos:</b>\n{produtos_txt}"
-    )
+        msg = (
+            f"🛒 <b>Nova Venda Realizada!</b>\n\n"
+            f"📅 <b>Data:</b> {data_str}\n"
+            f"⏰ <b>Hora:</b> {hora_str}\n"
+            f"🆔 <b>Venda:</b> {novo_id}\n"
+            f"💳 <b>Pagamento:</b> {forma}\n"
+            f"💰 <b>Total:</b> {brl(total_pedido)}\n\n"
+            f"📦 <b>Produtos:</b>\n{produtos_txt}"
+        )
 
-    enviar_telegram(msg)
-except Exception as e:
-    st.error(f"Erro ao enviar Telegram: {e}")
+        enviar_telegram(msg)
+    except Exception as e:
+        st.error(f"Erro ao enviar Telegram: {e}")
 
-st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
-st.rerun()
+    st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
+    st.rerun()
 
 
 # 🔹 Resumo Último Fechamento
