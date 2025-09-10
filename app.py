@@ -1421,6 +1421,21 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
         novo_id = 1
 
     df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
+
+    # 🔹 Garante coluna PrecoComDesconto calculada com promoções
+    if "PrecoComDesconto" not in df_pedido.columns:
+        precos_corrigidos = []
+        promocoes_aplicadas = []
+        for _, row in df_pedido.iterrows():
+            preco_base = float(row["PrecoVista"])
+            preco_desc, promo = preco_vista_com_promocao(
+                row["IDProduto"], preco_base, date.today(), promocoes
+            )
+            precos_corrigidos.append(preco_desc)
+            promocoes_aplicadas.append(promo["Desconto"] if promo else None)
+        df_pedido["PrecoComDesconto"] = precos_corrigidos
+        df_pedido["Promocao"] = promocoes_aplicadas
+
     df_pedido["IDVenda"] = novo_id
     df_pedido["Data"] = date.today()
     df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
@@ -1428,10 +1443,7 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     df_pedido["ValorRecebido"] = valor_recebido
 
     # Usa PrecoComDesconto para calcular o total com promoção
-    if "PrecoComDesconto" in df_pedido.columns:
-        total_pedido = df_pedido["PrecoComDesconto"].multiply(df_pedido["Quantidade"]).sum()
-    else:
-        total_pedido = df_pedido["PrecoVista"].multiply(df_pedido["Quantidade"]).sum()
+    total_pedido = df_pedido["PrecoComDesconto"].multiply(df_pedido["Quantidade"]).sum()
 
     if forma == "Misto" and forma1 and forma2:
         # Corrige valor1 e valor2 proporcionalmente para o total com desconto
@@ -1468,7 +1480,7 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                 "Cliente": nome_cliente,
                 "Produto": row["NomeProduto"],
                 "CodigoBarras": row.get("CodigoBarras", ""),
-                "Valor": float(row["PrecoComDesconto"]) * int(row["Quantidade"]) if "PrecoComDesconto" in row else float(row["PrecoVista"]) * int(row["Quantidade"]),
+                "Valor": float(row["PrecoComDesconto"]) * int(row["Quantidade"]),
                 "DataPagamento": str(data_pagamento) if data_pagamento else "",
                 "Status": "Aberto",
                 "FormaPagamento": "Fiado",
