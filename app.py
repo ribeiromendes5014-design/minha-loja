@@ -1576,10 +1576,10 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
 TELEGRAM_TOKEN = "8106907671:AAFoh0TfADdyP-NWasS2BQu4BkfG9ez-Smw"  # Seu token do bot aqui
 TELEGRAM_CHAT_ID = "-1003030758192"  # ID do grupo onde estão os tópicos
 
-# Função para enviar mensagens no Telegram (supondo que já exista)
-def enviar_telegram(mensagem, thread_id=None):
-    import requests
+import requests
 
+# Função para enviar mensagens no Telegram (já existente)
+def enviar_telegram(mensagem, thread_id=None):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     data = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -1592,17 +1592,37 @@ def enviar_telegram(mensagem, thread_id=None):
     try:
         r = requests.post(url, json=data)
         resp = r.json()
-        print("DEBUG TELEGRAM:", resp)
+        print("DEBUG TELEGRAM mensagem:", resp)
         if not resp.get("ok"):
             print(f"Erro Telegram: {resp}")
     except Exception as e:
         print(f"Erro ao enviar Telegram: {e}")
 
-# Função para formatar valores em reais (supondo que já exista)
+# Nova função para enviar PDF no Telegram
+def enviar_pdf_telegram(caminho_arquivo, thread_id=None):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument"
+    try:
+        with open(caminho_arquivo, 'rb') as arquivo_pdf:
+            files = {'document': arquivo_pdf}
+            data = {
+                "chat_id": TELEGRAM_CHAT_ID,
+            }
+            if thread_id is not None:
+                data["message_thread_id"] = thread_id
+            
+            r = requests.post(url, data=data, files=files)
+            resp = r.json()
+            print("DEBUG TELEGRAM PDF:", resp)
+            if not resp.get("ok"):
+                print(f"Erro Telegram no envio do PDF: {resp}")
+    except Exception as e:
+        print(f"Erro ao enviar PDF no Telegram: {e}")
+
+# Função para formatar valores em reais (já existente)
 def brl(valor):
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# Função para enviar relatório de fechamento de caixa pelo Telegram
+# Função para enviar relatório de fechamento de caixa pelo Telegram (mensagem + PDF)
 def enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=3):
     try:
         import pytz
@@ -1636,7 +1656,16 @@ def enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=3):
             f"🛒 Total de vendas no dia: {len(vendas_dia)}"
         )
 
+        # Envia a mensagem primeiro
         enviar_telegram(msg, thread_id=thread_id)
+
+        # Gera o PDF no caminho especificado
+        caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
+        gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
+
+        # Envia o PDF no mesmo tópico/thread
+        enviar_pdf_telegram(caminho_pdf, thread_id=thread_id)
+
     except Exception as e:
         print(f"Erro ao enviar relatório de fechamento: {e}")
 
@@ -1677,7 +1706,7 @@ if "dados_fechamento_caixa" in st.session_state:
             key="download_caixa"
         )
 
-    # Enviar relatório para o Telegram no tópico com thread_id=2 (altere se necessário)
+    # Enviar relatório para o Telegram no tópico com thread_id=3 (altere se necessário)
     enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=3)
 
     st.write("---")
