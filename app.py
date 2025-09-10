@@ -1622,6 +1622,46 @@ def enviar_pdf_telegram(caminho_arquivo, thread_id=None):
 def brl(valor):
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
+# Ajuste na função para gerar PDF incluindo operador e valor inicial do caixa
+def gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.units import cm
+
+    c = canvas.Canvas(caminho_pdf, pagesize=A4)
+    width, height = A4
+
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(2*cm, height - 2*cm, "Relatório de Fechamento de Caixa")
+
+    c.setFont("Helvetica", 12)
+    c.drawString(2*cm, height - 3*cm, f"Data: {dados_caixa['Data']}")
+    c.drawString(2*cm, height - 4*cm, f"Operador: {dados_caixa.get('Operador', 'N/A')}")
+    c.drawString(2*cm, height - 5*cm, f"Valor Inicial do Caixa: {brl(dados_caixa['ValorInicial'])}")
+
+    y = height - 6*cm
+
+    c.drawString(2*cm, y, f"Dinheiro recebido hoje: {brl(dados_caixa['Dinheiro'])}")
+    y -= 1*cm
+    c.drawString(2*cm, y, f"PIX recebido: {brl(dados_caixa['PIX'])}")
+    y -= 1*cm
+    c.drawString(2*cm, y, f"Cartão (valor bruto da venda): {brl(dados_caixa['Cartão'])}")
+    y -= 1*cm
+    c.drawString(2*cm, y, f"Fiado (não entra no caixa): {brl(dados_caixa['Fiado'])}")
+    y -= 1*cm
+
+    faturamento_total_caixa = dados_caixa['Dinheiro'] + dados_caixa['PIX'] + dados_caixa['Cartão'] + dados_caixa['Fiado']
+    valor_final_caixa = dados_caixa['ValorInicial'] + dados_caixa['Dinheiro']
+
+    c.drawString(2*cm, y, f"Faturamento Total do Dia: {brl(faturamento_total_caixa)}")
+    y -= 1*cm
+    c.drawString(2*cm, y, f"Valor Final esperado no Caixa: {brl(valor_final_caixa)}")
+    y -= 2*cm
+
+    c.drawString(2*cm, y, f"Total de vendas no dia: {len(vendas_dia)}")
+
+    c.save()
+
 # Função para enviar relatório de fechamento de caixa pelo Telegram (mensagem + PDF)
 def enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=3):
     try:
@@ -1638,6 +1678,7 @@ def enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=3):
         total_pix = dados_caixa['PIX']
         total_cartao_bruto = dados_caixa['Cartão']
         total_fiado = dados_caixa['Fiado']
+        operador = dados_caixa.get('Operador', 'N/A')
 
         faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_bruto + total_fiado
         valor_final_caixa = valor_inicial + total_dinheiro
@@ -1645,7 +1686,8 @@ def enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=3):
         msg = (
             f"📊 <b>Relatório de Fechamento de Caixa</b>\n"
             f"📅 Data: {data_str}\n"
-            f"⏰ Hora: {hora_str}\n\n"
+            f"⏰ Hora: {hora_str}\n"
+            f"👤 Operador: {operador}\n\n"
             f"💵 Valor Inicial do Caixa: {brl(valor_inicial)}\n"
             f"💵 Dinheiro recebido hoje: {brl(total_dinheiro)}\n"
             f"⚡ PIX recebido: {brl(total_pix)}\n"
@@ -1683,10 +1725,12 @@ if "dados_fechamento_caixa" in st.session_state:
     total_pix = dados_caixa['PIX']
     total_cartao_bruto = dados_caixa['Cartão']
     total_fiado = dados_caixa['Fiado']
+    operador = dados_caixa.get('Operador', 'N/A')
 
     faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_bruto + total_fiado
     valor_final_caixa = valor_inicial + total_dinheiro
 
+    st.write(f"👤 Operador do Caixa: {operador}")
     st.write(f"💵 Valor Inicial do Caixa: {brl(valor_inicial)}")
     st.write(f"💵 Dinheiro recebido hoje: {brl(total_dinheiro)}")
     st.write(f"⚡ PIX recebido: {brl(total_pix)}")
