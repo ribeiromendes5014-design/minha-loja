@@ -1468,51 +1468,46 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
     st.session_state["pedido_atual"] = []
 
+    try:
+        import pytz
+        from datetime import datetime
 
-    # 🚀 Enviar mensagem no Telegram (com data/hora BR e produtos)
-try:
-    import pytz
-    from datetime import datetime
+        tz = pytz.timezone("America/Sao_Paulo")
+        agora = datetime.now(tz)
+        data_str = agora.strftime("%Y-%m-%d")
+        hora_str = agora.strftime("%H:%M:%S")
 
-    tz = pytz.timezone("America/Sao_Paulo")
-    agora = datetime.now(tz)
-    data_str = agora.strftime("%Y-%m-%d")
-    hora_str = agora.strftime("%H:%M:%S")
+        produtos_txt = ""
+        for _, row in df_pedido.iterrows():
+            promo_str = ""
+            if "Promocao" in row and row["Promocao"]:
+                promo_str = f" 🔥 {row['Promocao']}% OFF"
+            produtos_txt += f"• <b>{row['NomeProduto']}</b> x{row['Quantidade']}{promo_str}\n"
 
-    # Montar lista de produtos com indicação de promoção
-    produtos_txt = ""
-    for _, row in df_pedido.iterrows():
-        promo_str = ""
-        if "Promocao" in row and row["Promocao"]:
-            # Supondo que 'Promocao' seja o percentual (ex: 10 para 10%)
-            promo_str = f" 🔥 {row['Promocao']}% OFF"
-        produtos_txt += f"• <b>{row['NomeProduto']}</b> x{row['Quantidade']}{promo_str}\n"
+        msg = (
+            f"🛒 <b>Nova Venda Realizada!</b>\n\n"
+            f"📅 <b>Data:</b> {data_str}\n"
+            f"⏰ <b>Hora:</b> {hora_str}\n"
+            f"🆔 <b>Venda:</b> {novo_id}\n"
+            f"💰 <b>Total:</b> {brl(total_pedido)}\n\n"
+            f"📦 <b>Produtos:</b>\n{produtos_txt}"
+        )
 
-    # Mensagem base
-    msg = (
-        f"🛒 <b>Nova Venda Realizada!</b>\n\n"
-        f"📅 <b>Data:</b> {data_str}\n"
-        f"⏰ <b>Hora:</b> {hora_str}\n"
-        f"🆔 <b>Venda:</b> {novo_id}\n"
-        f"💰 <b>Total:</b> {brl(total_pedido)}\n\n"
-        f"📦 <b>Produtos:</b>\n{produtos_txt}"
-    )
+        if forma == "Misto" and forma1 and forma2:
+            msg += f"\n💳 <b>Pagamento Misto:</b>\n - {forma1}: {brl(valor1)}\n - {forma2}: {brl(valor2)}"
+        else:
+            msg += f"\n💳 <b>Pagamento:</b> {forma}"
 
-    # Venda mista: mostrar formas de pagamento detalhadas
-    if forma == "Misto" and forma1 and forma2:
-        msg += f"\n💳 <b>Pagamento Misto:</b>\n - {forma1}: {brl(valor1)}\n - {forma2}: {brl(valor2)}"
-    else:
-        msg += f"\n💳 <b>Pagamento:</b> {forma}"
+        if forma == "Fiado" and nome_cliente:
+            data_pag = data_pagamento if data_pagamento else "Não informada"
+            msg += f"\n\n👤 <b>Cliente Fiado:</b> {nome_cliente}\n📅 <b>Data Pagamento:</b> {data_pag}"
 
-    # Venda fiado: incluir cliente e data pagamento
-    if forma == "Fiado" and nome_cliente:
-        data_pag = data_pagamento if data_pagamento else "Não informada"
-        msg += f"\n\n👤 <b>Cliente Fiado:</b> {nome_cliente}\n📅 <b>Data Pagamento:</b> {data_pag}"
+        enviar_telegram(msg)
 
-    enviar_telegram(msg)
+    except Exception as e:
+        st.error(f"Erro ao enviar Telegram: {e}")
 
-except Exception as e:
-    st.error(f"Erro ao enviar Telegram: {e}")
+    st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
     st.rerun()
 
 
