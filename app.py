@@ -1406,6 +1406,39 @@ def fechar_caixa():
         st.rerun()
 
 
+# =====================
+# 🔧 Configurações (supondo que já esteja no seu código)
+# =====================
+TELEGRAM_TOKEN = "8366173640:AAHECvJBn_1jN_OsX8BXBGuMw9XE_angTKc"  # Seu token do bot aqui
+TELEGRAM_CHAT_ID = "1016030298"  # ID do grupo onde estão os tópicos
+
+# =====================
+# 📤 Função para enviar mensagem no Telegram (ajustada para tópicos)
+# =====================
+def enviar_telegram(mensagem, thread_id=None):
+    import requests
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    data = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": mensagem,
+        "parse_mode": "HTML"
+    }
+    if thread_id is not None:
+        data["message_thread_id"] = thread_id  # Define o tópico para enviar
+
+    try:
+        r = requests.post(url, json=data)
+        resp = r.json()
+        print("DEBUG TELEGRAM:", resp)
+        if not resp.get("ok"):
+            print(f"Erro Telegram: {resp}")
+    except Exception as e:
+        print(f"Erro ao enviar Telegram: {e}")
+
+# =====================
+# Sua função finalizar_venda ajustada
+# =====================
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
     global vendas, produtos, clientes
@@ -1527,7 +1560,8 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
             data_pag = data_pagamento if data_pagamento else "Não informada"
             msg += f"\n\n👤 <b>Cliente Fiado:</b> {nome_cliente}\n📅 <b>Data Pagamento:</b> {data_pag}"
 
-        enviar_telegram(msg)
+        # Aqui alterei para enviar no tópico Vendas (thread_id=2)
+        enviar_telegram(msg, thread_id=2)
 
     except Exception as e:
         st.error(f"Erro ao enviar Telegram: {e}")
