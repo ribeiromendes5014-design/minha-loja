@@ -1678,7 +1678,7 @@ if "dados_fechamento_caixa" in st.session_state:
         )
 
     # Enviar relatório para o Telegram no tópico com thread_id=2 (altere se necessário)
-    enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=ID_DO_TOPICO_CAIXA)
+    enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=3)
 
     st.write("---")
 
