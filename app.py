@@ -1427,29 +1427,31 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
     df_pedido["ValorRecebido"] = valor_recebido
 
-    # Calcula o preço com promoção, se existir
-    def preco_com_promocao(row):
-        preco = row["PrecoVista"]
-        if "Promocao" in row and row["Promocao"]:
-            desconto = row["Promocao"] / 100  # Ex: 10 para 10%
-            preco = preco * (1 - desconto)
-        return preco
-
-    df_pedido["PrecoComDesconto"] = df_pedido.apply(preco_com_promocao, axis=1)
-
-    total_pedido = df_pedido["PrecoComDesconto"].multiply(df_pedido["Quantidade"]).sum()
+    # Usa PrecoComDesconto para calcular o total com promoção
+    if "PrecoComDesconto" in df_pedido.columns:
+        total_pedido = df_pedido["PrecoComDesconto"].multiply(df_pedido["Quantidade"]).sum()
+    else:
+        total_pedido = df_pedido["PrecoVista"].multiply(df_pedido["Quantidade"]).sum()
 
     if forma == "Misto" and forma1 and forma2:
+        # Corrige valor1 e valor2 proporcionalmente para o total com desconto
+        soma_valores = valor1 + valor2
+        if soma_valores == 0:
+            valor1_corrigido = valor2_corrigido = 0
+        else:
+            valor1_corrigido = total_pedido * (valor1 / soma_valores)
+            valor2_corrigido = total_pedido * (valor2 / soma_valores)
+
         df_vendas_misto = pd.DataFrame()
 
         df_temp = df_pedido.copy()
         df_temp["FormaPagamento"] = forma1
-        df_temp["Total"] = valor1
+        df_temp["Total"] = valor1_corrigido
         df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
         df_temp = df_pedido.copy()
         df_temp["FormaPagamento"] = forma2
-        df_temp["Total"] = valor2
+        df_temp["Total"] = valor2_corrigido
         df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
         vendas = pd.concat([vendas, df_vendas_misto], ignore_index=True)
@@ -1466,7 +1468,7 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                 "Cliente": nome_cliente,
                 "Produto": row["NomeProduto"],
                 "CodigoBarras": row.get("CodigoBarras", ""),
-                "Valor": float(row["PrecoComDesconto"]) * int(row["Quantidade"]),  # valor com desconto
+                "Valor": float(row["PrecoComDesconto"]) * int(row["Quantidade"]) if "PrecoComDesconto" in row else float(row["PrecoVista"]) * int(row["Quantidade"]),
                 "DataPagamento": str(data_pagamento) if data_pagamento else "",
                 "Status": "Aberto",
                 "FormaPagamento": "Fiado",
@@ -1505,7 +1507,7 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
         )
 
         if forma == "Misto" and forma1 and forma2:
-            msg += f"\n💳 <b>Pagamento Misto:</b>\n - {forma1}: {brl(valor1)}\n - {forma2}: {brl(valor2)}"
+            msg += f"\n💳 <b>Pagamento Misto:</b>\n - {forma1}: {brl(valor1_corrigido)}\n - {forma2}: {brl(valor2_corrigido)}"
         else:
             msg += f"\n💳 <b>Pagamento:</b> {forma}"
 
