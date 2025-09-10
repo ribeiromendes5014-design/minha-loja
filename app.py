@@ -1299,12 +1299,19 @@ import requests
 
 
 
-# 🔹 Configuração Telegram
+# =====================
+# 🔧 Configurações
+# =====================
 import requests
+import pytz
+from datetime import datetime
 
-TELEGRAM_TOKEN = "8366173640:AAHECvJBn_1jN_OsX8BXBGuMw9XE_angTKc"  # exemplo: 123456789:ABCdEfghIjKlmNoPQRstuVwxyz
-TELEGRAM_CHAT_ID = "1016030298"     # exemplo: 123456789
+TELEGRAM_TOKEN = "8366173640:AAHECvJBn_1jN_OsX8BXBGuMw9XE_angTKc"
+TELEGRAM_CHAT_ID = "1016030298"
 
+# =====================
+# 📤 Função para enviar mensagem
+# =====================
 def enviar_telegram(mensagem):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     data = {
@@ -1320,6 +1327,7 @@ def enviar_telegram(mensagem):
             print(f"Erro Telegram: {resp}")
     except Exception as e:
         print(f"Erro ao enviar Telegram: {e}")
+
 
 
 
