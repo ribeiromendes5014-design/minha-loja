@@ -1,2 +1,1 @@
-IDVenda,Data,IDProduto,NomeProduto,CodigoBarras,FormaPagamento,Quantidade,PrecoUnitario,Total,PrecoVista,Cliente,DataPagamento,ValorRecebido
-1,2025-09-10,4,Kit Shampoo babasoul,722713013411,Dinheiro,1,,31.0,31.0,,,30.0
+IDVenda,Data,IDProduto,NomeProduto,CodigoBarras,FormaPagamento,Quantidade,PrecoUnitario,Total
