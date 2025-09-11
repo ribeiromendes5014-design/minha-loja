@@ -2354,8 +2354,9 @@ if view == "precificação":
 
         return df_processado
 
-    import datetime
-import streamlit as st
+    import streamlit as st
+import pandas as pd
+import datetime
 
 def exibir_resultados(df):
     if not df.empty:
@@ -2376,6 +2377,19 @@ def exibir_resultados(df):
         nome_arquivo = f"precificacao_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         csv = df.to_csv(index=False, encoding="utf-8-sig")
         st.download_button("⬇️ Baixar CSV", data=csv, file_name=nome_arquivo, mime="text/csv")
+
+# Simula um DataFrame de teste
+df_teste = pd.DataFrame({
+    "Produto": ["Produto A", "Produto B"],
+    "Qtd": [10, 5],
+    "Custo c/ Rateio": [20.0, 30.0],
+    "Margem (%)": [50, 60],
+    "Preço à Vista": [40.0, 60.0],
+    "Preço no Cartão": [45.0, 65.0]
+})
+
+st.title("Exibição de Resultados")
+exibir_resultados(df_teste)
 
     # ===============================
     # Estado da sessão
