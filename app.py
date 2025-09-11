@@ -2347,18 +2347,21 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
                     st.write(f"🏷️ Valor Final Produto: R$ {row.get('Valor Final Produto', 0):.2f}")
             with cols[2]:
                 if st.button("✏️ Editar", key=f"edit_{idx}"):
-                    st.session_state["edit_index"] = idx
+                    # seta índice para edição e força rerun para atualizar os inputs do formulário
+                    st.session_state["edit_index"] = int(idx)
+                    st.experimental_rerun()
             with cols[3]:
                 if st.button("🗑️ Excluir", key=f"delete_{idx}"):
+                    # remove da lista manual, reprocessa e rerun
                     st.session_state.produtos_manuais = st.session_state.produtos_manuais.drop(idx).reset_index(drop=True)
                     st.session_state.df_produtos_geral = processar_dataframe(
                         st.session_state.produtos_manuais,
-                        0.0,
-                        0.0,
-                        "Margem fixa",
-                        30.0
+                        frete_total,
+                        custos_extras,
+                        modo_margem_global,
+                        margem_fixa_sidebar
                     )
-                    st.rerun()
+                    st.experimental_rerun()
 
     # Exibir tabela com imagens
     st.markdown("### 📋 Tabela Consolidada")
@@ -2366,7 +2369,7 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
     df_display = df.copy()
     if "Imagem" in df_display.columns:
         df_display["Imagem"] = df_display["Imagem"].apply(
-            lambda url: f'<img src="{url}" width="60">' if pd.notna(url) else "—"
+            lambda url: f'<img src="{url}" width="60">' if pd.notna(url) and url else "—"
         )
         st.write(df_display.to_html(escape=False), unsafe_allow_html=True)
     else:
@@ -2386,22 +2389,64 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
 def processar_dataframe(df: pd.DataFrame, frete_total: float, custos_extras: float,
                         modo_margem: str, margem_fixa: float) -> pd.DataFrame:
     """Processa dataframe para adicionar custos rateados e preços finais."""
-    if df.empty:
-        return df
+    if df is None or df.empty:
+        # Retorna um DataFrame com as colunas esperadas vazio para evitar KeyError mais adiante
+        cols = [
+            "Produto", "Qtd", "Custo Unitário", "Custos Extras Produto", "Margem (%)",
+            "Custo Total Unitário", "Preço à Vista", "Preço no Cartão", "Valor Final Produto", "Imagem"
+        ]
+        return pd.DataFrame(columns=cols)
 
     df = df.copy()
-    df["Custo Total Unitário"] = df["Custo Unitário"] + df["Custos Extras Produto"]
 
+    # garante que colunas essenciais existam
+    if "Custo Unitário" not in df.columns:
+        df["Custo Unitário"] = 0.0
+    if "Custos Extras Produto" not in df.columns:
+        df["Custos Extras Produto"] = 0.0
+    if "Qtd" not in df.columns:
+        df["Qtd"] = 1
+
+    # aplica rateio global (se fornecido)
+    # se frete_total/custos_extras forem > 0, distribui pelo total de itens
+    try:
+        total_qtd = df["Qtd"].sum()
+        if total_qtd > 0 and (frete_total > 0 or custos_extras > 0):
+            rateio_unitario_global = (frete_total + custos_extras) / total_qtd
+        else:
+            rateio_unitario_global = 0.0
+    except Exception:
+        rateio_unitario_global = 0.0
+
+    # Calcula custo total unitário considerando custos extras por produto + rateio global
+    df["Custo Total Unitário"] = df["Custo Unitário"].astype(float) + df["Custos Extras Produto"].astype(float) + rateio_unitario_global
+
+    # Margem
     if modo_margem == "Margem fixa":
         df["Margem (%)"] = margem_fixa
+    else:
+        # se já existir coluna, mantém os valores, senão preenche com 0
+        if "Margem (%)" not in df.columns:
+            df["Margem (%)"] = 0.0
 
-    df["Preço à Vista"] = df["Custo Total Unitário"] * (1 + df["Margem (%)"] / 100)
-    df["Preço no Cartão"] = df["Preço à Vista"] / 0.8872
+    # Preços
+    df["Preço à Vista"] = df["Custo Total Unitário"] * (1 + df["Margem (%)"].astype(float) / 100)
+    # Evita divisão por zero / valores nulos
+    df["Preço no Cartão"] = df["Preço à Vista"].apply(lambda x: x / 0.8872 if pd.notna(x) else 0.0)
 
     # Valor total do produto (quantidade * preço à vista unitário)
-    df["Valor Final Produto"] = df["Preço à Vista"] * df["Qtd"]
+    df["Valor Final Produto"] = df["Preço à Vista"] * df["Qtd"].astype(float)
 
-    return df
+    # organiza colunas para consistência
+    cols_order = [
+        "Produto", "Qtd", "Custo Unitário", "Custos Extras Produto", "Margem (%)",
+        "Custo Total Unitário", "Preço à Vista", "Preço no Cartão", "Valor Final Produto", "Imagem"
+    ]
+    for c in cols_order:
+        if c not in df.columns:
+            df[c] = None
+
+    return df[cols_order]
 
 
 def extrair_produtos_pdf(pdf_file) -> list:
@@ -2437,12 +2482,12 @@ def gerar_pdf_produtos(df: pd.DataFrame):
     for _, row in df.iterrows():
         produto = row.get("Produto", "")
         qtd = row.get("Qtd", "")
-        custo = f"R$ {row.get('Custo Unitário', 0):.2f}" if "Custo Unitário" in df.columns else ""
-        extras = f"R$ {row.get('Custos Extras Produto', 0):.2f}" if "Custos Extras Produto" in df.columns else ""
-        margem = f"{row.get('Margem (%)', 0)}%" if "Margem (%)" in df.columns else ""
-        preco_vista = f"R$ {row.get('Preço à Vista', 0):.2f}" if "Preço à Vista" in df.columns else ""
-        preco_cartao = f"R$ {row.get('Preço no Cartão', 0):.2f}" if "Preço no Cartão" in df.columns else ""
-        valor_final = f"R$ {row.get('Valor Final Produto', 0):.2f}" if "Valor Final Produto" in df.columns else ""
+        custo = f"R$ {row.get('Custo Unitário', 0):.2f}" if row.get('Custo Unitário', None) is not None else ""
+        extras = f"R$ {row.get('Custos Extras Produto', 0):.2f}" if row.get('Custos Extras Produto', None) is not None else ""
+        margem = f"{row.get('Margem (%)', 0)}%" if row.get('Margem (%)', None) is not None else ""
+        preco_vista = f"R$ {row.get('Preço à Vista', 0):.2f}" if row.get('Preço à Vista', None) is not None else ""
+        preco_cartao = f"R$ {row.get('Preço no Cartão', 0):.2f}" if row.get('Preço no Cartão', None) is not None else ""
+        valor_final = f"R$ {row.get('Valor Final Produto', 0):.2f}" if row.get('Valor Final Produto', None) is not None else ""
 
         img = Paragraph("—", styles["Normal"])
         if row.get("Imagem"):
@@ -2485,13 +2530,23 @@ if "rateio_manual" not in st.session_state:
     st.session_state["rateio_manual"] = 0.0
 if "edit_index" not in st.session_state:
     st.session_state["edit_index"] = None
+if "df_produtos_geral" not in st.session_state:
+    # inicializa df_produtos_geral de forma processada (pode ficar vazio)
+    st.session_state.df_produtos_geral = processar_dataframe(
+        st.session_state.produtos_manuais,
+        0.0,
+        0.0,
+        "Margem fixa",
+        30.0
+    )
 
+# variáveis globais (podem ser expandidas para sidebar depois)
 frete_total = 0.0
 custos_extras = 0.0
 modo_margem_global = "Margem fixa"
 margem_fixa_sidebar = 30.0
 
-# URL do CSV do GitHub
+# URL do CSV do GitHub (substitua pelo seu)
 ARQ_CAIXAS = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/precificacao.csv"
 
 # Criar as tabs
@@ -2512,8 +2567,11 @@ with tab_pdf:
                 st.warning("⚠️ Nenhum produto encontrado no PDF.")
             else:
                 df_pdf = pd.DataFrame(produtos_pdf)
-                df_pdf["Custos Extras Produto"] = 0.0
-                df_pdf["Imagem"] = None
+                # garante colunas necessárias
+                if "Custos Extras Produto" not in df_pdf.columns:
+                    df_pdf["Custos Extras Produto"] = 0.0
+                if "Imagem" not in df_pdf.columns:
+                    df_pdf["Imagem"] = None
                 st.session_state.produtos_manuais = df_pdf.copy()
                 st.session_state.df_produtos_geral = processar_dataframe(
                     df_pdf,
@@ -2531,8 +2589,10 @@ with tab_pdf:
         if st.button("📥 Carregar CSV de exemplo (PDF Tab)"):
             df_exemplo = load_csv_github(ARQ_CAIXAS)
             if not df_exemplo.empty:
-                df_exemplo["Custos Extras Produto"] = 0.0
-                df_exemplo["Imagem"] = None
+                if "Custos Extras Produto" not in df_exemplo.columns:
+                    df_exemplo["Custos Extras Produto"] = 0.0
+                if "Imagem" not in df_exemplo.columns:
+                    df_exemplo["Imagem"] = None
                 st.session_state.produtos_manuais = df_exemplo.copy()
                 st.session_state.df_produtos_geral = processar_dataframe(
                     df_exemplo, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar
@@ -2554,7 +2614,17 @@ with tab_manual:
         with col_r3:
             qtd_total_manual = st.number_input("📦 Quantidade Total de Produtos", min_value=1, step=1, key="qtd_total_manual")
 
-        rateio_calculado = (frete_manual + extras_manual) / qtd_total_manual
+        # atualiza variáveis globais locais (usadas no processar_dataframe)
+        try:
+            frete_total = float(frete_manual)
+            custos_extras = float(extras_manual)
+            total_qtd_manual = int(qtd_total_manual)
+        except Exception:
+            frete_total = 0.0
+            custos_extras = 0.0
+            total_qtd_manual = 1
+
+        rateio_calculado = (frete_total + custos_extras) / max(1, total_qtd_manual)
         st.session_state["rateio_manual"] = round(rateio_calculado, 4)
         st.markdown(f"💰 **Rateio Unitário Calculado:** R$ {rateio_calculado:,.4f}")
 
@@ -2570,26 +2640,27 @@ with tab_manual:
         margem_default = 30.0
         preco_sugerido_default = 0.0
 
+        # preenche defaults se estiver editando
         if edit_idx is not None and edit_idx < len(st.session_state.produtos_manuais):
             produto_default = st.session_state.produtos_manuais.at[edit_idx, "Produto"]
             qtd_default = st.session_state.produtos_manuais.at[edit_idx, "Qtd"]
             valor_default = st.session_state.produtos_manuais.at[edit_idx, "Custo Unitário"]
             imagem_default = st.session_state.produtos_manuais.at[edit_idx, "Imagem"]
-            extras_default = st.session_state.produtos_manuais.at[edit_idx, "Custos Extras Produto"]
-            margem_default = st.session_state.produtos_manuais.at[edit_idx, "Margem (%)"]
+            extras_default = st.session_state.produtos_manuais.at[edit_idx, "Custos Extras Produto"] if "Custos Extras Produto" in st.session_state.produtos_manuais.columns else extras_default
+            margem_default = st.session_state.produtos_manuais.at[edit_idx, "Margem (%)"] if "Margem (%)" in st.session_state.produtos_manuais.columns else margem_default
 
         col1, col2 = st.columns(2)
         with col1:
             produto = st.text_input("📝 Nome do Produto", value=produto_default)
-            quantidade = st.number_input("📦 Quantidade", min_value=1, step=1, value=qtd_default)
-            valor_pago = st.number_input("💰 Valor Pago (R$)", min_value=0.0, step=0.01, value=valor_default)
+            quantidade = st.number_input("📦 Quantidade", min_value=1, step=1, value=int(qtd_default))
+            valor_pago = st.number_input("💰 Valor Pago (R$)", min_value=0.0, step=0.01, value=float(valor_default))
             imagem_url = st.text_input("🌐 URL da Foto do Produto (opcional)", value=imagem_default)
         with col2:
             custo_extra_produto = st.number_input(
-                "💰 Custos extras do Produto (R$)", min_value=0.0, step=0.01, value=extras_default
+                "💰 Custos extras do Produto (R$)", min_value=0.0, step=0.01, value=float(extras_default)
             )
             preco_final_sugerido = st.number_input(
-                "💸 Preço Final Sugerido (Preço à Vista)", min_value=0.0, step=0.01, value=preco_sugerido_default
+                "💸 Preço Final Sugerido (Preço à Vista)", min_value=0.0, step=0.01, value=float(preco_sugerido_default)
             )
 
             margem_manual = margem_default
@@ -2601,12 +2672,12 @@ with tab_manual:
                     margem_manual = 0.0
                 st.info(f"🧮 Margem calculada automaticamente: {margem_manual:.2f}%")
             else:
-                margem_manual = st.number_input("🧮 Margem de Lucro (%)", min_value=0.0, value=margem_default)
+                margem_manual = st.number_input("🧮 Margem de Lucro (%)", min_value=0.0, value=float(margem_default))
 
             custo_total_unitario = valor_pago + custo_extra_produto
 
         preco_a_vista_calc = custo_total_unitario * (1 + margem_manual / 100)
-        preco_no_cartao_calc = preco_a_vista_calc / 0.8872
+        preco_no_cartao_calc = preco_a_vista_calc / 0.8872 if preco_a_vista_calc is not None else 0.0
         valor_final_calc = preco_a_vista_calc * quantidade
 
         st.markdown(f"**Preço à Vista Calculado (unit.):** R$ {preco_a_vista_calc:,.2f}")
@@ -2623,10 +2694,10 @@ with tab_manual:
                 if produto and quantidade > 0 and valor_pago >= 0:
                     novo_produto = {
                         "Produto": produto,
-                        "Qtd": quantidade,
-                        "Custo Unitário": valor_pago,
-                        "Custos Extras Produto": custo_extra_produto,
-                        "Margem (%)": margem_manual,
+                        "Qtd": int(quantidade),
+                        "Custo Unitário": float(valor_pago),
+                        "Custos Extras Produto": float(custo_extra_produto),
+                        "Margem (%)": float(margem_manual),
                         "Imagem": imagem_url if imagem_url else None,
                     }
 
@@ -2636,7 +2707,8 @@ with tab_manual:
                             ignore_index=True
                         )
                     else:
-                        st.session_state.produtos_manuais.iloc[edit_idx] = novo_produto
+                        # sobrescreve a linha existente
+                        st.session_state.produtos_manuais.iloc[edit_idx] = pd.Series(novo_produto)
                         st.session_state["edit_index"] = None
 
                     # Agora sempre processa os cálculos antes de exibir
@@ -2648,7 +2720,7 @@ with tab_manual:
                         margem_fixa_sidebar
                     )
                     st.success("✅ Produto salvo com sucesso!")
-                    st.rerun()
+                    st.experimental_rerun()
                 else:
                     st.warning("⚠️ Preencha todos os campos obrigatórios.")
 
@@ -2663,8 +2735,10 @@ with tab_github:
     if st.button("🔄 Carregar CSV do GitHub (Tab GitHub)"):
         df_exemplo = load_csv_github(ARQ_CAIXAS)
         if not df_exemplo.empty:
-            df_exemplo["Custos Extras Produto"] = 0.0
-            df_exemplo["Imagem"] = None
+            if "Custos Extras Produto" not in df_exemplo.columns:
+                df_exemplo["Custos Extras Produto"] = 0.0
+            if "Imagem" not in df_exemplo.columns:
+                df_exemplo["Imagem"] = None
             st.session_state.produtos_manuais = df_exemplo.copy()
             st.session_state.df_produtos_geral = processar_dataframe(
                 df_exemplo, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar
@@ -2673,6 +2747,7 @@ with tab_github:
             exibir_resultados(st.session_state.df_produtos_geral, {})
         else:
             st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+
 
 
 
