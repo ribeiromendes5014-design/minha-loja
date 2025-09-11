@@ -2356,7 +2356,7 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
                         "Margem fixa",
                         30.0
                     )
-                    st.experimental_rerun()
+                    st.rerun()
 
     # Exibir tabela com imagens
     st.markdown("### 📋 Tabela Consolidada")
