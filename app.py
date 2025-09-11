@@ -2621,16 +2621,6 @@ with tab_manual:
 
             if submit_btn:
                 if produto and quantidade > 0 and valor_pago >= 0:
-                    custo_total_unitario = valor_pago + custo_extra_produto
-
-                    if preco_final_sugerido > 0:
-                        preco_a_vista_final = preco_final_sugerido
-                    else:
-                        preco_a_vista_final = custo_total_unitario * (1 + margem_manual / 100)
-
-                    preco_no_cartao_final = preco_a_vista_final / 0.8872
-                    valor_final_produto = preco_a_vista_final * quantidade
-
                     novo_produto = {
                         "Produto": produto,
                         "Qtd": quantidade,
@@ -2638,9 +2628,6 @@ with tab_manual:
                         "Custos Extras Produto": custo_extra_produto,
                         "Margem (%)": margem_manual,
                         "Imagem": imagem_url if imagem_url else None,
-                        "Preço à Vista": preco_a_vista_final,
-                        "Preço no Cartão": preco_no_cartao_final,
-                        "Valor Final Produto": valor_final_produto
                     }
 
                     if edit_idx is None:
@@ -2652,7 +2639,14 @@ with tab_manual:
                         st.session_state.produtos_manuais.iloc[edit_idx] = novo_produto
                         st.session_state["edit_index"] = None
 
-                    st.session_state.df_produtos_geral = st.session_state.produtos_manuais.copy()
+                    # Agora sempre processa os cálculos antes de exibir
+                    st.session_state.df_produtos_geral = processar_dataframe(
+                        st.session_state.produtos_manuais,
+                        frete_total,
+                        custos_extras,
+                        modo_margem_global,
+                        margem_fixa_sidebar
+                    )
                     st.success("✅ Produto salvo com sucesso!")
                     st.rerun()
                 else:
@@ -2660,6 +2654,7 @@ with tab_manual:
 
         if not st.session_state.produtos_manuais.empty:
             exibir_resultados(st.session_state.df_produtos_geral, {})
+
 
 # === Tab GitHub ===
 with tab_github:
