@@ -2523,7 +2523,7 @@ if view == "precificação":
     # === Tab PDF ===
     with tab_pdf:
         st.markdown("---")
-        pdf_file = st.file_uploader("📤 Selecione o PDF da nota fiscal ou lista de compras", type=["pdf"])
+        pdf_file = st.file_uploader("📤 Selecione o PDF da nota fiscal ou lista de compras (1)", type=["pdf"])
         if pdf_file:
             try:
                 produtos_pdf = extrair_produtos_pdf(pdf_file)
