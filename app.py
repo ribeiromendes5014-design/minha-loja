@@ -2681,54 +2681,60 @@ with tab_manual:
         valor_final_calc = preco_a_vista_calc * quantidade
 
         st.markdown(f"**Preço à Vista Calculado (unit.):** R$ {preco_a_vista_calc:,.2f}")
-        st.markdown(f"**Preço no Cartão Calculado (unit.):** R$ {preco_no_cartao_calc:,.2f}")
-        st.markdown(f"**🏷️ Valor Final do Produto (Qtd × Unitário): R$ {valor_final_calc:,.2f}**")
+st.markdown(f"**Preço no Cartão Calculado (unit.):** R$ {preco_no_cartao_calc:,.2f}")
+st.markdown(f"**🏷️ Valor Final do Produto (Qtd × Unitário): R$ {valor_final_calc:,.2f}**")
 
-        with st.form("form_submit_manual"):
+with st.form("form_submit_manual"):
+    if edit_idx is None:
+        submit_btn = st.form_submit_button("➕ Adicionar Produto (Manual)")
+    else:
+        submit_btn = st.form_submit_button("💾 Salvar Alterações")
+
+    if submit_btn:
+        if produto and quantidade > 0 and valor_pago >= 0:
+            # calcular os valores finais antes de salvar
+            custo_total_unitario = valor_pago + custo_extra_produto
+            preco_a_vista_final = custo_total_unitario * (1 + margem_manual / 100)
+            preco_no_cartao_final = preco_a_vista_final / 0.8872
+            valor_final_produto = preco_a_vista_final * quantidade
+
+            novo_produto = {
+                "Produto": produto,
+                "Qtd": int(quantidade),
+                "Custo Unitário": float(valor_pago),
+                "Custos Extras Produto": float(custo_extra_produto),
+                "Margem (%)": float(margem_manual),
+                "Imagem": imagem_url if imagem_url else None,
+                "Preço à Vista": preco_a_vista_final,
+                "Preço no Cartão": preco_no_cartao_final,
+                "Valor Final Produto": valor_final_produto
+            }
+
             if edit_idx is None:
-                submit_btn = st.form_submit_button("➕ Adicionar Produto (Manual)")
+                st.session_state.produtos_manuais = pd.concat(
+                    [st.session_state.produtos_manuais, pd.DataFrame([novo_produto])],
+                    ignore_index=True
+                )
             else:
-                submit_btn = st.form_submit_button("💾 Salvar Alterações")
+                # sobrescreve a linha existente
+                st.session_state.produtos_manuais.iloc[edit_idx] = pd.Series(novo_produto)
+                st.session_state["edit_index"] = None
 
-            if submit_btn:
-                if produto and quantidade > 0 and valor_pago >= 0:
-                    novo_produto = {
-                        "Produto": produto,
-                        "Qtd": int(quantidade),
-                        "Custo Unitário": float(valor_pago),
-                        "Custos Extras Produto": float(custo_extra_produto),
-                        "Margem (%)": float(margem_manual),
-                        "Imagem": imagem_url if imagem_url else None,
-                        "Preço á vista": preco_a_vista_final,
-                        "Preço no cartão": preco_no_cartao_final,
-                        "Valor final produto": valor_final_produto
-                    }
+            # Agora sempre processa os cálculos antes de exibir
+            st.session_state.df_produtos_geral = processar_dataframe(
+                st.session_state.produtos_manuais,
+                frete_total,
+                custos_extras,
+                modo_margem_global,
+                margem_fixa_sidebar
+            )
+            st.success("✅ Produto salvo com sucesso!")
+            st.experimental_rerun()
+        else:
+            st.warning("⚠️ Preencha todos os campos obrigatórios.")
 
-                    if edit_idx is None:
-                        st.session_state.produtos_manuais = pd.concat(
-                            [st.session_state.produtos_manuais, pd.DataFrame([novo_produto])],
-                            ignore_index=True
-                        )
-                    else:
-                        # sobrescreve a linha existente
-                        st.session_state.produtos_manuais.iloc[edit_idx] = pd.Series(novo_produto)
-                        st.session_state["edit_index"] = None
-
-                    # Agora sempre processa os cálculos antes de exibir
-                    st.session_state.df_produtos_geral = processar_dataframe(
-                        st.session_state.produtos_manuais,
-                        frete_total,
-                        custos_extras,
-                        modo_margem_global,
-                        margem_fixa_sidebar
-                    )
-                    st.success("✅ Produto salvo com sucesso!")
-                    st.experimental_rerun()
-                else:
-                    st.warning("⚠️ Preencha todos os campos obrigatórios.")
-
-        if not st.session_state.produtos_manuais.empty:
-            exibir_resultados(st.session_state.df_produtos_geral, {})
+if not st.session_state.produtos_manuais.empty:
+    exibir_resultados(st.session_state.df_produtos_geral, {})
 
 
 # === Tab GitHub ===
