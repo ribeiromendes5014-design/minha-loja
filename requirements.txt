@@ -14,3 +14,4 @@ PyGithub
 pyzbar
 Pillow
 pdfplumber
+fpdf
