@@ -2412,7 +2412,7 @@ def load_csv_github(url: str) -> pd.DataFrame:
 
 
 def gerar_pdf_produtos(df: pd.DataFrame):
-    """Gera um PDF com os produtos cadastrados e fotos via URL."""
+    """Gera um PDF com os produtos cadastrados e retorna o buffer."""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elementos = []
@@ -2459,7 +2459,8 @@ def gerar_pdf_produtos(df: pd.DataFrame):
     doc.build(elementos)
 
     buffer.seek(0)
-    st.download_button("⬇️ Clique aqui para baixar o PDF", buffer, file_name="produtos.pdf", mime="application/pdf")
+    return buffer
+
 
 
 # ===============================
