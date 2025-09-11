@@ -2597,7 +2597,8 @@ with tab_manual:
             else:
                 margem_manual = st.number_input("🧮 Margem de Lucro (%)", min_value=0.0, value=margem_default)
 
-               custo_total_unitario = valor_pago + custo_extra_produto
+            custo_total_unitario = valor_pago + custo_extra_produto
+
         preco_a_vista_calc = custo_total_unitario * (1 + margem_manual / 100)
         preco_no_cartao_calc = preco_a_vista_calc / 0.8872
 
@@ -2667,6 +2668,7 @@ with tab_github:
             exibir_resultados(st.session_state.df_produtos_geral, {})
         else:
             st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+
 
 
 
