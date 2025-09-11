@@ -2301,12 +2301,17 @@ if view == "Clientes":
 # =====================================
 # PRECIFICAÇÃO
 # =====================================
+
+import streamlit as st
+import pandas as pd
+import datetime
+import pdfplumber
+import re
+
 if view == "precificação":
     st.title("💄 Precificador de Produtos")
 
     url_precificacao = "https://raw.githubusercontent.com/ribeiromendes5014-design/minha-loja/main/precificacao.csv"
-
-    
 
     # ===============================
     # Funções de processamento e exibição
@@ -2344,58 +2349,47 @@ if view == "precificação":
         df_processado = df.copy()
         total_itens = df_processado["Qtd"].sum()
         rateio_unit = (frete + custos_extras) / total_itens if total_itens > 0 else 0
-        df_processado["Custo c/ Rateio"] = (df_processado["Custo Unitário"] + rateio_unit + df_processado.get("Custos Extras Produto", 0)).round(2)
+        df_processado["Custo c/ Rateio"] = (
+            df_processado["Custo Unitário"] + rateio_unit + df_processado.get("Custos Extras Produto", 0)
+        ).round(2)
 
         if modo_margem == "Margem fixa":
             df_processado["Margem (%)"] = margem_fixa_sidebar
 
-        df_processado["Preço à Vista"] = (df_processado["Custo c/ Rateio"] * (1 + df_processado["Margem (%)"] / 100)).round(2)
+        df_processado["Preço à Vista"] = (
+            df_processado["Custo c/ Rateio"] * (1 + df_processado["Margem (%)"] / 100)
+        ).round(2)
         df_processado["Preço no Cartão"] = (df_processado["Preço à Vista"] / 0.8872).round(2)
 
         return df_processado
 
-    import streamlit as st
-import pandas as pd
-import datetime
+    def exibir_resultados(df):
+        if not df.empty:
+            custo_total = (df["Custo c/ Rateio"] * df["Qtd"]).sum()
+            faturamento_vista = (df["Preço à Vista"] * df["Qtd"]).sum()
+            lucro_total = faturamento_vista - custo_total
 
-def exibir_resultados(df):
-    if not df.empty:
-        custo_total = (df["Custo c/ Rateio"] * df["Qtd"]).sum()
-        faturamento_vista = (df["Preço à Vista"] * df["Qtd"]).sum()
-        lucro_total = faturamento_vista - custo_total
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Custo Total", f"R$ {custo_total:,.2f}")
+            col2.metric("Faturamento Previsto", f"R$ {faturamento_vista:,.2f}")
+            col3.metric("Lucro Estimado", f"R$ {lucro_total:,.2f}")
 
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Custo Total", f"R$ {custo_total:,.2f}")
-        col2.metric("Faturamento Previsto", f"R$ {faturamento_vista:,.2f}")
-        col3.metric("Lucro Estimado", f"R$ {lucro_total:,.2f}")
+            st.dataframe(
+                df[["Produto", "Qtd", "Custo c/ Rateio", "Margem (%)", "Preço à Vista", "Preço no Cartão"]],
+                use_container_width=True
+            )
 
-        st.dataframe(
-            df[["Produto", "Qtd", "Custo c/ Rateio", "Margem (%)", "Preço à Vista", "Preço no Cartão"]],
-            use_container_width=True
-        )
-
-        nome_arquivo = f"precificacao_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        csv = df.to_csv(index=False, encoding="utf-8-sig")
-        st.download_button("⬇️ Baixar CSV", data=csv, file_name=nome_arquivo, mime="text/csv")
-
-# Simula um DataFrame de teste
-df_teste = pd.DataFrame({
-    "Produto": ["Produto A", "Produto B"],
-    "Qtd": [10, 5],
-    "Custo c/ Rateio": [20.0, 30.0],
-    "Margem (%)": [50, 60],
-    "Preço à Vista": [40.0, 60.0],
-    "Preço no Cartão": [45.0, 65.0]
-})
-
-st.title("Exibição de Resultados")
-exibir_resultados(df_teste)
+            nome_arquivo = f"precificacao_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            csv = df.to_csv(index=False, encoding="utf-8-sig")
+            st.download_button("⬇️ Baixar CSV", data=csv, file_name=nome_arquivo, mime="text/csv")
 
     # ===============================
     # Estado da sessão
     # ===============================
     if "produtos_manuais" not in st.session_state:
-        st.session_state.produtos_manuais = pd.DataFrame(columns=["Produto", "Qtd", "Custo Unitário", "Custos Extras Produto", "Margem (%)"])
+        st.session_state.produtos_manuais = pd.DataFrame(columns=[
+            "Produto", "Qtd", "Custo Unitário", "Custos Extras Produto", "Margem (%)"
+        ])
     if "rateio_manual" not in st.session_state:
         st.session_state["rateio_manual"] = 0.0
 
@@ -2411,8 +2405,6 @@ exibir_resultados(df_teste)
     # URL do CSV do GitHub
     # ===============================
     ARQ_CAIXAS = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/precificacao.csv"
-
-
 
     tab_pdf, tab_manual, tab_github = st.tabs([
         "📄 Precificador PDF",
@@ -2432,7 +2424,9 @@ exibir_resultados(df_teste)
                 else:
                     df_pdf = pd.DataFrame(produtos_pdf)
                     df_pdf["Custos Extras Produto"] = 0.0
-                    st.session_state.df_produtos_geral = processar_dataframe(df_pdf, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar)
+                    st.session_state.df_produtos_geral = processar_dataframe(
+                        df_pdf, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar
+                    )
                     st.success("✅ Produtos precificados com sucesso!")
                     exibir_resultados(st.session_state.df_produtos_geral)
             except Exception as e:
@@ -2443,7 +2437,9 @@ exibir_resultados(df_teste)
                 df_exemplo = load_csv_github(ARQ_CAIXAS)
                 if not df_exemplo.empty:
                     df_exemplo["Custos Extras Produto"] = 0.0
-                    st.session_state.df_produtos_geral = processar_dataframe(df_exemplo, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar)
+                    st.session_state.df_produtos_geral = processar_dataframe(
+                        df_exemplo, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar
+                    )
                     exibir_resultados(st.session_state.df_produtos_geral)
 
     # === Tab Manual ===
@@ -2475,8 +2471,12 @@ exibir_resultados(df_teste)
                 valor_pago = st.number_input("💰 Valor Pago (R$)", min_value=0.0, step=0.01)
             with col2:
                 valor_default_rateio = st.session_state.get("rateio_manual", 0.0)
-                custo_extra_produto = st.number_input("💰 Custos extras do Produto (R$)", min_value=0.0, step=0.01, value=valor_default_rateio)
-                preco_final_sugerido = st.number_input("💸 Valor Final Sugerido (Preço à Vista) (R$)", min_value=0.0, step=0.01)
+                custo_extra_produto = st.number_input(
+                    "💰 Custos extras do Produto (R$)", min_value=0.0, step=0.01, value=valor_default_rateio
+                )
+                preco_final_sugerido = st.number_input(
+                    "💸 Valor Final Sugerido (Preço à Vista) (R$)", min_value=0.0, step=0.01
+                )
 
                 margem_manual = 0.0
                 if preco_final_sugerido > 0:
@@ -2505,7 +2505,9 @@ exibir_resultados(df_teste)
                             "Custos Extras Produto": custo_extra_produto,
                             "Margem (%)": margem_manual
                         }])
-                        st.session_state.produtos_manuais = pd.concat([st.session_state.produtos_manuais, novo_produto], ignore_index=True)
+                        st.session_state.produtos_manuais = pd.concat(
+                            [st.session_state.produtos_manuais, novo_produto], ignore_index=True
+                        )
                         st.success("✅ Produto adicionado!")
                     else:
                         st.warning("⚠️ Preencha todos os campos obrigatórios.")
@@ -2531,11 +2533,14 @@ exibir_resultados(df_teste)
             df_exemplo = load_csv_github(ARQ_CAIXAS)
             if not df_exemplo.empty:
                 df_exemplo["Custos Extras Produto"] = 0.0
-                df_processado = processar_dataframe(df_exemplo, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar)
+                df_processado = processar_dataframe(
+                    df_exemplo, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar
+                )
                 st.success("✅ CSV carregado e processado com sucesso!")
                 exibir_resultados(df_processado)
             else:
                 st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+
 
 
 
