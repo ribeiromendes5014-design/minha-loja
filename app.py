@@ -2301,26 +2301,8 @@ if view == "Clientes":
 import streamlit as st
 import pandas as pd
 
-# Supondo que as funções extrair_produtos_pdf, processar_dataframe, load_csv_github e exibir_resultados estejam definidas em outro lugar.
-
 # ===============================
-# URL do CSV do GitHub
-# ===============================
-ARQ_CAIXAS = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/precificacao.csv"
-
-# dicionário para armazenar imagens em memória para PDF
-imagens_dict = {}  # produto → imagem bytes
-
-# ===============================
-# Variáveis fixas
-# ===============================
-frete_total = 0.0
-custos_extras = 0.0
-modo_margem_global = "Margem fixa"
-margem_fixa_sidebar = 30.0
-
-# ===============================
-# Estado da sessão
+# Estado da sessão e variáveis fixas
 # ===============================
 if "produtos_manuais" not in st.session_state:
     st.session_state.produtos_manuais = pd.DataFrame(columns=[
@@ -2329,15 +2311,18 @@ if "produtos_manuais" not in st.session_state:
 if "rateio_manual" not in st.session_state:
     st.session_state["rateio_manual"] = 0.0
 
-# ===============================
-# Função para formatar valores monetários em BRL
-# ===============================
-def formatar_brl(valor):
-    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+frete_total = 0.0
+custos_extras = 0.0
+modo_margem_global = "Margem fixa"
+margem_fixa_sidebar = 30.0
 
-# ===============================
-# Abas
-# ===============================
+# URL do CSV do GitHub
+ARQ_CAIXAS = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/precificacao.csv"
+
+# dicionário para armazenar imagens em memória para PDF
+imagens_dict = {}  # produto → imagem bytes
+
+# Criar as tabs
 tab_pdf, tab_manual, tab_github = st.tabs([
     "📄 Precificador PDF",
     "✍️ Precificador Manual",
@@ -2347,7 +2332,7 @@ tab_pdf, tab_manual, tab_github = st.tabs([
 # === Tab PDF ===
 with tab_pdf:
     st.markdown("---")
-    pdf_file = st.file_uploader("📤 Selecione o PDF da nota fiscal ou lista de compras (1)", type=["pdf"])
+    pdf_file = st.file_uploader("📤 Selecione o PDF da nota fiscal ou lista de compras", type=["pdf"])
     if pdf_file:
         try:
             produtos_pdf = extrair_produtos_pdf(pdf_file)
@@ -2355,8 +2340,8 @@ with tab_pdf:
                 st.warning("⚠️ Nenhum produto encontrado no PDF.")
             else:
                 df_pdf = pd.DataFrame(produtos_pdf)
-                df_pdf["Imagem"] = None  # sem imagem para PDF importado
                 df_pdf["Custos Extras Produto"] = 0.0
+                df_pdf["Imagem"] = None  # sem imagem para PDF importado
                 st.session_state.produtos_manuais = df_pdf.copy()
                 st.session_state.df_produtos_geral = processar_dataframe(
                     df_pdf,
@@ -2371,7 +2356,7 @@ with tab_pdf:
             st.error(f"❌ Erro ao processar o PDF: {e}")
     else:
         st.info("📄 Faça upload de um arquivo PDF para começar.")
-        if st.button("📥 Carregar CSV de exemplo"):
+        if st.button("📥 Carregar CSV de exemplo (PDF Tab)"):
             df_exemplo = load_csv_github(ARQ_CAIXAS)
             if not df_exemplo.empty:
                 df_exemplo["Custos Extras Produto"] = 0.0
@@ -2399,7 +2384,7 @@ with tab_manual:
 
         rateio_calculado = (frete_manual + extras_manual) / qtd_total_manual
         st.session_state["rateio_manual"] = round(rateio_calculado, 4)
-        st.markdown(f"💰 **Rateio Unitário Calculado:** {formatar_brl(rateio_calculado)}")
+        st.markdown(f"💰 **Rateio Unitário Calculado:** R$ {rateio_calculado:,.4f}")
 
     with aba_prec_manual:
         st.subheader("Adicionar novo produto")
@@ -2409,7 +2394,7 @@ with tab_manual:
             produto = st.text_input("📝 Nome do Produto")
             quantidade = st.number_input("📦 Quantidade", min_value=1, step=1)
             valor_pago = st.number_input("💰 Valor Pago (R$)", min_value=0.0, step=0.01)
-            imagem_file = st.file_uploader("🖼️ Foto do Produto (opcional)", type=["png", "jpg", "jpeg"])
+            imagem_file = st.file_uploader("🖼️ Foto do Produto (opcional)", type=["png", "jpg", "jpeg"], key="imagem_manual")
         with col2:
             valor_default_rateio = st.session_state.get("rateio_manual", 0.0)
             custo_extra_produto = st.number_input(
@@ -2432,11 +2417,11 @@ with tab_manual:
         preco_a_vista_calc = custo_total_unitario * (1 + margem_manual / 100)
         preco_no_cartao_calc = preco_a_vista_calc / 0.8872
 
-        st.markdown(f"**Preço à Vista Calculado:** {formatar_brl(preco_a_vista_calc)}")
-        st.markdown(f"**Preço no Cartão Calculado:** {formatar_brl(preco_no_cartao_calc)}")
+        st.markdown(f"**Preço à Vista Calculado:** R$ {preco_a_vista_calc:,.2f}")
+        st.markdown(f"**Preço no Cartão Calculado:** R$ {preco_no_cartao_calc:,.2f}")
 
         with st.form("form_submit_manual"):
-            adicionar_produto = st.form_submit_button("➕ Adicionar Produto")
+            adicionar_produto = st.form_submit_button("➕ Adicionar Produto (Manual)")
             if adicionar_produto:
                 if produto and quantidade > 0 and valor_pago >= 0:
                     imagem_bytes = None
@@ -2477,7 +2462,7 @@ with tab_manual:
 with tab_github:
     st.markdown("---")
     st.header("📥 Carregar CSV de Precificação do GitHub")
-    if st.button("🔄 Carregar CSV do GitHub"):
+    if st.button("🔄 Carregar CSV do GitHub (Tab GitHub)"):
         df_exemplo = load_csv_github(ARQ_CAIXAS)
         if not df_exemplo.empty:
             df_exemplo["Custos Extras Produto"] = 0.0
@@ -2490,6 +2475,7 @@ with tab_github:
             exibir_resultados(st.session_state.df_produtos_geral, imagens_dict)
         else:
             st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+
 
 
 
