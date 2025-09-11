@@ -2312,7 +2312,7 @@ import requests
 # Funções auxiliares
 # ===============================
 def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
-    """Exibe os resultados de precificação com tabela e imagens dos produtos."""
+    """Exibe os resultados de precificação com tabela e imagens dos produtos, com opções de editar/excluir."""
     if df is None or df.empty:
         st.info("⚠️ Nenhum produto disponível para exibir.")
         return
@@ -2321,7 +2321,7 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
 
     for idx, row in df.iterrows():
         with st.container():
-            cols = st.columns([1, 3])
+            cols = st.columns([1, 3, 1, 1])
             with cols[0]:
                 if row.get("Imagem"):
                     try:
@@ -2343,6 +2343,20 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
                     st.write(f"💸 Preço à Vista: R$ {row.get('Preço à Vista', 0):.2f}")
                 if "Preço no Cartão" in df.columns:
                     st.write(f"💳 Preço no Cartão: R$ {row.get('Preço no Cartão', 0):.2f}")
+            with cols[2]:
+                if st.button("✏️ Editar", key=f"edit_{idx}"):
+                    st.session_state["edit_index"] = idx
+            with cols[3]:
+                if st.button("🗑️ Excluir", key=f"delete_{idx}"):
+                    st.session_state.produtos_manuais = st.session_state.produtos_manuais.drop(idx).reset_index(drop=True)
+                    st.session_state.df_produtos_geral = processar_dataframe(
+                        st.session_state.produtos_manuais,
+                        0.0,
+                        0.0,
+                        "Margem fixa",
+                        30.0
+                    )
+                    st.experimental_rerun()
 
     # Exibir tabela com imagens
     st.markdown("### 📋 Tabela Consolidada")
@@ -2457,6 +2471,8 @@ if "produtos_manuais" not in st.session_state:
     ])
 if "rateio_manual" not in st.session_state:
     st.session_state["rateio_manual"] = 0.0
+if "edit_index" not in st.session_state:
+    st.session_state["edit_index"] = None
 
 frete_total = 0.0
 custos_extras = 0.0
@@ -2531,31 +2547,35 @@ with tab_manual:
         st.markdown(f"💰 **Rateio Unitário Calculado:** R$ {rateio_calculado:,.4f}")
 
     with aba_prec_manual:
-        st.subheader("Adicionar novo produto")
+        st.subheader("Adicionar ou Editar Produto")
+
+        edit_idx = st.session_state.get("edit_index", None)
+        produto_default = ""
+        qtd_default = 1
+        valor_default = 0.0
+        imagem_default = ""
+        extras_default = st.session_state.get("rateio_manual", 0.0)
+        margem_default = 30.0
+
+        if edit_idx is not None and edit_idx < len(st.session_state.produtos_manuais):
+            produto_default = st.session_state.produtos_manuais.at[edit_idx, "Produto"]
+            qtd_default = st.session_state.produtos_manuais.at[edit_idx, "Qtd"]
+            valor_default = st.session_state.produtos_manuais.at[edit_idx, "Custo Unitário"]
+            imagem_default = st.session_state.produtos_manuais.at[edit_idx, "Imagem"]
+            extras_default = st.session_state.produtos_manuais.at[edit_idx, "Custos Extras Produto"]
+            margem_default = st.session_state.produtos_manuais.at[edit_idx, "Margem (%)"]
 
         col1, col2 = st.columns(2)
         with col1:
-            produto = st.text_input("📝 Nome do Produto")
-            quantidade = st.number_input("📦 Quantidade", min_value=1, step=1)
-            valor_pago = st.number_input("💰 Valor Pago (R$)", min_value=0.0, step=0.01)
-            imagem_url = st.text_input("🌐 URL da Foto do Produto (opcional)")
+            produto = st.text_input("📝 Nome do Produto", value=produto_default)
+            quantidade = st.number_input("📦 Quantidade", min_value=1, step=1, value=qtd_default)
+            valor_pago = st.number_input("💰 Valor Pago (R$)", min_value=0.0, step=0.01, value=valor_default)
+            imagem_url = st.text_input("🌐 URL da Foto do Produto (opcional)", value=imagem_default)
         with col2:
-            valor_default_rateio = st.session_state.get("rateio_manual", 0.0)
             custo_extra_produto = st.number_input(
-                "💰 Custos extras do Produto (R$)", min_value=0.0, step=0.01, value=valor_default_rateio
+                "💰 Custos extras do Produto (R$)", min_value=0.0, step=0.01, value=extras_default
             )
-            preco_final_sugerido = st.number_input(
-                "💸 Valor Final Sugerido (Preço à Vista) (R$)", min_value=0.0, step=0.01
-            )
-
-            margem_manual = 0.0
-            if preco_final_sugerido > 0:
-                custo_total_unitario = valor_pago + custo_extra_produto
-                margem_calculada = max(0.0, (preco_final_sugerido / custo_total_unitario - 1) * 100) if custo_total_unitario > 0 else 0.0
-                margem_manual = round(margem_calculada, 2)
-                st.info(f"🧮 Margem calculada automaticamente: {margem_manual:.2f}%")
-            else:
-                margem_manual = st.number_input("🧮 Margem de Lucro (%)", min_value=0.0, value=30.0)
+            margem_manual = st.number_input("🧮 Margem de Lucro (%)", min_value=0.0, value=margem_default)
 
         custo_total_unitario = valor_pago + custo_extra_produto
         preco_a_vista_calc = custo_total_unitario * (1 + margem_manual / 100)
@@ -2565,21 +2585,31 @@ with tab_manual:
         st.markdown(f"**Preço no Cartão Calculado:** R$ {preco_no_cartao_calc:,.2f}")
 
         with st.form("form_submit_manual"):
-            adicionar_produto = st.form_submit_button("➕ Adicionar Produto (Manual)")
-            if adicionar_produto:
+            if edit_idx is None:
+                submit_btn = st.form_submit_button("➕ Adicionar Produto (Manual)")
+            else:
+                submit_btn = st.form_submit_button("💾 Salvar Alterações")
+
+            if submit_btn:
                 if produto and quantidade > 0 and valor_pago >= 0:
-                    novo_produto = pd.DataFrame([{
+                    novo_produto = {
                         "Produto": produto,
                         "Qtd": quantidade,
                         "Custo Unitário": valor_pago,
                         "Custos Extras Produto": custo_extra_produto,
                         "Margem (%)": margem_manual,
                         "Imagem": imagem_url if imagem_url else None
-                    }])
-                    st.session_state.produtos_manuais = pd.concat(
-                        [st.session_state.produtos_manuais, novo_produto],
-                        ignore_index=True
-                    )
+                    }
+
+                    if edit_idx is None:
+                        st.session_state.produtos_manuais = pd.concat(
+                            [st.session_state.produtos_manuais, pd.DataFrame([novo_produto])],
+                            ignore_index=True
+                        )
+                    else:
+                        st.session_state.produtos_manuais.iloc[edit_idx] = novo_produto
+                        st.session_state["edit_index"] = None
+
                     st.session_state.df_produtos_geral = processar_dataframe(
                         st.session_state.produtos_manuais,
                         frete_total,
@@ -2587,7 +2617,8 @@ with tab_manual:
                         modo_margem_global,
                         margem_fixa_sidebar
                     )
-                    st.success("✅ Produto adicionado!")
+                    st.success("✅ Produto salvo com sucesso!")
+                    st.experimental_rerun()
                 else:
                     st.warning("⚠️ Preencha todos os campos obrigatórios.")
 
@@ -2611,6 +2642,7 @@ with tab_github:
             exibir_resultados(st.session_state.df_produtos_geral, {})
         else:
             st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+
 
 
 
