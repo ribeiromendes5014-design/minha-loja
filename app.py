@@ -2340,9 +2340,11 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
                 if "Margem (%)" in df.columns:
                     st.write(f"📈 Margem: {row.get('Margem (%)', 0)}%")
                 if "Preço à Vista" in df.columns:
-                    st.write(f"💸 Preço à Vista: R$ {row.get('Preço à Vista', 0):.2f}")
+                    st.write(f"💸 Preço à Vista (unit.): R$ {row.get('Preço à Vista', 0):.2f}")
                 if "Preço no Cartão" in df.columns:
-                    st.write(f"💳 Preço no Cartão: R$ {row.get('Preço no Cartão', 0):.2f}")
+                    st.write(f"💳 Preço no Cartão (unit.): R$ {row.get('Preço no Cartão', 0):.2f}")
+                if "Valor Final Produto" in df.columns:
+                    st.write(f"🏷️ Valor Final Produto: R$ {row.get('Valor Final Produto', 0):.2f}")
             with cols[2]:
                 if st.button("✏️ Editar", key=f"edit_{idx}"):
                     st.session_state["edit_index"] = idx
@@ -2396,6 +2398,9 @@ def processar_dataframe(df: pd.DataFrame, frete_total: float, custos_extras: flo
     df["Preço à Vista"] = df["Custo Total Unitário"] * (1 + df["Margem (%)"] / 100)
     df["Preço no Cartão"] = df["Preço à Vista"] / 0.8872
 
+    # Valor total do produto (quantidade * preço à vista unitário)
+    df["Valor Final Produto"] = df["Preço à Vista"] * df["Qtd"]
+
     return df
 
 
@@ -2426,7 +2431,8 @@ def gerar_pdf_produtos(df: pd.DataFrame):
     elementos.append(Paragraph("Relatório de Produtos", styles["Heading1"]))
     elementos.append(Spacer(1, 12))
 
-    dados = [["Produto", "Qtd", "Custo Unitário", "Custos Extras", "Margem (%)", "Preço à Vista", "Preço no Cartão", "Imagem"]]
+    dados = [["Produto", "Qtd", "Custo Unitário", "Custos Extras", "Margem (%)",
+              "Preço à Vista (unit.)", "Preço no Cartão (unit.)", "Valor Final Produto", "Imagem"]]
 
     for _, row in df.iterrows():
         produto = row.get("Produto", "")
@@ -2436,6 +2442,7 @@ def gerar_pdf_produtos(df: pd.DataFrame):
         margem = f"{row.get('Margem (%)', 0)}%" if "Margem (%)" in df.columns else ""
         preco_vista = f"R$ {row.get('Preço à Vista', 0):.2f}" if "Preço à Vista" in df.columns else ""
         preco_cartao = f"R$ {row.get('Preço no Cartão', 0):.2f}" if "Preço no Cartão" in df.columns else ""
+        valor_final = f"R$ {row.get('Valor Final Produto', 0):.2f}" if "Valor Final Produto" in df.columns else ""
 
         img = Paragraph("—", styles["Normal"])
         if row.get("Imagem"):
@@ -2448,7 +2455,7 @@ def gerar_pdf_produtos(df: pd.DataFrame):
             except Exception:
                 pass
 
-        dados.append([produto, qtd, custo, extras, margem, preco_vista, preco_cartao, img])
+        dados.append([produto, qtd, custo, extras, margem, preco_vista, preco_cartao, valor_final, img])
 
     tabela = Table(dados, repeatRows=1)
     tabela.setStyle(TableStyle([
@@ -2465,7 +2472,6 @@ def gerar_pdf_produtos(df: pd.DataFrame):
 
     buffer.seek(0)
     return buffer
-
 
 
 # ===============================
@@ -2601,9 +2607,11 @@ with tab_manual:
 
         preco_a_vista_calc = custo_total_unitario * (1 + margem_manual / 100)
         preco_no_cartao_calc = preco_a_vista_calc / 0.8872
+        valor_final_calc = preco_a_vista_calc * quantidade
 
-        st.markdown(f"**Preço à Vista Calculado:** R$ {preco_a_vista_calc:,.2f}")
-        st.markdown(f"**Preço no Cartão Calculado:** R$ {preco_no_cartao_calc:,.2f}")
+        st.markdown(f"**Preço à Vista Calculado (unit.):** R$ {preco_a_vista_calc:,.2f}")
+        st.markdown(f"**Preço no Cartão Calculado (unit.):** R$ {preco_no_cartao_calc:,.2f}")
+        st.markdown(f"**🏷️ Valor Final do Produto (Qtd × Unitário): R$ {valor_final_calc:,.2f}**")
 
         with st.form("form_submit_manual"):
             if edit_idx is None:
@@ -2621,6 +2629,7 @@ with tab_manual:
                         preco_a_vista_final = custo_total_unitario * (1 + margem_manual / 100)
 
                     preco_no_cartao_final = preco_a_vista_final / 0.8872
+                    valor_final_produto = preco_a_vista_final * quantidade
 
                     novo_produto = {
                         "Produto": produto,
@@ -2630,7 +2639,8 @@ with tab_manual:
                         "Margem (%)": margem_manual,
                         "Imagem": imagem_url if imagem_url else None,
                         "Preço à Vista": preco_a_vista_final,
-                        "Preço no Cartão": preco_no_cartao_final
+                        "Preço no Cartão": preco_no_cartao_final,
+                        "Valor Final Produto": valor_final_produto
                     }
 
                     if edit_idx is None:
