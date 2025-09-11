@@ -2699,6 +2699,9 @@ with tab_manual:
                         "Custos Extras Produto": float(custo_extra_produto),
                         "Margem (%)": float(margem_manual),
                         "Imagem": imagem_url if imagem_url else None,
+                        "Preço á vista": preco_a_vista_final,
+                        "Preço no cartão": preco_no_cartao_final,
+                        "Valor final produto": valor_final_produto
                     }
 
                     if edit_idx is None:
