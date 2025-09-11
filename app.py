@@ -2311,6 +2311,10 @@ from io import BytesIO
 from PIL import Image
 from fpdf import FPDF
 
+# Função para formatar valores como moeda BR
+def formatar_moeda_br(valor):
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
 # Função para gerar PDF com produtos, incluindo imagens se existirem
 class PDF(FPDF):
     def header(self):
@@ -2346,11 +2350,11 @@ class PDF(FPDF):
             # Coluna Quantidade
             self.cell(col_widths[1], 10, str(row["Qtd"]), 1, align='C')
             # Custo c/ Rateio
-            self.cell(col_widths[2], 10, f'R$ {row["Custo c/ Rateio"]:.2f}', 1, align='R')
+            self.cell(col_widths[2], 10, formatar_moeda_br(row["Custo c/ Rateio"]), 1, align='R')
             # Margem (%)
             self.cell(col_widths[3], 10, f'{row["Margem (%)"]:.2f}%', 1, align='R')
             # Preço à Vista
-            self.cell(col_widths[4], 10, f'R$ {row["Preço à Vista"]:.2f}', 1, align='R')
+            self.cell(col_widths[4], 10, formatar_moeda_br(row["Preço à Vista"]), 1, align='R')
             self.ln()
 
             # Se houver imagem para esse produto, inserir abaixo da linha de produto
@@ -2370,6 +2374,10 @@ def gerar_pdf_produtos(df, imagens_dict, filename="produtos_precificados.pdf"):
     pdf.output(filename)
     return filename
 
+
+if "view" not in st.session_state:
+    st.session_state.view = "precificação"
+view = st.session_state.view
 
 if view == "precificação":
     st.title("💄 Precificador de Produtos")
@@ -2443,9 +2451,9 @@ if view == "precificação":
 
         # mostrar métricas
         col1, col2, col3 = st.columns(3)
-        col1.metric("Custo Total", f"R$ {custo_total:,.2f}")
-        col2.metric("Faturamento à Vista (sem taxa cartão)", f"R$ {faturamento_vista:,.2f}")
-        col3.metric("Lucro Estimado (sem taxa cartão)", f"R$ {lucro_total:,.2f}")
+        col1.metric("Custo Total", formatar_moeda_br(custo_total))
+        col2.metric("Faturamento à Vista (sem taxa cartão)", formatar_moeda_br(faturamento_vista))
+        col3.metric("Lucro Estimado (sem taxa cartão)", formatar_moeda_br(lucro_total))
 
         # edição/exclusão: usamos data_editor para permitir editar linhas, excluir, adicionar
         df_editavel = st.data_editor(
@@ -2483,9 +2491,6 @@ if view == "precificação":
         csv = df_sync.to_csv(index=False, encoding="utf-8-sig")
         st.download_button("⬇️ Baixar CSV", data=csv, file_name=nome_csv, mime="text/csv")
 
-    import streamlit as st
-import pandas as pd
-
 # ===============================
 # Estado da sessão e variáveis fixas
 # ===============================
@@ -2502,164 +2507,139 @@ modo_margem_global = "Margem fixa"
 margem_fixa_sidebar = 30.0
 
 # URL do CSV do GitHub
-ARQ_CAIXAS = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/precificacao.csv"
+ARQ_CAIXAS = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/caixas.csv"  # exemplo
 
-# dicionário para armazenar imagens em memória para PDF
-imagens_dict = {}  # produto → imagem bytes
+# ===============================
+# Upload e leitura de arquivo CSV ou PDF
+# ===============================
 
-# Criar as tabs
-tab_pdf, tab_manual, tab_github = st.tabs([
-    "📄 Precificador PDF",
-    "✍️ Precificador Manual",
-    "📥 Carregar CSV do GitHub"
-])
+uploaded_file = st.file_uploader("Faça upload do arquivo CSV ou PDF contendo os produtos", type=["csv", "pdf"])
+imagens_dict = {}  # armazenar imagens para usar no PDF
 
-# === Tab PDF ===
-with tab_pdf:
-    st.markdown("---")
-    pdf_file = st.file_uploader("📤 Selecione o PDF da nota fiscal ou lista de compras", type=["pdf"])
-    if pdf_file:
-        try:
-            produtos_pdf = extrair_produtos_pdf(pdf_file)
-            if not produtos_pdf:
-                st.warning("⚠️ Nenhum produto encontrado no PDF.")
-            else:
-                df_pdf = pd.DataFrame(produtos_pdf)
-                df_pdf["Custos Extras Produto"] = 0.0
-                df_pdf["Imagem"] = None  # sem imagem para PDF importado
-                st.session_state.produtos_manuais = df_pdf.copy()
-                st.session_state.df_produtos_geral = processar_dataframe(
-                    df_pdf,
-                    frete_total,
-                    custos_extras,
-                    modo_margem_global,
-                    margem_fixa_sidebar
-                )
-                st.success("✅ Produtos precificados com sucesso!")
-                exibir_resultados(st.session_state.df_produtos_geral, imagens_dict)
-        except Exception as e:
-            st.error(f"❌ Erro ao processar o PDF: {e}")
-    else:
-        st.info("📄 Faça upload de um arquivo PDF para começar.")
-        if st.button("📥 Carregar CSV de exemplo (PDF Tab)"):
-            df_exemplo = load_csv_github(ARQ_CAIXAS)
-            if not df_exemplo.empty:
-                df_exemplo["Custos Extras Produto"] = 0.0
-                df_exemplo["Imagem"] = None
-                st.session_state.produtos_manuais = df_exemplo.copy()
-                st.session_state.df_produtos_geral = processar_dataframe(
-                    df_exemplo, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar
-                )
-                exibir_resultados(st.session_state.df_produtos_geral, imagens_dict)
-
-# === Tab Manual ===
-with tab_manual:
-    st.markdown("---")
-    aba_prec_manual, aba_rateio = st.tabs(["✍️ Novo Produto Manual", "🔢 Rateio Manual"])
-
-    with aba_rateio:
-        st.subheader("🔢 Cálculo de Rateio Unitário (Frete + Custos Extras)")
-        col_r1, col_r2, col_r3 = st.columns(3)
-        with col_r1:
-            frete_manual = st.number_input("🚚 Frete Total (R$)", min_value=0.0, step=0.01, key="frete_manual")
-        with col_r2:
-            extras_manual = st.number_input("🛠 Custos Extras (R$)", min_value=0.0, step=0.01, key="extras_manual")
-        with col_r3:
-            qtd_total_manual = st.number_input("📦 Quantidade Total de Produtos", min_value=1, step=1, key="qtd_total_manual")
-
-        rateio_calculado = (frete_manual + extras_manual) / qtd_total_manual
-        st.session_state["rateio_manual"] = round(rateio_calculado, 4)
-        st.markdown(f"💰 **Rateio Unitário Calculado:** R$ {rateio_calculado:,.4f}")
-
-    with aba_prec_manual:
-        st.subheader("Adicionar novo produto")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            produto = st.text_input("📝 Nome do Produto")
-            quantidade = st.number_input("📦 Quantidade", min_value=1, step=1)
-            valor_pago = st.number_input("💰 Valor Pago (R$)", min_value=0.0, step=0.01)
-            imagem_file = st.file_uploader("🖼️ Foto do Produto (opcional)", type=["png", "jpg", "jpeg"], key="imagem_manual")
-        with col2:
-            valor_default_rateio = st.session_state.get("rateio_manual", 0.0)
-            custo_extra_produto = st.number_input(
-                "💰 Custos extras do Produto (R$)", min_value=0.0, step=0.01, value=valor_default_rateio
-            )
-            preco_final_sugerido = st.number_input(
-                "💸 Valor Final Sugerido (Preço à Vista) (R$)", min_value=0.0, step=0.01
-            )
-
-            margem_manual = 0.0
-            if preco_final_sugerido > 0:
-                custo_total_unitario = valor_pago + custo_extra_produto
-                margem_calculada = max(0.0, (preco_final_sugerido / custo_total_unitario - 1) * 100) if custo_total_unitario > 0 else 0.0
-                margem_manual = round(margem_calculada, 2)
-                st.info(f"🧮 Margem calculada automaticamente: {margem_manual:.2f}%")
-            else:
-                margem_manual = st.number_input("🧮 Margem de Lucro (%)", min_value=0.0, value=30.0)
-
-        custo_total_unitario = valor_pago + custo_extra_produto
-        preco_a_vista_calc = custo_total_unitario * (1 + margem_manual / 100)
-        preco_no_cartao_calc = preco_a_vista_calc / 0.8872
-
-        st.markdown(f"**Preço à Vista Calculado:** R$ {preco_a_vista_calc:,.2f}")
-        st.markdown(f"**Preço no Cartão Calculado:** R$ {preco_no_cartao_calc:,.2f}")
-
-        with st.form("form_submit_manual"):
-            adicionar_produto = st.form_submit_button("➕ Adicionar Produto (Manual)")
-            if adicionar_produto:
-                if produto and quantidade > 0 and valor_pago >= 0:
-                    imagem_bytes = None
-                    if imagem_file is not None:
-                        imagem_bytes = imagem_file.read()
-                        # registrar no dicionário para o PDF
-                        imagens_dict[produto] = imagem_bytes
-
-                    novo_produto = pd.DataFrame([{
-                        "Produto": produto,
-                        "Qtd": quantidade,
-                        "Custo Unitário": valor_pago,
-                        "Custos Extras Produto": custo_extra_produto,
-                        "Margem (%)": margem_manual,
-                        "Imagem": imagem_bytes
-                    }])
-                    st.session_state.produtos_manuais = pd.concat(
-                        [st.session_state.produtos_manuais, novo_produto],
-                        ignore_index=True
-                    )
-                    # recalcular df geral
-                    st.session_state.df_produtos_geral = processar_dataframe(
-                        st.session_state.produtos_manuais,
-                        frete_total,
-                        custos_extras,
-                        modo_margem_global,
-                        margem_fixa_sidebar
-                    )
-                    st.success("✅ Produto adicionado!")
-                else:
-                    st.warning("⚠️ Preencha todos os campos obrigatórios.")
-
-        # se já houverem produtos manuais cadastrados, exibir resultados
-        if not st.session_state.produtos_manuais.empty:
-            exibir_resultados(st.session_state.df_produtos_geral, imagens_dict)
-
-# === Tab GitHub ===
-with tab_github:
-    st.markdown("---")
-    st.header("📥 Carregar CSV de Precificação do GitHub")
-    if st.button("🔄 Carregar CSV do GitHub (Tab GitHub)"):
-        df_exemplo = load_csv_github(ARQ_CAIXAS)
-        if not df_exemplo.empty:
-            df_exemplo["Custos Extras Produto"] = 0.0
-            df_exemplo["Imagem"] = None
-            st.session_state.produtos_manuais = df_exemplo.copy()
-            st.session_state.df_produtos_geral = processar_dataframe(
-                df_exemplo, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar
-            )
-            st.success("✅ CSV carregado e processado com sucesso!")
-            exibir_resultados(st.session_state.df_produtos_geral, imagens_dict)
+if uploaded_file:
+    if uploaded_file.type == "application/pdf":
+        produtos_extraidos = extrair_produtos_pdf(uploaded_file)
+        if produtos_extraidos:
+            df_produtos = pd.DataFrame(produtos_extraidos)
         else:
-            st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+            st.warning("Não foi possível extrair produtos do PDF.")
+            df_produtos = pd.DataFrame()
+    elif uploaded_file.type == "text/csv" or uploaded_file.name.endswith(".csv"):
+        df_produtos = pd.read_csv(uploaded_file)
+    else:
+        st.error("Formato de arquivo não suportado.")
+        df_produtos = pd.DataFrame()
+else:
+    df_produtos = pd.DataFrame()
+
+if not df_produtos.empty:
+    st.success(f"{len(df_produtos)} produtos carregados com sucesso.")
+else:
+    st.info("Nenhum produto carregado.")
+
+# ===============================
+# Sidebar para configurações e ajustes
+# ===============================
+
+with st.sidebar:
+    st.header("Configurações")
+    frete_total = st.number_input("Frete total (R$)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+    custos_extras = st.number_input("Custos extras (R$)", min_value=0.0, value=0.0, step=0.01, format="%.2f")
+    modo_margem_global = st.radio("Modo de margem", options=["Margem fixa", "Margem variável"], index=0)
+    if modo_margem_global == "Margem fixa":
+        margem_fixa_sidebar = st.slider("Margem fixa (%)", 0.0, 100.0, 30.0, step=0.1)
+
+# ===============================
+# Processar dataframe e exibir resultados
+# ===============================
+
+if not df_produtos.empty:
+    # Se não existir coluna 'Custos Extras Produto', criar com 0
+    if "Custos Extras Produto" not in df_produtos.columns:
+        df_produtos["Custos Extras Produto"] = 0.0
+
+    # Se não existir coluna "Qtd", adicionar com valor 1 (default)
+    if "Qtd" not in df_produtos.columns:
+        df_produtos["Qtd"] = 1
+
+    df_processado = processar_dataframe(df_produtos, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar)
+
+    st.subheader("Produtos Precificados")
+    exibir_resultados(df_processado, imagens_dict)
+
+else:
+    st.info("Carregue um arquivo CSV ou PDF para iniciar a precificação.")
+
+# ===============================
+# Inputs para precificação manual (opcional)
+# ===============================
+
+st.markdown("---")
+st.header("Adicionar Produto Manualmente")
+with st.form("form_add_produto"):
+    nome_produto = st.text_input("Nome do Produto")
+    qtd_produto = st.number_input("Quantidade", min_value=1, value=1)
+    custo_unitario = st.number_input("Custo Unitário (R$)", min_value=0.0, value=0.0, format="%.2f")
+    custos_extras_produto = st.number_input("Custos Extras Produto (R$)", min_value=0.0, value=0.0, format="%.2f")
+    margem_manual = st.number_input("Margem (%)", min_value=0.0, max_value=100.0, value=30.0, format="%.2f")
+    uploaded_img = st.file_uploader("Imagem do Produto (opcional)", type=["jpg", "png"], key="upload_img")
+
+    submit = st.form_submit_button("Adicionar Produto")
+    if submit and nome_produto:
+        # salvar imagem como bytes
+        img_bytes = None
+        if uploaded_img:
+            img_bytes = uploaded_img.read()
+            imagens_dict[nome_produto] = img_bytes
+
+        novo_produto = {
+            "Produto": nome_produto,
+            "Qtd": qtd_produto,
+            "Custo Unitário": custo_unitario,
+            "Custos Extras Produto": custos_extras_produto,
+            "Margem (%)": margem_manual,
+            "Imagem": img_bytes,
+        }
+        df_novo = pd.DataFrame([novo_produto])
+        if "produtos_manuais" not in st.session_state or st.session_state.produtos_manuais.empty:
+            st.session_state.produtos_manuais = df_novo
+        else:
+            st.session_state.produtos_manuais = pd.concat([st.session_state.produtos_manuais, df_novo], ignore_index=True)
+
+        st.success(f"Produto '{nome_produto}' adicionado.")
+
+# ===============================
+# Mostrar produtos manuais (se houver)
+# ===============================
+
+if "produtos_manuais" in st.session_state and not st.session_state.produtos_manuais.empty:
+    st.subheader("Produtos Manuais")
+    df_manuais = st.session_state.produtos_manuais.copy()
+
+    # calcular preço à vista e preço no cartão para produtos manuais
+    df_manuais["Custo c/ Rateio"] = (df_manuais["Custo Unitário"] + (frete_total + custos_extras) / max(df_manuais["Qtd"].sum(), 1) + df_manuais["Custos Extras Produto"]).round(2)
+    df_manuais["Preço à Vista"] = (df_manuais["Custo c/ Rateio"] * (1 + df_manuais["Margem (%)"] / 100)).round(2)
+    df_manuais["Preço no Cartão"] = (df_manuais["Preço à Vista"] / 0.8872).round(2)
+
+    # mostrar tabela formatada
+    # formatar colunas monetárias para exibição no streamlit (não altera dados originais)
+    df_manuais_exibir = df_manuais.copy()
+    df_manuais_exibir["Custo c/ Rateio"] = df_manuais_exibir["Custo c/ Rateio"].apply(formatar_moeda_br)
+    df_manuais_exibir["Preço à Vista"] = df_manuais_exibir["Preço à Vista"].apply(formatar_moeda_br)
+    df_manuais_exibir["Preço no Cartão"] = df_manuais_exibir["Preço no Cartão"].apply(formatar_moeda_br)
+
+    st.dataframe(df_manuais_exibir[["Produto", "Qtd", "Custo c/ Rateio", "Margem (%)", "Preço à Vista", "Preço no Cartão"]], use_container_width=True)
+
+    # botão para exportar manuais CSV
+    csv_manuais = df_manuais.to_csv(index=False, encoding="utf-8-sig")
+    st.download_button("⬇️ Baixar CSV dos Produtos Manuais", data=csv_manuais, file_name="produtos_manuais.csv", mime="text/csv")
+
+    # botão para baixar PDF manuais
+    if st.button("📄 Baixar PDF dos Produtos Manuais"):
+        nome_pdf_manual = gerar_pdf_produtos(df_manuais, imagens_dict, filename=f"produtos_manuais_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf")
+        with open(nome_pdf_manual, "rb") as f:
+            st.download_button("📥 Clique para baixar PDF", data=f, file_name=nome_pdf_manual, mime="application/pdf")
+
 
 
 
