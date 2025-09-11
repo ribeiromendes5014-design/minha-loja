@@ -2354,7 +2354,10 @@ if view == "precificação":
 
         return df_processado
 
-    def exibir_resultados(df):
+    import datetime
+import streamlit as st
+
+def exibir_resultados(df):
     if not df.empty:
         custo_total = (df["Custo c/ Rateio"] * df["Qtd"]).sum()
         faturamento_vista = (df["Preço à Vista"] * df["Qtd"]).sum()
