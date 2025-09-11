@@ -2302,6 +2302,79 @@ import streamlit as st
 import pandas as pd
 
 # ===============================
+# Funções auxiliares
+# ===============================
+def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
+    """Exibe os resultados de precificação com tabela e imagens dos produtos."""
+    if df is None or df.empty:
+        st.info("⚠️ Nenhum produto disponível para exibir.")
+        return
+
+    st.subheader("📊 Resultados da Precificação")
+
+    # Exibir cards individuais
+    for idx, row in df.iterrows():
+        with st.container():
+            cols = st.columns([1, 3])
+            with cols[0]:
+                img_bytes = imagens_dict.get(row["Produto"])
+                if img_bytes:
+                    st.image(img_bytes, width=100)
+                elif row.get("Imagem") is not None:
+                    try:
+                        st.image(row["Imagem"], width=100)
+                    except Exception:
+                        st.write("🖼️ N/A")
+            with cols[1]:
+                st.markdown(f"**{row['Produto']}**")
+                st.write(f"📦 Quantidade: {row['Qtd']}")
+                st.write(f"💰 Custo Unitário: R$ {row['Custo Unitário']:.2f}")
+                st.write(f"🛠 Custos Extras: R$ {row['Custos Extras Produto']:.2f}")
+                st.write(f"📈 Margem: {row['Margem (%)']}%")
+
+    # Exibir tabela completa
+    st.markdown("### 📋 Tabela Consolidada")
+    st.dataframe(df, use_container_width=True)
+
+
+def processar_dataframe(df: pd.DataFrame, frete_total: float, custos_extras: float,
+                        modo_margem: str, margem_fixa: float) -> pd.DataFrame:
+    """Processa dataframe para adicionar custos rateados e preços finais."""
+    if df.empty:
+        return df
+
+    df = df.copy()
+    df["Custo Total Unitário"] = df["Custo Unitário"] + df["Custos Extras Produto"]
+
+    if modo_margem == "Margem fixa":
+        df["Margem (%)"] = margem_fixa
+
+    df["Preço à Vista"] = df["Custo Total Unitário"] * (1 + df["Margem (%)"] / 100)
+    df["Preço no Cartão"] = df["Preço à Vista"] / 0.8872
+
+    return df
+
+
+def extrair_produtos_pdf(pdf_file) -> list:
+    """Simulação de extração de produtos de PDF (substitua pelo OCR real)."""
+    # Aqui você poderia usar PyPDF2, pdfplumber ou OCR.
+    # Por enquanto retorna um exemplo fixo.
+    return [
+        {"Produto": "Shampoo", "Qtd": 10, "Custo Unitário": 15.0},
+        {"Produto": "Condicionador", "Qtd": 8, "Custo Unitário": 18.0},
+    ]
+
+
+def load_csv_github(url: str) -> pd.DataFrame:
+    """Carrega CSV público do GitHub."""
+    try:
+        return pd.read_csv(url)
+    except Exception as e:
+        st.error(f"Erro ao carregar CSV do GitHub: {e}")
+        return pd.DataFrame()
+
+
+# ===============================
 # Estado da sessão e variáveis fixas
 # ===============================
 if "produtos_manuais" not in st.session_state:
@@ -2357,6 +2430,7 @@ with tab_pdf:
     else:
         st.info("📄 Faça upload de um arquivo PDF para começar.")
         if st.button("📥 Carregar CSV de exemplo (PDF Tab)"):
+
             df_exemplo = load_csv_github(ARQ_CAIXAS)
             if not df_exemplo.empty:
                 df_exemplo["Custos Extras Produto"] = 0.0
@@ -2475,6 +2549,7 @@ with tab_github:
             exibir_resultados(st.session_state.df_produtos_geral, imagens_dict)
         else:
             st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+
 
 
 
