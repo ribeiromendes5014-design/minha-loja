@@ -2556,6 +2556,7 @@ with tab_manual:
         imagem_default = ""
         extras_default = st.session_state.get("rateio_manual", 0.0)
         margem_default = 30.0
+        preco_sugerido_default = 0.0
 
         if edit_idx is not None and edit_idx < len(st.session_state.produtos_manuais):
             produto_default = st.session_state.produtos_manuais.at[edit_idx, "Produto"]
@@ -2575,7 +2576,20 @@ with tab_manual:
             custo_extra_produto = st.number_input(
                 "💰 Custos extras do Produto (R$)", min_value=0.0, step=0.01, value=extras_default
             )
-            margem_manual = st.number_input("🧮 Margem de Lucro (%)", min_value=0.0, value=margem_default)
+            preco_final_sugerido = st.number_input(
+                "💸 Preço Final Sugerido (Preço à Vista)", min_value=0.0, step=0.01, value=preco_sugerido_default
+            )
+
+            margem_manual = margem_default
+            if preco_final_sugerido > 0:
+                custo_total_unitario = valor_pago + custo_extra_produto
+                if custo_total_unitario > 0:
+                    margem_manual = round(((preco_final_sugerido / custo_total_unitario) - 1) * 100, 2)
+                else:
+                    margem_manual = 0.0
+                st.info(f"🧮 Margem calculada automaticamente: {margem_manual:.2f}%")
+            else:
+                margem_manual = st.number_input("🧮 Margem de Lucro (%)", min_value=0.0, value=margem_default)
 
         custo_total_unitario = valor_pago + custo_extra_produto
         preco_a_vista_calc = custo_total_unitario * (1 + margem_manual / 100)
@@ -2618,7 +2632,7 @@ with tab_manual:
                         margem_fixa_sidebar
                     )
                     st.success("✅ Produto salvo com sucesso!")
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.warning("⚠️ Preencha todos os campos obrigatórios.")
 
@@ -2642,6 +2656,7 @@ with tab_github:
             exibir_resultados(st.session_state.df_produtos_geral, {})
         else:
             st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+
 
 
 
