@@ -2355,22 +2355,24 @@ if view == "precificação":
         return df_processado
 
     def exibir_resultados(df):
-        if not df.empty:
-            custo_total = (df["Custo c/ Rateio"] * df["Qtd"]).sum()
-            faturamento_vista = (df["Preço à Vista"] * df["Qtd"]).sum()
-            lucro_total = faturamento_vista - custo_total
+    if not df.empty:
+        custo_total = (df["Custo c/ Rateio"] * df["Qtd"]).sum()
+        faturamento_vista = (df["Preço à Vista"] * df["Qtd"]).sum()
+        lucro_total = faturamento_vista - custo_total
 
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Custo Total", f"R$ {custo_total:,.2f}")
-            col2.metric("Faturamento Previsto", f"R$ {faturamento_vista:,.2f}")
-            col3.metric("Lucro Estimado", f"R$ {lucro_total:,.2f}")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Custo Total", f"R$ {custo_total:,.2f}")
+        col2.metric("Faturamento Previsto", f"R$ {faturamento_vista:,.2f}")
+        col3.metric("Lucro Estimado", f"R$ {lucro_total:,.2f}")
 
-            st.dataframe(df[["Produto", "Qtd", "Custo c/ Rateio", "Margem (%)", "Preço à Vista", "Preço no Cartão"]],
-                        use_container_width=True)
+        st.dataframe(
+            df[["Produto", "Qtd", "Custo c/ Rateio", "Margem (%)", "Preço à Vista", "Preço no Cartão"]],
+            use_container_width=True
+        )
 
-            nome_arquivo = f"precificacao_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-            csv = df.to_csv(index=False, encoding="utf-8-sig")
-            st.download_button("⬇️ Baixar CSV", data=csv, file_name=nome_arquivo, mime="text/csv")
+        nome_arquivo = f"precificacao_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        csv = df.to_csv(index=False, encoding="utf-8-sig")
+        st.download_button("⬇️ Baixar CSV", data=csv, file_name=nome_arquivo, mime="text/csv")
 
     # ===============================
     # Estado da sessão
