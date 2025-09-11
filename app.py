@@ -2306,6 +2306,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 import tempfile
 import io
+import requests
 
 # ===============================
 # Funções auxiliares
@@ -2322,14 +2323,13 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
         with st.container():
             cols = st.columns([1, 3])
             with cols[0]:
-                img_bytes = imagens_dict.get(row.get("Produto"))
-                if img_bytes:
-                    st.image(img_bytes, width=100)
-                elif row.get("Imagem") is not None:
+                if row.get("Imagem"):
                     try:
-                        st.image(row.get("Imagem"), width=100)
+                        st.image(row["Imagem"], width=100)
                     except Exception:
                         st.write("🖼️ N/A")
+                else:
+                    st.write("🖼️ N/A")
             with cols[1]:
                 st.markdown(f"**{row.get('Produto', '—')}**")
                 st.write(f"📦 Quantidade: {row.get('Qtd', '—')}")
@@ -2349,8 +2349,8 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
 
     df_display = df.copy()
     if "Imagem" in df_display.columns:
-        df_display["Imagem"] = df_display["Produto"].apply(
-            lambda x: f'<img src="data:image/png;base64,{imagens_dict[x].hex()}" width="60">' if x in imagens_dict else "—"
+        df_display["Imagem"] = df_display["Imagem"].apply(
+            lambda url: f'<img src="{url}" width="60">' if pd.notna(url) else "—"
         )
         st.write(df_display.to_html(escape=False), unsafe_allow_html=True)
     else:
@@ -2359,7 +2359,7 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
     # Botão para baixar PDF
     if not df.empty:
         if st.button("📥 Baixar PDF dos Produtos"):
-            gerar_pdf_produtos(df, imagens_dict)
+            gerar_pdf_produtos(df)
 
 
 def processar_dataframe(df: pd.DataFrame, frete_total: float, custos_extras: float,
@@ -2397,8 +2397,8 @@ def load_csv_github(url: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def gerar_pdf_produtos(df: pd.DataFrame, imagens_dict: dict):
-    """Gera um PDF com os produtos cadastrados e fotos."""
+def gerar_pdf_produtos(df: pd.DataFrame):
+    """Gera um PDF com os produtos cadastrados e fotos via URL."""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elementos = []
@@ -2418,16 +2418,16 @@ def gerar_pdf_produtos(df: pd.DataFrame, imagens_dict: dict):
         preco_vista = f"R$ {row.get('Preço à Vista', 0):.2f}" if "Preço à Vista" in df.columns else ""
         preco_cartao = f"R$ {row.get('Preço no Cartão', 0):.2f}" if "Preço no Cartão" in df.columns else ""
 
-        img_path = None
-        if produto in imagens_dict:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img:
-                tmp_img.write(imagens_dict[produto])
-                img_path = tmp_img.name
-
-        if img_path:
-            img = Image(img_path, width=50, height=50)
-        else:
-            img = Paragraph("—", styles["Normal"])
+        img = Paragraph("—", styles["Normal"])
+        if row.get("Imagem"):
+            try:
+                response = requests.get(row["Imagem"], stream=True, timeout=5)
+                if response.status_code == 200:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_img:
+                        tmp_img.write(response.content)
+                        img = Image(tmp_img.name, width=50, height=50)
+            except Exception:
+                pass
 
         dados.append([produto, qtd, custo, extras, margem, preco_vista, preco_cartao, img])
 
@@ -2466,9 +2466,6 @@ margem_fixa_sidebar = 30.0
 # URL do CSV do GitHub
 ARQ_CAIXAS = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/precificacao.csv"
 
-# dicionário para armazenar imagens em memória para PDF
-imagens_dict = {}  # produto → imagem bytes
-
 # Criar as tabs
 tab_pdf, tab_manual, tab_github = st.tabs([
     "📄 Precificador PDF",
@@ -2498,7 +2495,7 @@ with tab_pdf:
                     margem_fixa_sidebar
                 )
                 st.success("✅ Produtos precificados com sucesso!")
-                exibir_resultados(st.session_state.df_produtos_geral, imagens_dict)
+                exibir_resultados(st.session_state.df_produtos_geral, {})
         except Exception as e:
             st.error(f"❌ Erro ao processar o PDF: {e}")
     else:
@@ -2512,7 +2509,7 @@ with tab_pdf:
                 st.session_state.df_produtos_geral = processar_dataframe(
                     df_exemplo, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar
                 )
-                exibir_resultados(st.session_state.df_produtos_geral, imagens_dict)
+                exibir_resultados(st.session_state.df_produtos_geral, {})
 
 # === Tab Manual ===
 with tab_manual:
@@ -2541,7 +2538,7 @@ with tab_manual:
             produto = st.text_input("📝 Nome do Produto")
             quantidade = st.number_input("📦 Quantidade", min_value=1, step=1)
             valor_pago = st.number_input("💰 Valor Pago (R$)", min_value=0.0, step=0.01)
-            imagem_file = st.file_uploader("🖼️ Foto do Produto (opcional)", type=["png", "jpg", "jpeg"], key="imagem_manual")
+            imagem_url = st.text_input("🌐 URL da Foto do Produto (opcional)")
         with col2:
             valor_default_rateio = st.session_state.get("rateio_manual", 0.0)
             custo_extra_produto = st.number_input(
@@ -2571,18 +2568,13 @@ with tab_manual:
             adicionar_produto = st.form_submit_button("➕ Adicionar Produto (Manual)")
             if adicionar_produto:
                 if produto and quantidade > 0 and valor_pago >= 0:
-                    imagem_bytes = None
-                    if imagem_file is not None:
-                        imagem_bytes = imagem_file.read()
-                        imagens_dict[produto] = imagem_bytes
-
                     novo_produto = pd.DataFrame([{
                         "Produto": produto,
                         "Qtd": quantidade,
                         "Custo Unitário": valor_pago,
                         "Custos Extras Produto": custo_extra_produto,
                         "Margem (%)": margem_manual,
-                        "Imagem": imagem_bytes
+                        "Imagem": imagem_url if imagem_url else None
                     }])
                     st.session_state.produtos_manuais = pd.concat(
                         [st.session_state.produtos_manuais, novo_produto],
@@ -2600,7 +2592,7 @@ with tab_manual:
                     st.warning("⚠️ Preencha todos os campos obrigatórios.")
 
         if not st.session_state.produtos_manuais.empty:
-            exibir_resultados(st.session_state.df_produtos_geral, imagens_dict)
+            exibir_resultados(st.session_state.df_produtos_geral, {})
 
 # === Tab GitHub ===
 with tab_github:
@@ -2616,9 +2608,10 @@ with tab_github:
                 df_exemplo, frete_total, custos_extras, modo_margem_global, margem_fixa_sidebar
             )
             st.success("✅ CSV carregado e processado com sucesso!")
-            exibir_resultados(st.session_state.df_produtos_geral, imagens_dict)
+            exibir_resultados(st.session_state.df_produtos_geral, {})
         else:
             st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+
 
 
 
