@@ -2312,27 +2312,32 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
 
     st.subheader("📊 Resultados da Precificação")
 
-    # Exibir cards individuais
     for idx, row in df.iterrows():
         with st.container():
             cols = st.columns([1, 3])
             with cols[0]:
-                img_bytes = imagens_dict.get(row["Produto"])
+                img_bytes = imagens_dict.get(row.get("Produto"))
                 if img_bytes:
                     st.image(img_bytes, width=100)
                 elif row.get("Imagem") is not None:
                     try:
-                        st.image(row["Imagem"], width=100)
+                        st.image(row.get("Imagem"), width=100)
                     except Exception:
                         st.write("🖼️ N/A")
             with cols[1]:
-                st.markdown(f"**{row['Produto']}**")
-                st.write(f"📦 Quantidade: {row['Qtd']}")
-                st.write(f"💰 Custo Unitário: R$ {row['Custo Unitário']:.2f}")
-                st.write(f"🛠 Custos Extras: R$ {row['Custos Extras Produto']:.2f}")
-                st.write(f"📈 Margem: {row['Margem (%)']}%")
+                st.markdown(f"**{row.get('Produto', '—')}**")
+                st.write(f"📦 Quantidade: {row.get('Qtd', '—')}")
+                if "Custo Unitário" in df.columns:
+                    st.write(f"💰 Custo Unitário: R$ {row.get('Custo Unitário', 0):.2f}")
+                if "Custos Extras Produto" in df.columns:
+                    st.write(f"🛠 Custos Extras: R$ {row.get('Custos Extras Produto', 0):.2f}")
+                if "Margem (%)" in df.columns:
+                    st.write(f"📈 Margem: {row.get('Margem (%)', 0)}%")
+                if "Preço à Vista" in df.columns:
+                    st.write(f"💸 Preço à Vista: R$ {row.get('Preço à Vista', 0):.2f}")
+                if "Preço no Cartão" in df.columns:
+                    st.write(f"💳 Preço no Cartão: R$ {row.get('Preço no Cartão', 0):.2f}")
 
-    # Exibir tabela completa
     st.markdown("### 📋 Tabela Consolidada")
     st.dataframe(df, use_container_width=True)
 
