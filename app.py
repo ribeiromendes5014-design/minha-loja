@@ -2372,8 +2372,13 @@ def exibir_resultados(df: pd.DataFrame, imagens_dict: dict):
 
     # Botão para baixar PDF
     if not df.empty:
-        if st.button("📥 Baixar PDF dos Produtos"):
-            gerar_pdf_produtos(df)
+        pdf_buffer = gerar_pdf_produtos(df)
+st.download_button(
+    label="📥 Baixar PDF dos Produtos",
+    data=pdf_buffer,
+    file_name="relatorio_produtos.pdf",
+    mime="application/pdf"
+)
 
 
 def processar_dataframe(df: pd.DataFrame, frete_total: float, custos_extras: float,
