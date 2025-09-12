@@ -2659,6 +2659,13 @@ with aba_campos:
         # Função para baixar CSV
         baixar_csv(st.session_state.campos, "campos_papelaria.csv")
 
+# Definir PRODUTOS_BASE_COLS
+PRODUTOS_BASE_COLS = ["Produto", "Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"]
+
+# Inicializando produtos, caso não tenha sido feito ainda
+if 'produtos' not in st.session_state:
+    st.session_state.produtos = pd.DataFrame(columns=PRODUTOS_BASE_COLS)
+
 # =====================================
 # Aba Produtos
 # =====================================
@@ -2737,10 +2744,12 @@ with aba_produtos:
                         "Margem (%)": margem,
                     }
 
+                    # Adicionando as colunas base, se não existirem
                     for col in PRODUTOS_BASE_COLS:
                         if col not in st.session_state.produtos.columns:
                             st.session_state.produtos[col] = ""
 
+                    # Adicionando o novo produto
                     st.session_state.produtos = pd.concat([
                         st.session_state.produtos,
                         pd.DataFrame([novo_produto])
