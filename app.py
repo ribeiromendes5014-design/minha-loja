@@ -2918,105 +2918,106 @@ def papelaria_aba():
 
         baixar_csv(st.session_state.insumos, "insumos_papelaria.csv")
 
-    # =====================================
+       # =====================================
     # Aba Produtos
     # =====================================
-   with aba_produtos:
-    st.header("Montar Produto")
+    with aba_produtos:
+        st.header("Montar Produto")
 
-    # Verifica se há insumos cadastrados
-    if st.session_state.insumos.empty:
-        st.warning("Cadastre insumos primeiro na aba 'Insumos'.")
-    else:
-        with st.form("form_montar_produto"):
-            st.subheader("Novo Produto")
+        # Verifica se há insumos cadastrados
+        if st.session_state.insumos.empty:
+            st.warning("Cadastre insumos primeiro na aba 'Insumos'.")
+        else:
+            with st.form("form_montar_produto"):
+                st.subheader("Novo Produto")
 
-            nome_produto = st.text_input("Nome do Produto")
+                nome_produto = st.text_input("Nome do Produto")
 
-            st.markdown("### Insumos utilizados")
-            insumos_disponiveis = st.session_state.insumos["Nome"].dropna().unique().tolist()
-            insumos_selecionados = st.multiselect(
-                "Selecione os insumos utilizados",
-                options=insumos_disponiveis,
+                st.markdown("### Insumos utilizados")
+                insumos_disponiveis = st.session_state.insumos["Nome"].dropna().unique().tolist()
+                insumos_selecionados = st.multiselect(
+                    "Selecione os insumos utilizados",
+                    options=insumos_disponiveis,
+                )
+
+                insumos_utilizados = []
+                custo_total_insumos = 0.0
+
+                for i, insumo in enumerate(insumos_selecionados):
+                    col1, col2 = st.columns([3, 2])
+                    with col1:
+                        st.markdown(f"**{insumo}**")
+                    with col2:
+                        qtd = st.number_input(f"Quantidade de '{insumo}'", min_value=0.0, step=1.0, key=f"qtd_insumo_{i}")
+
+                    preco_unitario = st.session_state.insumos.loc[
+                        st.session_state.insumos["Nome"] == insumo, "Preço Unitário (R$)"
+                    ].values[0]
+
+                    subtotal = qtd * preco_unitario
+                    custo_total_insumos += subtotal
+
+                    insumos_utilizados.append({
+                        "nome": insumo,
+                        "quantidade": qtd,
+                        "preco_unitario": preco_unitario,
+                        "subtotal": subtotal
+                    })
+
+                st.markdown("### Mão de obra")
+                tempo_horas = st.number_input("Tempo de produção (horas)", min_value=0.0, value=1.0, step=0.5)
+                valor_hora = st.number_input("Valor da hora (R$)", min_value=0.0, value=20.0, step=1.0)
+                custo_mao_obra = tempo_horas * valor_hora
+
+                # Cálculo total
+                custo_total = custo_total_insumos + custo_mao_obra
+                st.markdown(f"**Custo Total: R$ {custo_total:.2f}**")
+
+                margem = st.number_input("Margem de Lucro (%)", min_value=0.0, value=50.0, step=1.0)
+                preco_venda = custo_total * (1 + margem / 100)
+                preco_cartao = preco_venda * 1.05  # 5% taxa de cartão
+
+                st.markdown(f"**Preço à Vista sugerido: R$ {preco_venda:.2f}**")
+                st.markdown(f"**Preço no Cartão sugerido (5%): R$ {preco_cartao:.2f}**")
+
+                salvar = st.form_submit_button("Salvar Produto")
+
+                if salvar:
+                    if not nome_produto.strip():
+                        st.warning("Informe um nome para o produto.")
+                    elif not insumos_utilizados:
+                        st.warning("Selecione ao menos um insumo.")
+                    else:
+                        novo_produto = {
+                            "Produto": nome_produto.strip(),
+                            "Custo Total": round(custo_total, 2),
+                            "Preço à Vista": round(preco_venda, 2),
+                            "Preço no Cartão": round(preco_cartao, 2),
+                            "Margem (%)": margem,
+                        }
+
+                        # Garante colunas
+                        for col in PRODUTOS_BASE_COLS:
+                            if col not in st.session_state.produtos.columns:
+                                st.session_state.produtos[col] = ""
+
+                        st.session_state.produtos = pd.concat([
+                            st.session_state.produtos,
+                            pd.DataFrame([novo_produto])
+                        ], ignore_index=True)
+
+                        st.success(f"Produto '{nome_produto}' salvo com sucesso!")
+                        st.rerun()
+
+        # Exibe tabela dos produtos
+        if not st.session_state.produtos.empty:
+            st.markdown("### Produtos cadastrados")
+            st.dataframe(
+                st.session_state.produtos.reindex(columns=PRODUTOS_BASE_COLS + [c for c in st.session_state.produtos.columns if c not in PRODUTOS_BASE_COLS]),
+                use_container_width=True
             )
+            baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
 
-            insumos_utilizados = []
-            custo_total_insumos = 0.0
-
-            for i, insumo in enumerate(insumos_selecionados):
-                col1, col2 = st.columns([3, 2])
-                with col1:
-                    st.markdown(f"**{insumo}**")
-                with col2:
-                    qtd = st.number_input(f"Quantidade de '{insumo}'", min_value=0.0, step=1.0, key=f"qtd_insumo_{i}")
-
-                preco_unitario = st.session_state.insumos.loc[
-                    st.session_state.insumos["Nome"] == insumo, "Preço Unitário (R$)"
-                ].values[0]
-
-                subtotal = qtd * preco_unitario
-                custo_total_insumos += subtotal
-
-                insumos_utilizados.append({
-                    "nome": insumo,
-                    "quantidade": qtd,
-                    "preco_unitario": preco_unitario,
-                    "subtotal": subtotal
-                })
-
-            st.markdown("### Mão de obra")
-            tempo_horas = st.number_input("Tempo de produção (horas)", min_value=0.0, value=1.0, step=0.5)
-            valor_hora = st.number_input("Valor da hora (R$)", min_value=0.0, value=20.0, step=1.0)
-            custo_mao_obra = tempo_horas * valor_hora
-
-            # Cálculo total
-            custo_total = custo_total_insumos + custo_mao_obra
-            st.markdown(f"**Custo Total: R$ {custo_total:.2f}**")
-
-            margem = st.number_input("Margem de Lucro (%)", min_value=0.0, value=50.0, step=1.0)
-            preco_venda = custo_total * (1 + margem / 100)
-            preco_cartao = preco_venda * 1.05  # 5% taxa de cartão
-
-            st.markdown(f"**Preço à Vista sugerido: R$ {preco_venda:.2f}**")
-            st.markdown(f"**Preço no Cartão sugerido (5%): R$ {preco_cartao:.2f}**")
-
-            salvar = st.form_submit_button("Salvar Produto")
-
-            if salvar:
-                if not nome_produto.strip():
-                    st.warning("Informe um nome para o produto.")
-                elif not insumos_utilizados:
-                    st.warning("Selecione ao menos um insumo.")
-                else:
-                    novo_produto = {
-                        "Produto": nome_produto.strip(),
-                        "Custo Total": round(custo_total, 2),
-                        "Preço à Vista": round(preco_venda, 2),
-                        "Preço no Cartão": round(preco_cartao, 2),
-                        "Margem (%)": margem,
-                    }
-
-                    # Garante colunas
-                    for col in PRODUTOS_BASE_COLS:
-                        if col not in st.session_state.produtos.columns:
-                            st.session_state.produtos[col] = ""
-
-                    st.session_state.produtos = pd.concat([
-                        st.session_state.produtos,
-                        pd.DataFrame([novo_produto])
-                    ], ignore_index=True)
-
-                    st.success(f"Produto '{nome_produto}' salvo com sucesso!")
-                    st.rerun()
-
-    # Exibe tabela dos produtos
-    if not st.session_state.produtos.empty:
-        st.markdown("### Produtos cadastrados")
-        st.dataframe(
-            st.session_state.produtos.reindex(columns=PRODUTOS_BASE_COLS + [c for c in st.session_state.produtos.columns if c not in PRODUTOS_BASE_COLS]),
-            use_container_width=True
-        )
-        baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
 
 
 
