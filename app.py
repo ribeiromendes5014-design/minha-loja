@@ -2308,6 +2308,24 @@ import re
 import datetime
 
 # ===============================
+# Função para baixar CSV
+# ===============================
+def baixar_csv(df, filename="dados.csv"):
+    """
+    Gera um botão de download para baixar o DataFrame como CSV.
+    """
+    if df is not None and not df.empty:
+        csv = df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label=f"📥 Baixar {filename}",
+            data=csv,
+            file_name=filename,
+            mime="text/csv",
+        )
+    else:
+        st.warning("⚠️ Nenhum dado disponível para exportar.")
+
+# ===============================
 # Função para carregar CSV do GitHub
 # ===============================
 def load_csv_github(url):
@@ -2317,6 +2335,9 @@ def load_csv_github(url):
     except Exception as e:
         st.error(f"❌ Erro ao carregar CSV do GitHub: {e}")
         return pd.DataFrame()
+
+# segurança: define view padrão
+view = st.session_state.get("view", "precificação")
 
 if view == "precificação":
     st.title("💄 Precificador de Produtos")
@@ -2394,8 +2415,7 @@ if view == "precificação":
             )
 
             nome_arquivo = f"precificacao_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-            csv = df.to_csv(index=False, encoding="utf-8-sig")
-            st.download_button("⬇️ Baixar CSV", data=csv, file_name=nome_arquivo, mime="text/csv")
+            baixar_csv(df, nome_arquivo)
 
     # ===============================
     # Estado da sessão
@@ -2556,6 +2576,7 @@ if view == "precificação":
                 exibir_resultados(df_processado)
             else:
                 st.warning("⚠️ Não foi possível carregar o CSV do GitHub.")
+
 
 
 
