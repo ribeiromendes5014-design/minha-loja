@@ -2921,125 +2921,103 @@ def papelaria_aba():
     # =====================================
     # Aba Produtos
     # =====================================
-    with aba_produtos:
-        st.header("Produtos")
+   with aba_produtos:
+    st.header("Montar Produto")
 
-        # Garante colunas extras atuais
-        st.session_state.produtos = garantir_colunas_extras(st.session_state.produtos, "Produtos")
-
-        with st.form("form_add_produto"):
-            st.subheader("Adicionar novo produto")
+    # Verifica se há insumos cadastrados
+    if st.session_state.insumos.empty:
+        st.warning("Cadastre insumos primeiro na aba 'Insumos'.")
+    else:
+        with st.form("form_montar_produto"):
+            st.subheader("Novo Produto")
 
             nome_produto = st.text_input("Nome do Produto")
-            custo_total = st.number_input("Custo Total (R$)", min_value=0.0, format="%.2f")
-            preco_vista = st.number_input("Preço à Vista (R$)", min_value=0.0, format="%.2f")
-            preco_cartao = st.number_input("Preço no Cartão (R$)", min_value=0.0, format="%.2f")
-            margem = st.number_input("Margem (%)", min_value=0.0, format="%.2f")
 
-            # Campos extras
-            extras_produtos = col_defs_para("Produtos")
-            valores_extras_prod = {}
-            if not extras_produtos.empty:
-                st.markdown("**Campos extras**")
-                for i, row in extras_produtos.reset_index(drop=True).iterrows():
-                    key = f"novo_produto_extra_{row['Campo']}"
-                    valores_extras_prod[row["Campo"]] = render_input_por_tipo(
-                        label=row["Campo"],
-                        tipo=row["Tipo"],
-                        opcoes=row["Opções"],
-                        valor_padrao=None,
-                        key=key
-                    )
+            st.markdown("### Insumos utilizados")
+            insumos_disponiveis = st.session_state.insumos["Nome"].dropna().unique().tolist()
+            insumos_selecionados = st.multiselect(
+                "Selecione os insumos utilizados",
+                options=insumos_disponiveis,
+            )
 
-            adicionou_prod = st.form_submit_button("Adicionar Produto")
-            if adicionou_prod:
+            insumos_utilizados = []
+            custo_total_insumos = 0.0
+
+            for i, insumo in enumerate(insumos_selecionados):
+                col1, col2 = st.columns([3, 2])
+                with col1:
+                    st.markdown(f"**{insumo}**")
+                with col2:
+                    qtd = st.number_input(f"Quantidade de '{insumo}'", min_value=0.0, step=1.0, key=f"qtd_insumo_{i}")
+
+                preco_unitario = st.session_state.insumos.loc[
+                    st.session_state.insumos["Nome"] == insumo, "Preço Unitário (R$)"
+                ].values[0]
+
+                subtotal = qtd * preco_unitario
+                custo_total_insumos += subtotal
+
+                insumos_utilizados.append({
+                    "nome": insumo,
+                    "quantidade": qtd,
+                    "preco_unitario": preco_unitario,
+                    "subtotal": subtotal
+                })
+
+            st.markdown("### Mão de obra")
+            tempo_horas = st.number_input("Tempo de produção (horas)", min_value=0.0, value=1.0, step=0.5)
+            valor_hora = st.number_input("Valor da hora (R$)", min_value=0.0, value=20.0, step=1.0)
+            custo_mao_obra = tempo_horas * valor_hora
+
+            # Cálculo total
+            custo_total = custo_total_insumos + custo_mao_obra
+            st.markdown(f"**Custo Total: R$ {custo_total:.2f}**")
+
+            margem = st.number_input("Margem de Lucro (%)", min_value=0.0, value=50.0, step=1.0)
+            preco_venda = custo_total * (1 + margem / 100)
+            preco_cartao = preco_venda * 1.05  # 5% taxa de cartão
+
+            st.markdown(f"**Preço à Vista sugerido: R$ {preco_venda:.2f}**")
+            st.markdown(f"**Preço no Cartão sugerido (5%): R$ {preco_cartao:.2f}**")
+
+            salvar = st.form_submit_button("Salvar Produto")
+
+            if salvar:
                 if not nome_produto.strip():
-                    st.warning("Informe o Nome do Produto.")
+                    st.warning("Informe um nome para o produto.")
+                elif not insumos_utilizados:
+                    st.warning("Selecione ao menos um insumo.")
                 else:
-                    novo = {
+                    novo_produto = {
                         "Produto": nome_produto.strip(),
-                        "Custo Total": float(custo_total),
-                        "Preço à Vista": float(preco_vista),
-                        "Preço no Cartão": float(preco_cartao),
-                        "Margem (%)": float(margem),
+                        "Custo Total": round(custo_total, 2),
+                        "Preço à Vista": round(preco_venda, 2),
+                        "Preço no Cartão": round(preco_cartao, 2),
+                        "Margem (%)": margem,
                     }
-                    for k, v in valores_extras_prod.items():
-                        novo[k] = v
 
-                    todas_cols = list(dict.fromkeys(PRODUTOS_BASE_COLS + extras_produtos["Campo"].tolist()))
-                    st.session_state.produtos = st.session_state.produtos.reindex(columns=list(set(st.session_state.produtos.columns) | set(todas_cols)))
-                    st.session_state.produtos = pd.concat([st.session_state.produtos, pd.DataFrame([novo])], ignore_index=True)
-                    st.success(f"Produto '{nome_produto}' adicionado!")
+                    # Garante colunas
+                    for col in PRODUTOS_BASE_COLS:
+                        if col not in st.session_state.produtos.columns:
+                            st.session_state.produtos[col] = ""
+
+                    st.session_state.produtos = pd.concat([
+                        st.session_state.produtos,
+                        pd.DataFrame([novo_produto])
+                    ], ignore_index=True)
+
+                    st.success(f"Produto '{nome_produto}' salvo com sucesso!")
                     st.rerun()
 
+    # Exibe tabela dos produtos
+    if not st.session_state.produtos.empty:
         st.markdown("### Produtos cadastrados")
-        ordem_cols_p = PRODUTOS_BASE_COLS + [c for c in st.session_state.produtos.columns if c not in PRODUTOS_BASE_COLS]
-        st.dataframe(st.session_state.produtos.reindex(columns=ordem_cols_p), use_container_width=True)
-
-        # Seleção para editar/excluir
-        if not st.session_state.produtos.empty:
-            produto_selecionado = st.selectbox(
-                "Selecione um produto",
-                [""] + st.session_state.produtos["Produto"].astype(str).fillna("").tolist()
-            )
-        else:
-            produto_selecionado = None
-
-        if produto_selecionado:
-            acao_produto = st.radio(
-                f"Ação para '{produto_selecionado}'",
-                ["Nenhuma", "Editar", "Excluir"],
-                horizontal=True,
-                key=f"acao_produto_{produto_selecionado}"
-            )
-
-            idxs_p = st.session_state.produtos.index[st.session_state.produtos["Produto"] == produto_selecionado].tolist()
-            idx_p = idxs_p[0] if idxs_p else None
-
-            if acao_produto == "Excluir" and idx_p is not None:
-                if st.button("Confirmar Exclusão", key=f"excluir_produto_{idx_p}"):
-                    st.session_state.produtos = st.session_state.produtos.drop(index=idx_p).reset_index(drop=True)
-                    st.success(f"Produto '{produto_selecionado}' removido!")
-                    st.rerun()
-
-            if acao_produto == "Editar" and idx_p is not None:
-                atual_p = st.session_state.produtos.loc[idx_p]
-                with st.form(f"form_edit_produto_{idx_p}"):
-                    novo_nome = st.text_input("Nome do Produto", value=str(atual_p.get("Produto","")))
-                    novo_custo = st.number_input("Custo Total (R$)", min_value=0.0, format="%.2f", value=float(atual_p.get("Custo Total", 0.0)))
-                    novo_vista = st.number_input("Preço à Vista (R$)", min_value=0.0, format="%.2f", value=float(atual_p.get("Preço à Vista", 0.0)))
-                    novo_cartao = st.number_input("Preço no Cartão (R$)", min_value=0.0, format="%.2f", value=float(atual_p.get("Preço no Cartão", 0.0)))
-                    nova_margem = st.number_input("Margem (%)", min_value=0.0, format="%.2f", value=float(atual_p.get("Margem (%)", 0.0)))
-
-                    # Edita extras
-                    valores_extras_edit_p = {}
-                    extras_produtos = col_defs_para("Produtos")
-                    if not extras_produtos.empty:
-                        st.markdown("**Campos extras**")
-                        for i, row in extras_produtos.reset_index(drop=True).iterrows():
-                            campo = row["Campo"]
-                            key = f"edit_produto_extra_{idx_p}_{campo}"
-                            valores_extras_edit_p[campo] = render_input_por_tipo(
-                                label=campo,
-                                tipo=row["Tipo"],
-                                opcoes=row["Opções"],
-                                valor_padrao=atual_p.get(campo, ""),
-                                key=key
-                            )
-
-                    salvou_p = st.form_submit_button("Salvar Alterações", key=f"salvar_produto_{idx_p}")
-                    if salvou_p:
-                        st.session_state.produtos.loc[idx_p, "Produto"] = novo_nome
-                        st.session_state.produtos.loc[idx_p, "Custo Total"] = float(novo_custo)
-                        st.session_state.produtos.loc[idx_p, "Preço à Vista"] = float(novo_vista)
-                        st.session_state.produtos.loc[idx_p, "Preço no Cartão"] = float(novo_cartao)
-                        st.session_state.produtos.loc[idx_p, "Margem (%)"] = float(nova_margem)
-                        for k, v in valores_extras_edit_p.items():
-                            st.session_state.produtos.loc[idx_p, k] = v
-                        st.success("Produto atualizado!")
-                        st.rerun()
-
+        st.dataframe(
+            st.session_state.produtos.reindex(columns=PRODUTOS_BASE_COLS + [c for c in st.session_state.produtos.columns if c not in PRODUTOS_BASE_COLS]),
+            use_container_width=True
+        )
         baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
+
 
 
 
