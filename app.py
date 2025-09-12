@@ -2660,6 +2660,7 @@ def papelaria_aba():
     # ---------------------
     # Abas
     # ---------------------
+    
     aba_campos, aba_insumos, aba_produtos = st.tabs(["Campos (Colunas)", "Insumos", "Produtos"])
 
     # =====================================
@@ -2793,7 +2794,6 @@ def papelaria_aba():
         st.divider()
         baixar_csv(st.session_state.campos, "campos_papelaria.csv")
 
-import streamlit as st
 # =====================================
 # Aba Produtos
 # =====================================
