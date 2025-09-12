@@ -2822,6 +2822,7 @@ with aba_produtos:
                     st.success("Produto atualizado!")
                     st.rerun()
 
+    # Adiciona o botão de download do CSV
     baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
 
     
