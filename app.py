@@ -2666,6 +2666,10 @@ PRODUTOS_BASE_COLS = ["Produto", "Custo Total", "Preço à Vista", "Preço no Ca
 if 'produtos' not in st.session_state:
     st.session_state.produtos = pd.DataFrame(columns=PRODUTOS_BASE_COLS)
 
+# Inicializando produtos, caso não tenha sido feito ainda
+if 'produtos' not in st.session_state:
+    st.session_state.produtos = pd.DataFrame(columns=PRODUTOS_BASE_COLS)
+
 # =====================================
 # Aba Produtos
 # =====================================
@@ -2762,7 +2766,9 @@ with aba_produtos:
     # Exibição e edição/exclusão de produtos
     # =====================================
     st.markdown("### Produtos cadastrados")
-    if not st.session_state.produtos.empty:
+    
+    # Verificando se a coluna 'Produto' existe
+    if 'Produto' in st.session_state.produtos.columns:
         st.dataframe(
             st.session_state.produtos.reindex(columns=PRODUTOS_BASE_COLS + [c for c in st.session_state.produtos.columns if c not in PRODUTOS_BASE_COLS]),
             use_container_width=True
@@ -2774,6 +2780,7 @@ with aba_produtos:
         )
     else:
         produto_selecionado = None
+        st.warning("Nenhum produto cadastrado ainda.")
 
     if produto_selecionado:
         acao_produto = st.radio(
