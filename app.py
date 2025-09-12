@@ -2888,7 +2888,13 @@ with aba_produtos:
 
     
     
-   # =====================================
+   import streamlit as st
+import pandas as pd
+
+# Defina suas colunas base para insumos aqui, se ainda não estiverem definidas
+INSUMOS_BASE_COLS = ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
+
+# =====================================
 # Função auxiliar para garantir colunas
 # =====================================
 def garantir_colunas_extras(df, tipo="Insumos"):
@@ -2917,12 +2923,49 @@ def garantir_colunas_extras(df, tipo="Insumos"):
 
     return df
 
+# Função fictícia para simular os campos extras, substitua conforme sua implementação real
+def pegar_campos_extras(tipo="Insumos"):
+    # Exemplo simples; no seu caso, busque dos seus dados reais ou configuração
+    if tipo == "Insumos":
+        # Exemplo: DataFrame com campos extras
+        return pd.DataFrame({
+            "Campo": ["Fornecedor", "Validade"],
+            "Tipo": ["texto", "data"],
+            "Opções": [None, None]
+        })
+    else:
+        return pd.DataFrame()
+
+# Função fictícia para renderizar input baseado no tipo - substitua conforme sua implementação
+def render_input_por_tipo(label, tipo, opcoes, valor_padrao, key):
+    if tipo == "texto":
+        return st.text_input(label, value=valor_padrao if valor_padrao is not None else "", key=key)
+    elif tipo == "data":
+        return st.date_input(label, value=valor_padrao if valor_padrao is not None else None, key=key)
+    # Outros tipos podem ser adicionados aqui
+    else:
+        return st.text_input(label, value=valor_padrao if valor_padrao is not None else "", key=key)
+
+# Função fictícia para download de CSV, substitua conforme seu código
+def baixar_csv(df, nome_arquivo):
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Download CSV",
+        data=csv,
+        file_name=nome_arquivo,
+        mime='text/csv',
+    )
 
 # =====================================
-# Aba Insumos
+# Aba Insumos - exemplo com Streamlit
 # =====================================
+aba_insumos = st.container()
+
 with aba_insumos:
     st.header("Insumos")
+
+    if "insumos" not in st.session_state:
+        st.session_state.insumos = pd.DataFrame(columns=INSUMOS_BASE_COLS)
 
     # Garante colunas extras atuais
     st.session_state.insumos = garantir_colunas_extras(st.session_state.insumos, "Insumos")
@@ -2936,7 +2979,7 @@ with aba_insumos:
         preco_insumo = st.number_input("Preço Unitário (R$)", min_value=0.0, format="%.2f")
 
         # Campos extras
-        extras_insumos = col_defs_para("Insumos")
+        extras_insumos = pegar_campos_extras("Insumos")
         valores_extras = {}
         if not extras_insumos.empty:
             st.markdown("**Campos extras**")
@@ -2973,7 +3016,7 @@ with aba_insumos:
                     [st.session_state.insumos, pd.DataFrame([novo])], ignore_index=True
                 )
                 st.success(f"Insumo '{nome_insumo}' adicionado!")
-                st.rerun()
+                st.experimental_rerun()
 
     st.markdown("### Insumos cadastrados")
     # Exibe reordenando: base + extras
@@ -3005,14 +3048,14 @@ with aba_insumos:
             if st.button("Confirmar Exclusão", key=f"excluir_insumo_{idx}"):
                 st.session_state.insumos = st.session_state.insumos.drop(index=idx).reset_index(drop=True)
                 st.success(f"Insumo '{insumo_selecionado}' removido!")
-                st.rerun()
+                st.experimental_rerun()
 
         if acao_insumo == "Editar" and idx is not None:
             atual = st.session_state.insumos.loc[idx]
             with st.form(f"form_edit_insumo_{idx}"):
-                novo_nome = st.text_input("Nome do Insumo", value=str(atual.get("Nome","")))
-                nova_categoria = st.text_input("Categoria", value=str(atual.get("Categoria","")))
-                nova_unidade = st.text_input("Unidade de Medida (ex: un, kg, m)", value=str(atual.get("Unidade","")))
+                novo_nome = st.text_input("Nome do Insumo", value=str(atual.get("Nome", "")))
+                nova_categoria = st.text_input("Categoria", value=str(atual.get("Categoria", "")))
+                nova_unidade = st.text_input("Unidade de Medida (ex: un, kg, m)", value=str(atual.get("Unidade", "")))
                 novo_preco = st.number_input(
                     "Preço Unitário (R$)", min_value=0.0, format="%.2f",
                     value=float(atual.get("Preço Unitário (R$)", 0.0))
@@ -3020,7 +3063,7 @@ with aba_insumos:
 
                 # Edita extras
                 valores_extras_edit = {}
-                extras_insumos = col_defs_para("Insumos")
+                extras_insumos = pegar_campos_extras("Insumos")
                 if not extras_insumos.empty:
                     st.markdown("**Campos extras**")
                     for i, row in extras_insumos.reset_index(drop=True).iterrows():
@@ -3043,9 +3086,10 @@ with aba_insumos:
                     for k, v in valores_extras_edit.items():
                         st.session_state.insumos.loc[idx, k] = v
                     st.success("Insumo atualizado!")
-                    st.rerun()
+                    st.experimental_rerun()
 
     baixar_csv(st.session_state.insumos, "insumos_papelaria.csv")
+
 
 
 
