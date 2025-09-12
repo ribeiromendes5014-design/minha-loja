@@ -2534,264 +2534,129 @@ import requests
 from io import StringIO
 
 
-# =====================================
-# Aba Papelaria (função completa, com campos dinâmicos)
-# =====================================
-def papelaria_aba():
-    st.title("📚 Gerenciador Papelaria Personalizada")
+# Inicializando as abas
+aba_campos, aba_insumos, aba_produtos = st.tabs(["Campos (Colunas)", "Insumos", "Produtos"])
 
-    # ---------------------
-    # Config. de arquivos remotos (ajuste para o seu repositório real)
-    # ---------------------
-    URL_BASE = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/"
-    INSUMOS_CSV_URL = URL_BASE + "insumos_papelaria.csv"
-    PRODUTOS_CSV_URL = URL_BASE + "produtos_papelaria.csv"
-    # Reaproveitado: este CSV agora armazena DEFINIÇÕES DE CAMPOS (não uma lista de categorias)
-    CAMPOS_CSV_URL = URL_BASE + "categorias_papelaria.csv"
+# ==============================
+# Aba Campos (gerencia colunas extras)
+# ==============================
+with aba_campos:
+    st.header("Campos / Colunas Personalizadas")
 
-    # ---------------------
-    # Colunas padrão dos dados
-    # ---------------------
-    INSUMOS_BASE_COLS = ["Nome", "Categoria", "Unidade", "Preço Unitário (R$)"]
-    PRODUTOS_BASE_COLS = ["Produto", "Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"]
+    with st.form("form_add_campo"):
+        st.subheader("Adicionar novo campo")
+        nome_campo = st.text_input("Nome do Campo (será o nome da coluna)")
+        aplicacao = st.selectbox("Aplicação", ["Insumos", "Produtos", "Ambos"])
+        tipo = st.selectbox("Tipo", ["Texto", "Número", "Seleção"])
+        opcoes = st.text_input("Opções (se 'Seleção', separe por vírgula)")
+        adicionar = st.form_submit_button("Adicionar Campo")
 
-    # Definição da tabela de "campos extras" (metadados)
-    COLUNAS_CAMPOS = ["Campo", "Aplicação", "Tipo", "Opções"]  # Aplicação: Insumos | Produtos | Ambos
-                                                               # Tipo: Texto | Número | Seleção
-                                                               # Opções: CSV de opções (apenas se Tipo == Seleção)
-
-    # ---------------------
-    # Utilitários
-    # ---------------------
-    def carregar_csv_github(url, colunas=None):
-        """
-        Tenta carregar um CSV remoto.
-        Se 'colunas' for fornecido, garante essas colunas (criando se faltar).
-        """
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            df = pd.read_csv(StringIO(response.text))
-            if colunas is not None:
-                for c in colunas:
-                    if c not in df.columns:
-                        df[c] = None
-                # Reordena
-                df = df[[c for c in colunas if c in df.columns]]
-            return df
-        except Exception as e:
-            st.warning(f"Não foi possível carregar CSV do GitHub ({url}): {e}")
-            if colunas is not None:
-                return pd.DataFrame(columns=colunas)
-            return pd.DataFrame()
-
-    def baixar_csv(df, nome_arquivo):
-        csv = df.to_csv(index=False, encoding="utf-8-sig")
-        st.download_button(
-            f"⬇️ Baixar {nome_arquivo}",
-            data=csv,
-            file_name=nome_arquivo,
-            mime="text/csv"
-        )
-
-    def _opcoes_para_lista(opcoes_str):
-        if pd.isna(opcoes_str) or not str(opcoes_str).strip():
-            return []
-        return [o.strip() for o in str(opcoes_str).split(",") if o.strip()]
-
-    def col_defs_para(aplicacao: str):
-        """Retorna DataFrame de campos extras filtrando por Aplicação."""
-        df = st.session_state.campos
-        if df.empty:
-            return df
-        # "Ambos" vale para as duas abas
-        return df[(df["Aplicação"] == aplicacao) | (df["Aplicação"] == "Ambos")].copy()
-
-    def garantir_colunas_extras(df: pd.DataFrame, aplicacao: str) -> pd.DataFrame:
-        """Garante que o DataFrame tenha as colunas extras definidas para a aplicação."""
-        defs = col_defs_para(aplicacao)
-        for campo in defs["Campo"].tolist():
-            if campo not in df.columns:
-                df[campo] = ""
-        return df
-
-    def render_input_por_tipo(label, tipo, opcoes, valor_padrao=None, key=None):
-        """Desenha o widget apropriado conforme o tipo."""
-        if tipo == "Número":
-            # valor padrão numérico seguro
-            valor = float(valor_padrao) if (valor_padrao is not None and str(valor_padrao).strip() != "") else 0.0
-            return st.number_input(label, min_value=0.0, format="%.2f", value=valor, key=key)
-        elif tipo == "Seleção":
-            lista = _opcoes_para_lista(opcoes)
-            if not lista:
-                # Se não há opções, degrade para texto
-                return st.text_input(label, value=str(valor_padrao) if valor_padrao is not None else "", key=key)
-            # Se existir valor padrão que não está na lista, inclui temporariamente
-            if valor_padrao not in lista and valor_padrao not in (None, "", "nan"):
-                lista = [str(valor_padrao)] + [o for o in lista if o != valor_padrao]
-            return st.selectbox(label, options=lista, index=0 if valor_padrao in (None, "", "nan") else lista.index(str(valor_padrao)), key=key)
-        else:
-            # Texto (default)
-            return st.text_input(label, value=str(valor_padrao) if valor_padrao is not None else "", key=key)
-
-    # ---------------------
-    # Estado da sessão
-    # ---------------------
-    if "insumos" not in st.session_state:
-        st.session_state.insumos = carregar_csv_github(INSUMOS_CSV_URL)
-    if "produtos" not in st.session_state:
-        st.session_state.produtos = carregar_csv_github(PRODUTOS_CSV_URL)
-    if "campos" not in st.session_state:
-        # Lê definições de campos (antigo "categorias")
-        st.session_state.campos = carregar_csv_github(CAMPOS_CSV_URL, COLUNAS_CAMPOS)
-
-    # Sempre garante as colunas base existirem (em caso de CSV vazio)
-    for col in INSUMOS_BASE_COLS:
-        if col not in st.session_state.insumos.columns:
-            st.session_state.insumos[col] = "" if col != "Preço Unitário (R$)" else 0.0
-    for col in PRODUTOS_BASE_COLS:
-        if col not in st.session_state.produtos.columns:
-            st.session_state.produtos[col] = "" if col not in ["Custo Total", "Preço à Vista", "Preço no Cartão", "Margem (%)"] else 0.0
-
-    # Garante colunas extras atuais nos DataFrames
-    st.session_state.insumos = garantir_colunas_extras(st.session_state.insumos, "Insumos")
-    st.session_state.produtos = garantir_colunas_extras(st.session_state.produtos, "Produtos")
-
-    # ---------------------
-    # Abas
-    # ---------------------
-    
-    aba_campos, aba_insumos, aba_produtos = st.tabs(["Campos (Colunas)", "Insumos", "Produtos"])
-
-    # =====================================
-    # Aba Campos (gerencia colunas extras)
-    # =====================================
-    with aba_campos:
-        st.header("Campos / Colunas Personalizadas")
-
-        with st.form("form_add_campo"):
-            st.subheader("Adicionar novo campo")
-            nome_campo = st.text_input("Nome do Campo (será o nome da coluna)")
-            aplicacao = st.selectbox("Aplicação", ["Insumos", "Produtos", "Ambos"])
-            tipo = st.selectbox("Tipo", ["Texto", "Número", "Seleção"])
-            opcoes = st.text_input("Opções (se 'Seleção', separe por vírgula)")
-            adicionar = st.form_submit_button("Adicionar Campo")
-
-            if adicionar:
-                if not nome_campo.strip():
-                    st.warning("Informe um nome de campo válido.")
+        if adicionar:
+            if not nome_campo.strip():
+                st.warning("Informe um nome de campo válido.")
+            else:
+                ja_existe = (
+                    (st.session_state.campos["Campo"].astype(str).str.lower() == nome_campo.strip().lower())
+                    & (st.session_state.campos["Aplicação"] == aplicacao)
+                ).any()
+                if ja_existe:
+                    st.warning("Já existe um campo com esse nome para essa aplicação.")
                 else:
-                    # Evita duplicatas exatas (mesmo nome + aplicação)
-                    ja_existe = (
-                        (st.session_state.campos["Campo"].astype(str).str.lower() == nome_campo.strip().lower())
-                        & (st.session_state.campos["Aplicação"] == aplicacao)
-                    ).any()
-                    if ja_existe:
-                        st.warning("Já existe um campo com esse nome para essa aplicação.")
-                    else:
-                        nova_linha = {"Campo": nome_campo.strip(), "Aplicação": aplicacao, "Tipo": tipo, "Opções": opcoes}
-                        st.session_state.campos = pd.concat(
-                            [st.session_state.campos, pd.DataFrame([nova_linha])],
-                            ignore_index=True
-                        )
-                        # Se "Ambos", nada impede — a regra é aplicada no uso.
-                        st.success(f"Campo '{nome_campo}' adicionado para {aplicacao}!")
-                        # Garante a coluna imediatamente nas tabelas
-                        if aplicacao in ("Insumos", "Ambos"):
-                            if nome_campo not in st.session_state.insumos.columns:
-                                st.session_state.insumos[nome_campo] = ""
-                        if aplicacao in ("Produtos", "Ambos"):
-                            if nome_campo not in st.session_state.produtos.columns:
-                                st.session_state.produtos[nome_campo] = ""
+                    nova_linha = {"Campo": nome_campo.strip(), "Aplicação": aplicacao, "Tipo": tipo, "Opções": opcoes}
+                    st.session_state.campos = pd.concat(
+                        [st.session_state.campos, pd.DataFrame([nova_linha])],
+                        ignore_index=True
+                    )
+                    if aplicacao in ("Insumos", "Ambos"):
+                        if nome_campo not in st.session_state.insumos.columns:
+                            st.session_state.insumos[nome_campo] = ""
+                    if aplicacao in ("Produtos", "Ambos"):
+                        if nome_campo not in st.session_state.produtos.columns:
+                            st.session_state.produtos[nome_campo] = ""
+                    st.success(f"Campo '{nome_campo}' adicionado para {aplicacao}!")
+                    st.rerun()
+
+    st.markdown("### Campos cadastrados")
+    if st.session_state.campos.empty:
+        st.info("Nenhum campo extra cadastrado ainda.")
+    else:
+        st.dataframe(st.session_state.campos, use_container_width=True)
+
+    # Editar/Excluir Campo
+    if not st.session_state.campos.empty:
+        st.divider()
+        st.subheader("Editar ou Excluir campo")
+
+        rotulos = [
+            f"{row.Campo}  ·  ({row.Aplicação})"
+            for _, row in st.session_state.campos.iterrows()
+        ]
+        escolha = st.selectbox("Escolha um campo", [""] + rotulos)
+
+        if escolha:
+            idx = rotulos.index(escolha)
+            campo_atual = st.session_state.campos.iloc[idx]
+
+            acao_campo = st.radio(
+                "Ação",
+                ["Nenhuma", "Editar", "Excluir"],
+                horizontal=True,
+                key=f"acao_campo_{idx}"
+            )
+
+            if acao_campo == "Excluir":
+                if st.button("Confirmar Exclusão", key=f"excluir_campo_{idx}"):
+                    nome = campo_atual["Campo"]
+                    aplic = campo_atual["Aplicação"]
+
+                    st.session_state.campos = st.session_state.campos.drop(st.session_state.campos.index[idx]).reset_index(drop=True)
+
+                    if aplic in ("Insumos", "Ambos"):
+                        if nome in st.session_state.insumos.columns:
+                            st.session_state.insumos = st.session_state.insumos.drop(columns=[nome])
+                    if aplic in ("Produtos", "Ambos"):
+                        if nome in st.session_state.produtos.columns:
+                            st.session_state.produtos = st.session_state.produtos.drop(columns=[nome])
+
+                    st.success(f"Campo '{nome}' removido de {aplic}!")
+                    st.rerun()
+
+            if acao_campo == "Editar":
+                with st.form(f"form_edit_campo_{idx}"):
+                    novo_nome = st.text_input("Nome do Campo", value=str(campo_atual["Campo"]))
+                    nova_aplic = st.selectbox("Aplicação", ["Insumos", "Produtos", "Ambos"], index=["Insumos", "Produtos", "Ambos"].index(campo_atual["Aplicação"]))
+                    novo_tipo = st.selectbox("Tipo", ["Texto", "Número", "Seleção"], index=["Texto", "Número", "Seleção"].index(campo_atual["Tipo"]))
+                    novas_opcoes = st.text_input("Opções (se 'Seleção')", value=str(campo_atual["Opções"]) if pd.notna(campo_atual["Opções"]) else "")
+
+                    salvar = st.form_submit_button("Salvar Alterações")
+
+                    if salvar:
+                        nome_antigo = campo_atual["Campo"]
+                        aplic_antiga = campo_atual["Aplicação"]
+
+                        st.session_state.campos.loc[st.session_state.campos.index[idx], ["Campo", "Aplicação", "Tipo", "Opções"]] = [
+                            novo_nome, nova_aplic, novo_tipo, novas_opcoes
+                        ]
+
+                        renomeou = (str(novo_nome).strip() != str(nome_antigo).strip())
+                        if renomeou:
+                            if aplic_antiga in ("Insumos", "Ambos") and nome_antigo in st.session_state.insumos.columns:
+                                st.session_state.insumos = st.session_state.insumos.rename(columns={nome_antigo: novo_nome})
+                            if aplic_antiga in ("Produtos", "Ambos") and nome_antigo in st.session_state.produtos.columns:
+                                st.session_state.produtos = st.session_state.produtos.rename(columns={nome_antigo: novo_nome})
+
+                        if nova_aplic in ("Insumos", "Ambos"):
+                            if novo_nome not in st.session_state.insumos.columns:
+                                st.session_state.insumos[novo_nome] = ""
+                        if nova_aplic in ("Produtos", "Ambos"):
+                            if novo_nome not in st.session_state.produtos.columns:
+                                st.session_state.produtos[novo_nome] = ""
+
+                        st.success("Campo atualizado!")
                         st.rerun()
-
-        st.markdown("### Campos cadastrados")
-        # Visualização
-        if st.session_state.campos.empty:
-            st.info("Nenhum campo extra cadastrado ainda.")
-        else:
-            st.dataframe(st.session_state.campos, use_container_width=True)
-
-        # Editar/Excluir Campo
-        if not st.session_state.campos.empty:
-            st.divider()
-            st.subheader("Editar ou Excluir campo")
-
-            # Monta rótulos amigáveis
-            rotulos = [
-                f"{row.Campo}  ·  ({row.Aplicação})"
-                for _, row in st.session_state.campos.iterrows()
-            ]
-            escolha = st.selectbox("Escolha um campo", [""] + rotulos)
-
-            if escolha:
-                idx = rotulos.index(escolha)
-                campo_atual = st.session_state.campos.iloc[idx]
-
-                acao_campo = st.radio(
-                    "Ação",
-                    ["Nenhuma", "Editar", "Excluir"],
-                    horizontal=True,
-                    key=f"acao_campo_{idx}"
-                )
-
-                if acao_campo == "Excluir":
-                    if st.button("Confirmar Exclusão", key=f"excluir_campo_{idx}"):
-                        nome = campo_atual["Campo"]
-                        aplic = campo_atual["Aplicação"]
-
-                        # Remove definição
-                        st.session_state.campos = st.session_state.campos.drop(st.session_state.campos.index[idx]).reset_index(drop=True)
-
-                        # Remove coluna dos dados conforme aplicação
-                        if aplic in ("Insumos", "Ambos"):
-                            if nome in st.session_state.insumos.columns:
-                                st.session_state.insumos = st.session_state.insumos.drop(columns=[nome])
-                        if aplic in ("Produtos", "Ambos"):
-                            if nome in st.session_state.produtos.columns:
-                                st.session_state.produtos = st.session_state.produtos.drop(columns=[nome])
-
-                        st.success(f"Campo '{nome}' removido de {aplic}!")
-                        st.rerun()
-
-                if acao_campo == "Editar":
-                    with st.form(f"form_edit_campo_{idx}"):
-                        novo_nome = st.text_input("Nome do Campo", value=str(campo_atual["Campo"]))
-                        nova_aplic = st.selectbox("Aplicação", ["Insumos", "Produtos", "Ambos"], index=["Insumos","Produtos","Ambos"].index(campo_atual["Aplicação"]))
-                        novo_tipo = st.selectbox("Tipo", ["Texto", "Número", "Seleção"], index=["Texto","Número","Seleção"].index(campo_atual["Tipo"]))
-                        novas_opcoes = st.text_input("Opções (se 'Seleção')", value=str(campo_atual["Opções"]) if pd.notna(campo_atual["Opções"]) else "")
-
-                        salvar = st.form_submit_button("Salvar Alterações")
-
-                        if salvar:
-                            nome_antigo = campo_atual["Campo"]
-                            aplic_antiga = campo_atual["Aplicação"]
-
-                            # Atualiza definição
-                            st.session_state.campos.loc[st.session_state.campos.index[idx], ["Campo","Aplicação","Tipo","Opções"]] = [
-                                novo_nome, nova_aplic, novo_tipo, novas_opcoes
-                            ]
-
-                            # Se renomeou, reflete nos DataFrames
-                            renomeou = (str(novo_nome).strip() != str(nome_antigo).strip())
-                            if renomeou:
-                                if aplic_antiga in ("Insumos", "Ambos") and nome_antigo in st.session_state.insumos.columns:
-                                    st.session_state.insumos = st.session_state.insumos.rename(columns={nome_antigo: novo_nome})
-                                if aplic_antiga in ("Produtos", "Ambos") and nome_antigo in st.session_state.produtos.columns:
-                                    st.session_state.produtos = st.session_state.produtos.rename(columns={nome_antigo: novo_nome})
-
-                            # Garante colunas existirem conforme nova aplicação
-                            if nova_aplic in ("Insumos", "Ambos"):
-                                if novo_nome not in st.session_state.insumos.columns:
-                                    st.session_state.insumos[novo_nome] = ""
-                            if nova_aplic in ("Produtos", "Ambos"):
-                                if novo_nome not in st.session_state.produtos.columns:
-                                    st.session_state.produtos[novo_nome] = ""
-
-                            st.success("Campo atualizado!")
-                            st.rerun()
 
         st.divider()
+        # Função para baixar CSV
         baixar_csv(st.session_state.campos, "campos_papelaria.csv")
 
 # =====================================
