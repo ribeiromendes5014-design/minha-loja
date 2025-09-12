@@ -2888,7 +2888,7 @@ with aba_produtos:
 
     
     
-   import streamlit as st
+import streamlit as st
 import pandas as pd
 
 # Defina suas colunas base para insumos aqui, se ainda não estiverem definidas
