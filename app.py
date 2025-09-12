@@ -2793,7 +2793,8 @@ def papelaria_aba():
         st.divider()
         baixar_csv(st.session_state.campos, "campos_papelaria.csv")
 
-   # =====================================
+import streamlit as st
+# =====================================
 # Aba Produtos
 # =====================================
 with aba_produtos:
