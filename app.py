@@ -2942,7 +2942,7 @@ with aba_produtos:
 
     baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
 
-      coloque essa funça e me devolva completo sem resumo nem cortes,   # =====================================
+    # =====================================
     # Aba Insumos
     # =====================================
     with aba_insumos:
