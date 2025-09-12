@@ -2942,6 +2942,8 @@ with aba_produtos:
 
     baixar_csv(st.session_state.produtos, "produtos_papelaria.csv")
 
+    
+    
     # =====================================
     # Aba Insumos
     # =====================================
