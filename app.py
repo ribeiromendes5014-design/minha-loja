@@ -12,10 +12,35 @@ import requests
 # Funções auxiliares
 # =====================================
 
+import streamlit as st
+import requests
+from PIL import Image
+import io
+
+# Configuração do Imgur
+IMGUR_CLIENT_ID = "SEU_CLIENT_ID"  # pegue em: https://api.imgur.com/oauth2/addclient
+
+def upload_to_imgur(image_bytes):
+    try:
+        url = "https://api.imgur.com/3/image"
+        headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
+        res = requests.post(url, headers=headers, files={"image": image_bytes})
+        res.raise_for_status()
+        data = res.json()
+        return data["data"]["link"]
+    except Exception as e:
+        st.error(f"Erro ao fazer upload para Imgur: {e}")
+        return None
+
 def ler_codigo_barras_api(image_bytes):
     try:
-        files = {"f": ("barcode.png", image_bytes, "image/png")}
-        response = requests.post("https://zxing.org/w/decode", files=files)
+        # Primeiro envia a imagem para o Imgur e pega a URL pública
+        img_url = upload_to_imgur(image_bytes)
+        if not img_url:
+            return []
+
+        # Faz a chamada para a API ZXing com GET
+        response = requests.get("https://zxing.org/w/decode", params={"u": img_url})
 
         if response.status_code != 200:
             st.error(f"Erro na API ZXing: {response.status_code}")
@@ -38,6 +63,30 @@ def ler_codigo_barras_api(image_bytes):
     except Exception as e:
         st.error(f"Erro ao chamar API ZXing: {e}")
         return []
+
+
+# ---------------------------
+# Exemplo de uso no Streamlit
+# ---------------------------
+st.title("Leitor de código de barras / QR Code com ZXing")
+
+uploaded_file = st.file_uploader("📷 Envie uma imagem", type=["png", "jpg", "jpeg"])
+
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Imagem carregada", use_column_width=True)
+
+    image_bytes = uploaded_file.getvalue()
+
+    codigos = ler_codigo_barras_api(image_bytes)
+
+    if codigos:
+        st.success("Códigos detectados:")
+        for c in codigos:
+            st.code(c)
+    else:
+        st.warning("Nenhum código detectado.")
+
 
 
 
