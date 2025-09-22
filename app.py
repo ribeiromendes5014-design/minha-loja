@@ -1231,29 +1231,34 @@ if view == "Produtos":
 
 
     # --- Busca minimalista ---
-    with st.expander("🔍 Pesquisar produto"):
-        criterio = st.selectbox(
-            "Pesquisar por:",
-            ["Nome", "Marca", "Código de Barras", "Valor"]
-        )
-        termo = st.text_input("Digite para buscar:")
+with st.expander("🔍 Pesquisar produto"):
+    criterio = st.selectbox(
+        "Pesquisar por:",
+        ["Nome", "Marca", "Código de Barras", "Valor"]
+    )
+    termo = st.text_input("Digite para buscar:")
 
-        if termo:
-            if criterio == "Nome":
-                produtos_filtrados = produtos[produtos["Nome"].astype(str).str.contains(termo, case=False, na=False)]
-            elif criterio == "Marca":
-                produtos_filtrados = produtos[produtos["Marca"].astype(str).str.contains(termo, case=False, na=False)]
-            elif criterio == "Código de Barras":
-                produtos_filtrados = produtos[produtos["CodigoBarras"].astype(str).str.contains(termo, case=False, na=False)]
-            elif criterio == "Valor":
-                try:
-                    valor = float(termo.replace(",", "."))
-                    produtos_filtrados = produtos[produtos["PrecoVista"].astype(float) == valor]
-                except:
-                    st.warning("Digite um número válido para buscar por valor.")
-                    produtos_filtrados = produtos.copy()
-        else:
-            produtos_filtrados = produtos.copy()
+    if termo:
+        if criterio == "Nome":
+            produtos_filtrados = produtos[produtos["Nome"].astype(str).str.contains(termo, case=False, na=False)]
+        elif criterio == "Marca":
+            produtos_filtrados = produtos[produtos["Marca"].astype(str).str.contains(termo, case=False, na=False)]
+        elif criterio == "Código de Barras":
+            produtos_filtrados = produtos[produtos["CodigoBarras"].astype(str).str.contains(termo, case=False, na=False)]
+        elif criterio == "Valor":
+            try:
+                valor = float(termo.replace(",", "."))
+                produtos_filtrados = produtos[produtos["PrecoVista"].astype(float) == valor]
+            except:
+                st.warning("Digite um número válido para buscar por valor.")
+                produtos_filtrados = produtos.copy()
+    else:
+        produtos_filtrados = produtos.copy()
+
+    # ✅ Garantir que PaiID exista mesmo após filtro
+    if "PaiID" not in produtos_filtrados.columns:
+        produtos_filtrados["PaiID"] = None
+
 
     # --- Lista de produtos com agrupamento por Pai e Variações ---
     st.markdown("### Lista de produtos")
