@@ -2561,6 +2561,21 @@ if view == "Clientes":
 
 
 
+if "page" in st.session_state:
+    if st.session_state.page == "Dashboard":
+        pagina_dashboard()
+    elif st.session_state.page == "Produtos":
+        pagina_produtos()
+    elif st.session_state.page == "Vendas":
+        pagina_vendas()
+    elif st.session_state.page == "Clientes":
+        pagina_clientes()
+    elif st.session_state.page == "Promoções":
+        pagina_promocoes()
+    elif st.session_state.page == "precificação":
+        pagina_precificacao()
+    elif st.session_state.page == "Papelaria":
+        pagina_papelaria()
 
 
 
