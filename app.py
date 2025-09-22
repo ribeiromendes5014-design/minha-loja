@@ -1267,68 +1267,71 @@ if view == "Produtos":
                         st.rerun()
 
         # Editor inline
-        if "edit_prod" in st.session_state:
-            eid = st.session_state["edit_prod"]
-            row = produtos[produtos["ID"]==str(eid)]
-            if not row.empty:
-                st.subheader("Editar produto")
-                row = row.iloc[0]
-                c1,c2,c3 = st.columns(3)
-                with c1:
-                    novo_nome = st.text_input("Nome", value=row["Nome"], key=f"edit_nome_{eid}")
-                    nova_marca = st.text_input("Marca", value=row["Marca"], key=f"edit_marca_{eid}")
-                    nova_cat = st.text_input("Categoria", value=row["Categoria"], key=f"edit_cat_{eid}")
-                with c2:
-                    nova_qtd = st.number_input("Quantidade", min_value=0, step=1, value=int(row["Quantidade"]), key=f"edit_qtd_{eid}")
-                    novo_preco_custo = st.text_input("Preço de Custo", value=str(row["PrecoCusto"]).replace(".",","), key=f"edit_pc_{eid}")
-                    novo_preco_vista = st.text_input("Preço à Vista", value=str(row["PrecoVista"]).replace(".",","), key=f"edit_pv_{eid}")
-                with c3:
-                    try:
-                        vdata = datetime.strptime(str(row["Validade"] or date.today()), "%Y-%m-%d").date()
-                    except Exception:
-                        vdata = date.today()
-                    nova_validade = st.date_input("Validade", value=vdata, key=f"edit_val_{eid}")
-                    nova_foto = st.text_input("URL da Foto", value=row["FotoURL"], key=f"edit_foto_{eid}")
-                    novo_cb = st.text_input("Código de Barras", value=str(row.get("CodigoBarras","")), key=f"edit_cb_{eid}")
-                    foto_codigo_edit = st.camera_input("📷 Atualizar código de barras", key=f"edit_cam_{eid}")
-                    if foto_codigo_edit is not None:
-                        codigo_lido = ler_codigo_barras_api(foto_codigo_edit.getbuffer())
-                        if codigo_lido:
-                            novo_cb = codigo_lido
-                            st.success(f"Código lido: {novo_cb}")
+if "edit_prod" in st.session_state:
+    eid = st.session_state["edit_prod"]
+    row = produtos[produtos["ID"] == str(eid)]
+    if not row.empty:
+        st.subheader("Editar produto")
+        row = row.iloc[0]
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            novo_nome = st.text_input("Nome", value=row["Nome"], key=f"edit_nome_{eid}")
+            nova_marca = st.text_input("Marca", value=row["Marca"], key=f"edit_marca_{eid}")
+            nova_cat = st.text_input("Categoria", value=row["Categoria"], key=f"edit_cat_{eid}")
+        with c2:
+            nova_qtd = st.number_input("Quantidade", min_value=0, step=1, value=int(row["Quantidade"]), key=f"edit_qtd_{eid}")
+            novo_preco_custo = st.text_input("Preço de Custo", value=str(row["PrecoCusto"]).replace(".", ","), key=f"edit_pc_{eid}")
+            novo_preco_vista = st.text_input("Preço à Vista", value=str(row["PrecoVista"]).replace(".", ","), key=f"edit_pv_{eid}")
+        with c3:
+            try:
+                vdata = datetime.strptime(str(row["Validade"] or date.today()), "%Y-%m-%d").date()
+            except Exception:
+                vdata = date.today()
+            nova_validade = st.date_input("Validade", value=vdata, key=f"edit_val_{eid}")
+            nova_foto = st.text_input("URL da Foto", value=row["FotoURL"], key=f"edit_foto_{eid}")
+            novo_cb = st.text_input("Código de Barras", value=str(row.get("CodigoBarras", "")), key=f"edit_cb_{eid}")
+            foto_codigo_edit = st.camera_input("📷 Atualizar código de barras", key=f"edit_cam_{eid}")
+            if foto_codigo_edit is not None:
+                codigo_lido = ler_codigo_barras_api(foto_codigo_edit.getbuffer())
+                if codigo_lido:
+                    novo_cb = codigo_lido
+                    st.success(f"Código lido: {novo_cb}")
 
-                col_save, col_cancel = st.columns([1,1])
-                with col_save:
-                    if st.button("Salvar alterações", key=f"save_{eid}"):
-                        produtos.loc[produtos["ID"]==str(eid), [
-                            "Nome","Marca","Categoria","Quantidade",
-                            "PrecoCusto","PrecoVista","PrecoCartao",
-                            "Validade","FotoURL","CodigoBarras"
-                        ]] = [
-                            novo_nome.strip(),
-                            nova_marca.strip(),
-                            nova_cat.strip(),
-                            int(nova_qtd),
-                            to_float(novo_preco_custo),
-                            to_float(novo_preco_vista),
-                            round(to_float(novo_preco_vista) / FATOR_CARTAO, 2) if to_float(novo_preco_vista)>0 else 0.0,
-                            str(nova_validade),
-                            nova_foto.strip(),
-                            str(novo_cb).strip()
-                        ]
-                        st.session_state["produtos"] = produtos
-                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-                        del st.session_state["edit_prod"]
-                        st.session_state[f"acao_{eid}"] = "Nenhuma"  # <<< reset do selectbox
-                        st.success("Produto atualizado!")
-                        st.rerun()
+        col_save, col_cancel = st.columns([1, 1])
+        with col_save:
+            if st.button("Salvar alterações", key=f"save_{eid}"):
+                produtos.loc[produtos["ID"] == str(eid), [
+                    "Nome", "Marca", "Categoria", "Quantidade",
+                    "PrecoCusto", "PrecoVista", "PrecoCartao",
+                    "Validade", "FotoURL", "CodigoBarras"
+                ]] = [
+                    novo_nome.strip(),
+                    nova_marca.strip(),
+                    nova_cat.strip(),
+                    int(nova_qtd),
+                    to_float(novo_preco_custo),
+                    to_float(novo_preco_vista),
+                    round(to_float(novo_preco_vista) / FATOR_CARTAO, 2) if to_float(novo_preco_vista) > 0 else 0.0,
+                    str(nova_validade),
+                    nova_foto.strip(),
+                    str(novo_cb).strip()
+                ]
+                st.session_state["produtos"] = produtos
+                save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                del st.session_state["edit_prod"]
+                if f"acao_{eid}" in st.session_state:
+                    st.session_state[f"acao_{eid}"] = "Nenhuma"  # <<< reset do selectbox
+                st.success("Produto atualizado!")
+                st.rerun()
 
-                with col_cancel:
-                    if st.button("Cancelar edição", key=f"cancel_{eid}"):
-                        del st.session_state["edit_prod"]
-                        st.session_state[f"acao_{eid}"] = "Nenhuma"  # <<< reset do selectbox
-                        st.info("Edição cancelada.")
-                        st.rerun()
+        with col_cancel:
+            if st.button("Cancelar edição", key=f"cancel_{eid}"):
+                del st.session_state["edit_prod"]
+                if f"acao_{eid}" in st.session_state:
+                    st.session_state[f"acao_{eid}"] = "Nenhuma"  # <<< reset do selectbox
+                st.info("Edição cancelada.")
+                st.rerun()
+
 
 
 
