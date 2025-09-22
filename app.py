@@ -1319,18 +1319,17 @@ if "edit_prod" in st.session_state:
                 st.session_state["produtos"] = produtos
                 save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
                 del st.session_state["edit_prod"]
-                if f"acao_{eid}" in st.session_state:
-                    st.session_state[f"acao_{eid}"] = "Nenhuma"  # <<< reset do selectbox
+                st.session_state.update({f"acao_{eid}": "Nenhuma"})  # reset seguro do selectbox
                 st.success("Produto atualizado!")
                 st.rerun()
 
         with col_cancel:
             if st.button("Cancelar edição", key=f"cancel_{eid}"):
                 del st.session_state["edit_prod"]
-                if f"acao_{eid}" in st.session_state:
-                    st.session_state[f"acao_{eid}"] = "Nenhuma"  # <<< reset do selectbox
+                st.session_state.update({f"acao_{eid}": "Nenhuma"})  # reset seguro do selectbox
                 st.info("Edição cancelada.")
                 st.rerun()
+
 
 
 
