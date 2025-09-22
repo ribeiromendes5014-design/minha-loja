@@ -1292,7 +1292,6 @@ with st.expander("🔍 Pesquisar produto"):
     if "PaiID" not in produtos_filtrados.columns:
         produtos_filtrados["PaiID"] = None
 
-
 # --- Lista de produtos com agrupamento por Pai e Variações ---
 st.markdown("### Lista de produtos")
 
