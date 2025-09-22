@@ -1338,9 +1338,9 @@ else:
                 st.session_state["edit_prod"] = eid
 
             if acao == "🗑️ Excluir":
-    if col_btn.button("Confirmar exclusão", key=f"conf_del_{eid}"):
-        # ✅ Garante que a coluna 'PaiID' existe
-        if "PaiID" not in produtos.columns:
+               if col_btn.button("Confirmar exclusão", key=f"conf_del_{eid}"):
+          # ✅ Garante que a coluna 'PaiID' existe
+            if "PaiID" not in produtos.columns:
             produtos["PaiID"] = None
 
         # Apaga o pai
