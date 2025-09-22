@@ -848,7 +848,7 @@ st.session_state["vendas"]    = vendas
 st.session_state["clientes"]  = clientes
 st.session_state["promocoes"] = promocoes
 
-# # =====================================
+# =====================================
 # Menu principal em blocos (cards)
 # =====================================
 
@@ -885,25 +885,25 @@ st.title("📊 Sistema de Gestão")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    if st.button("📊\nDashboard", key="dashboard"):
+    if st.button("📊\nDashboard", key="btn_dashboard"):
         st.session_state.page = "Dashboard"
-    if st.button("📦\nProdutos", key="produtos"):
+    if st.button("📦\nProdutos", key="btn_produtos"):
         st.session_state.page = "Produtos"
-    if st.button("🧾\nVendas", key="vendas"):
+    if st.button("🧾\nVendas", key="btn_vendas"):
         st.session_state.page = "Vendas"
 
 with col2:
-    if st.button("👥\nClientes", key="clientes"):
+    if st.button("👥\nClientes", key="btn_clientes"):
         st.session_state.page = "Clientes"
-    if st.button("🎉\nPromoções", key="promocoes"):
+    if st.button("🎉\nPromoções", key="btn_promocoes"):
         st.session_state.page = "Promoções"
-    if st.button("💰\nPrecificação", key="precificacao"):
+    if st.button("💰\nPrecificação", key="btn_precificacao"):
         st.session_state.page = "precificacao"
 
 with col3:
-    if st.button("📚\nPapelaria", key="papelaria"):
+    if st.button("📚\nPapelaria", key="btn_papelaria"):
         st.session_state.page = "Papelaria"
-    if st.button("🚪\nSair", key="sair"):
+    if st.button("🚪\nSair", key="btn_sair"):
         st.session_state.page = "Sair"
 
 # Campo de estoque mínimo
@@ -950,6 +950,7 @@ if "page" in st.session_state:
         st.session_state.clear()
         st.success("Sessão encerrada.")
         st.stop()
+
 
 
 
