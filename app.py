@@ -848,60 +848,65 @@ st.session_state["vendas"]    = vendas
 st.session_state["clientes"]  = clientes
 st.session_state["promocoes"] = promocoes
 
-# =====================================
-# Menu principal em cards
+# # =====================================
+# Menu principal em blocos (cards)
 # =====================================
 
 # CSS para os cards
 st.markdown("""
     <style>
     .card {
-        padding: 20px;
-        border-radius: 10px;
+        padding: 30px;
+        border-radius: 12px;
         background-color: #f9f9f9;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         text-align: center;
         transition: 0.3s;
         cursor: pointer;
         margin: 10px;
+        font-size: 18px;
+        font-weight: bold;
     }
     .card:hover {
         background-color: #e6ffe6;
-        transform: scale(1.02);
+        transform: scale(1.05);
     }
     .icon {
-        font-size: 30px;
+        font-size: 36px;
+        display: block;
+        margin-bottom: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("📊 Sistema de Gestão")
 
+# Criar colunas
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    if st.button("📊 Dashboard"):
+    if st.button("📊\nDashboard", key="dashboard"):
         st.session_state.page = "Dashboard"
-    if st.button("📦 Produtos"):
+    if st.button("📦\nProdutos", key="produtos"):
         st.session_state.page = "Produtos"
-    if st.button("🧾 Vendas"):
+    if st.button("🧾\nVendas", key="vendas"):
         st.session_state.page = "Vendas"
 
 with col2:
-    if st.button("👥 Clientes"):
+    if st.button("👥\nClientes", key="clientes"):
         st.session_state.page = "Clientes"
-    if st.button("🎉 Promoções"):
+    if st.button("🎉\nPromoções", key="promocoes"):
         st.session_state.page = "Promoções"
-    if st.button("💰 Precificação"):
-        st.session_state.page = "precificação"
+    if st.button("💰\nPrecificação", key="precificacao"):
+        st.session_state.page = "precificacao"
 
 with col3:
-    if st.button("📚 Papelaria"):
+    if st.button("📚\nPapelaria", key="papelaria"):
         st.session_state.page = "Papelaria"
-    if st.button("🚪 Sair"):
+    if st.button("🚪\nSair", key="sair"):
         st.session_state.page = "Sair"
 
-# Campo de estoque mínimo (que antes ficava na sidebar)
+# Campo de estoque mínimo
 st.markdown("---")
 st.number_input(
     "🔔 Estoque mínimo (alerta)",
@@ -937,7 +942,6 @@ if "page" in st.session_state:
         pagina_papelaria()
 
     elif st.session_state.page == "Sair":
-        # 🔹 Limpa sessão e também zera o "Manter"
         usuarios = norm_usuarios(pd.DataFrame())
         if "Manter" in usuarios.columns and st.session_state.get("usuario_logado"):
             usuarios.loc[usuarios["Usuario"] == st.session_state["usuario_logado"], "Manter"] = False
@@ -946,6 +950,7 @@ if "page" in st.session_state:
         st.session_state.clear()
         st.success("Sessão encerrada.")
         st.stop()
+
 
 
 
