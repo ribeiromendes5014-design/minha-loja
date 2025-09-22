@@ -1223,7 +1223,7 @@ if view == "Produtos":
         else:
             produtos_filtrados = produtos.copy()
 
-    # --- Lista de produtos ---
+      # --- Lista de produtos ---
     st.markdown("### Lista de produtos")
     if produtos_filtrados.empty:
         st.info("Nenhum produto encontrado.")
@@ -1319,14 +1319,17 @@ if view == "Produtos":
                         st.session_state["produtos"] = produtos
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
                         del st.session_state["edit_prod"]
+                        st.session_state[f"acao_{eid}"] = "Nenhuma"  # <<< reset do selectbox
                         st.success("Produto atualizado!")
                         st.rerun()
 
                 with col_cancel:
                     if st.button("Cancelar edição", key=f"cancel_{eid}"):
                         del st.session_state["edit_prod"]
+                        st.session_state[f"acao_{eid}"] = "Nenhuma"  # <<< reset do selectbox
                         st.info("Edição cancelada.")
                         st.rerun()
+
 
 
 
