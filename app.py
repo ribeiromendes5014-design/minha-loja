@@ -1335,26 +1335,26 @@ else:
             )
 
             if acao == "✏️ Editar":
-    st.session_state["edit_prod"] = eid
+                st.session_state["edit_prod"] = eid
 
-if acao == "🗑️ Excluir":
-    if col_btn.button("Confirmar exclusão", key=f"conf_del_{eid}"):
-        # ✅ Garante que a coluna 'PaiID' existe
-        if "PaiID" not in produtos.columns:
-            produtos["PaiID"] = None
+            if acao == "🗑️ Excluir":
+                if col_btn.button("Confirmar exclusão", key=f"conf_del_{eid}"):
+                    # ✅ Garante que a coluna 'PaiID' existe
+                    if "PaiID" not in produtos.columns:
+                        produtos["PaiID"] = None
 
+                    # Apaga o pai
+                    produtos = produtos[produtos["ID"] != str(eid)]
 
-        # Apaga o pai
-        produtos = produtos[produtos["ID"] != str(eid)]
+                    # Apaga as variações ligadas ao pai
+                    produtos = produtos[produtos["PaiID"] != str(eid)]
 
-        # Apaga as variações ligadas ao pai
-        produtos = produtos[produtos["PaiID"] != str(eid)]
+                    # Atualiza estado e salva
+                    st.session_state["produtos"] = produtos
+                    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                    st.warning(f"Produto {pai['Nome']} e suas variações excluídas!")
+                    st.experimental_rerun()
 
-        # Atualiza estado e salva
-        st.session_state["produtos"] = produtos
-        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-        st.warning(f"Produto {pai['Nome']} e suas variações excluídas!")
-        st.experimental_rerun()
 
 
             # Listar variações filhas do produto
