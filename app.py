@@ -1068,30 +1068,47 @@ if view == "Dashboard":
 
     
 # =====================================
-# PRODUTOS
+# PRODUTOS COM GRADE (PAI/FILHO)
 # =====================================
 if view == "Produtos":
     show_logo("main")
     st.header("📦 Produtos")
 
+    # Função auxiliar para criar um novo ID sequencial
+    def prox_id(df, coluna_id="ID"):
+        if df.empty:
+            return "1"
+        else:
+            try:
+                return str(int(df[coluna_id].max()) + 1)
+            except:
+                return str(len(df) + 1)
+
     # --- Cadastro ---
     with st.expander("Cadastrar novo produto"):
         c1, c2, c3 = st.columns(3)
         with c1:
+            # Produto pai ou simples
+            tipo_produto = st.radio("Tipo de produto", ["Produto simples", "Produto com variações (grade)"], key="cad_tipo_produto")
+
             nome = st.text_input("Nome", key="cad_nome")
             marca = st.text_input("Marca", key="cad_marca")
             categoria = st.text_input("Categoria", key="cad_categoria")
 
         with c2:
-            qtd = st.number_input("Quantidade", min_value=0, step=1, value=0, key="cad_qtd")
-            preco_custo = st.text_input("Preço de Custo", value="0,00", key="cad_preco_custo")
-            preco_vista = st.text_input("Preço à Vista", value="0,00", key="cad_preco_vista")
-            preco_cartao = 0.0
-            try:
-                preco_cartao = round(float(preco_vista.replace(",", ".").strip()) / FATOR_CARTAO, 2)
-            except Exception:
+            # Se for produto simples, cadastro direto da quantidade e preços
+            if tipo_produto == "Produto simples":
+                qtd = st.number_input("Quantidade", min_value=0, step=1, value=0, key="cad_qtd")
+                preco_custo = st.text_input("Preço de Custo", value="0,00", key="cad_preco_custo")
+                preco_vista = st.text_input("Preço à Vista", value="0,00", key="cad_preco_vista")
                 preco_cartao = 0.0
-            st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True, key="cad_preco_cartao")
+                try:
+                    preco_cartao = round(float(preco_vista.replace(",", ".").strip()) / FATOR_CARTAO, 2)
+                except Exception:
+                    preco_cartao = 0.0
+                st.text_input("Preço no Cartão (auto)", value=str(preco_cartao).replace(".", ","), disabled=True, key="cad_preco_cartao")
+            else:
+                st.info("Cadastre as variações abaixo (grade).")
 
         with c3:
             validade = st.date_input("Validade (opcional)", value=date.today(), key="cad_validade")
@@ -1111,7 +1128,7 @@ if view == "Produtos":
                 if codigos_lidos:
                     st.session_state["codigo_barras"] = codigos_lidos[0]
                     st.success(f"Código lido: {st.session_state['codigo_barras']}")
-                    st.rerun()
+                    st.experimental_rerun()
                 else:
                     st.error("❌ Não foi possível ler nenhum código.")
 
@@ -1123,30 +1140,94 @@ if view == "Produtos":
                 if codigos_lidos:
                     st.session_state["codigo_barras"] = codigos_lidos[0]
                     st.success(f"Código lido via upload: {st.session_state['codigo_barras']}")
-                    st.rerun()
+                    st.experimental_rerun()
                 else:
                     st.error("❌ Não foi possível ler nenhum código da imagem enviada.")
 
+        # --- Cadastro da grade (variações) ---
+        variações = []
+        if tipo_produto == "Produto com variações (grade)":
+            st.markdown("#### Cadastro das variações (grade)")
+            qtd_variações = st.number_input("Quantas variações deseja cadastrar?", min_value=1, step=1, key="cad_qtd_variações")
+
+            variações = []
+            for i in range(int(qtd_variações)):
+                st.markdown(f"**Variação {i+1}**")
+                var_c1, var_c2, var_c3, var_c4, var_c5 = st.columns(5)
+                var_nome = var_c1.text_input(f"Nome da variação {i+1}", key=f"var_nome_{i}")
+                var_qtd = var_c2.number_input(f"Quantidade variação {i+1}", min_value=0, step=1, value=0, key=f"var_qtd_{i}")
+                var_preco_custo = var_c3.text_input(f"Preço de custo variação {i+1}", value="0,00", key=f"var_pc_{i}")
+                var_preco_vista = var_c4.text_input(f"Preço à vista variação {i+1}", value="0,00", key=f"var_pv_{i}")
+                var_codigo_barras = var_c5.text_input(f"Código de barras variação {i+1}", key=f"var_cb_{i}")
+                variações.append({
+                    "Nome": var_nome.strip(),
+                    "Quantidade": int(var_qtd),
+                    "PrecoCusto": to_float(var_preco_custo),
+                    "PrecoVista": to_float(var_preco_vista),
+                    "PrecoCartao": round(to_float(var_preco_vista) / FATOR_CARTAO, 2) if to_float(var_preco_vista) > 0 else 0.0,
+                    "CodigoBarras": var_codigo_barras.strip()
+                })
+
         if st.button("💾 Salvar Produto", use_container_width=True, key="cad_salvar"):
             novo_id = prox_id(produtos, "ID")
-            novo = {
-                "ID": novo_id,
-                "Nome": nome.strip(),
-                "Marca": marca.strip(),
-                "Categoria": categoria.strip(),
-                "Quantidade": int(qtd),
-                "PrecoCusto": to_float(preco_custo),
-                "PrecoVista": to_float(preco_vista),
-                "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
-                "Validade": str(validade),
-                "FotoURL": foto_url.strip(),
-                "CodigoBarras": codigo_barras.strip()
-            }
-            produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
+            if tipo_produto == "Produto simples":
+                novo = {
+                    "ID": novo_id,
+                    "Nome": nome.strip(),
+                    "Marca": marca.strip(),
+                    "Categoria": categoria.strip(),
+                    "Quantidade": int(qtd),
+                    "PrecoCusto": to_float(preco_custo),
+                    "PrecoVista": to_float(preco_vista),
+                    "PrecoCartao": round(to_float(preco_vista) / FATOR_CARTAO, 2) if to_float(preco_vista) > 0 else 0.0,
+                    "Validade": str(validade),
+                    "FotoURL": foto_url.strip(),
+                    "CodigoBarras": codigo_barras.strip(),
+                    "PaiID": None  # Produto simples, sem pai
+                }
+                produtos = pd.concat([produtos, pd.DataFrame([novo])], ignore_index=True)
+            else:
+                # Produto pai
+                novo_pai = {
+                    "ID": novo_id,
+                    "Nome": nome.strip(),
+                    "Marca": marca.strip(),
+                    "Categoria": categoria.strip(),
+                    "Quantidade": 0,  # estoque do pai fica 0, soma nas variações
+                    "PrecoCusto": 0.0,
+                    "PrecoVista": 0.0,
+                    "PrecoCartao": 0.0,
+                    "Validade": str(validade),
+                    "FotoURL": foto_url.strip(),
+                    "CodigoBarras": codigo_barras.strip(),
+                    "PaiID": None
+                }
+                produtos = pd.concat([produtos, pd.DataFrame([novo_pai])], ignore_index=True)
+
+                # Agora cadastra as variações ligadas ao pai pelo ID
+                for var in variações:
+                    if var["Nome"] == "":
+                        continue  # pula variações sem nome
+                    novo_filho = {
+                        "ID": prox_id(produtos, "ID"),
+                        "Nome": var["Nome"],
+                        "Marca": marca.strip(),
+                        "Categoria": categoria.strip(),
+                        "Quantidade": var["Quantidade"],
+                        "PrecoCusto": var["PrecoCusto"],
+                        "PrecoVista": var["PrecoVista"],
+                        "PrecoCartao": var["PrecoCartao"],
+                        "Validade": str(validade),
+                        "FotoURL": foto_url.strip(),
+                        "CodigoBarras": var["CodigoBarras"],
+                        "PaiID": novo_id  # aponta para o produto pai
+                    }
+                    produtos = pd.concat([produtos, pd.DataFrame([novo_filho])], ignore_index=True)
+
             st.session_state["produtos"] = produtos
             save_csv_github(produtos, ARQ_PRODUTOS, "Novo produto cadastrado")
             st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
-            st.rerun()
+            st.experimental_rerun()
 
 
     # --- Busca minimalista ---
@@ -1174,32 +1255,39 @@ if view == "Produtos":
         else:
             produtos_filtrados = produtos.copy()
 
-    # --- Lista de produtos ---
+    # --- Lista de produtos com agrupamento por Pai e Variações ---
     st.markdown("### Lista de produtos")
+
     if produtos_filtrados.empty:
         st.info("Nenhum produto encontrado.")
     else:
-        for _, row in produtos_filtrados.iterrows():
+        # Separar produtos pais e variações (filhos)
+        produtos_pai = produtos_filtrados[produtos_filtrados["PaiID"].isnull()]
+        produtos_filho = produtos_filtrados[produtos_filtrados["PaiID"].notnull()]
+
+        for _, pai in produtos_pai.iterrows():
             with st.container():
-                c = st.columns([1,2,2,2,2])
-                if str(row["FotoURL"]).strip():
+                c = st.columns([1, 3, 1, 1, 1])
+                # Imagem do produto pai
+                if str(pai["FotoURL"]).strip():
                     try:
-                        c[0].image(row["FotoURL"], width=80)
+                        c[0].image(pai["FotoURL"], width=80)
                     except Exception:
                         c[0].write("Sem imagem")
                 else:
                     c[0].write("—")
-                cb = f' • CB: {row["CodigoBarras"]}' if str(row.get("CodigoBarras","")).strip() else ""
-                c[1].markdown(f"**{row['Nome']}**  \nMarca: {row['Marca']}  \nCat: {row['Categoria']}{cb}")
-                c[2].write(f"Estoque: {row['Quantidade']}")
-                c[3].write(f"Validade: {row['Validade']}")
+
+                cb = f' • CB: {pai["CodigoBarras"]}' if str(pai.get("CodigoBarras", "")).strip() else ""
+                c[1].markdown(f"**{pai['Nome']}**  \nMarca: {pai['Marca']}  \nCat: {pai['Categoria']}{cb}")
+                c[2].write(f"Estoque: {pai['Quantidade']}")
+                c[3].write(f"Validade: {pai['Validade']}")
                 col_btn = c[4]
+
                 try:
-                    eid = int(row["ID"])
+                    eid = int(pai["ID"])
                 except Exception:
                     continue
 
-                # 🔽 Novo seletor de ação
                 acao = col_btn.selectbox(
                     "Ação",
                     ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
@@ -1207,32 +1295,76 @@ if view == "Produtos":
                 )
 
                 if acao == "✏️ Editar":
-                    st.session_state["edit_prod"] = eid  # só marca, sem rerun
+                    st.session_state["edit_prod"] = eid
 
                 if acao == "🗑️ Excluir":
                     if col_btn.button("Confirmar exclusão", key=f"conf_del_{eid}"):
+                        # Apaga o pai e todas as variações ligadas
                         produtos = produtos[produtos["ID"] != str(eid)]
+                        produtos = produtos[produtos["PaiID"] != str(eid)]
                         st.session_state["produtos"] = produtos
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-                        st.warning(f"Produto {row['Nome']} excluído!")
-                        st.rerun()
+                        st.warning(f"Produto {pai['Nome']} e suas variações excluídas!")
+                        st.experimental_rerun()
 
-        # Editor inline
+                # Listar variações filhas do produto
+                filhos = produtos_filho[produtos_filho["PaiID"] == str(pai["ID"])]
+                if not filhos.empty:
+                    with st.expander(f"Variações de {pai['Nome']}"):
+                        for _, var in filhos.iterrows():
+                            c_var = st.columns([1, 3, 1, 1, 1])
+                            if str(var["FotoURL"]).strip():
+                                try:
+                                    c_var[0].image(var["FotoURL"], width=60)
+                                except Exception:
+                                    c_var[0].write("Sem imagem")
+                            else:
+                                c_var[0].write("—")
+
+                            cb_var = f' • CB: {var["CodigoBarras"]}' if str(var.get("CodigoBarras", "")).strip() else ""
+                            c_var[1].markdown(f"**{var['Nome']}**  \nMarca: {var['Marca']}  \nCat: {var['Categoria']}{cb_var}")
+                            c_var[2].write(f"Estoque: {var['Quantidade']}")
+                            c_var[3].write(f"Validade: {var['Validade']}")
+                            col_btn_var = c_var[4]
+
+                            try:
+                                eid_var = int(var["ID"])
+                            except Exception:
+                                continue
+
+                            acao_var = col_btn_var.selectbox(
+                                "Ação",
+                                ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
+                                key=f"acao_{eid_var}"
+                            )
+
+                            if acao_var == "✏️ Editar":
+                                st.session_state["edit_prod"] = eid_var
+
+                            if acao_var == "🗑️ Excluir":
+                                if col_btn_var.button("Confirmar exclusão", key=f"conf_del_{eid_var}"):
+                                    produtos = produtos[produtos["ID"] != str(eid_var)]
+                                    st.session_state["produtos"] = produtos
+                                    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                                    st.warning(f"Variação {var['Nome']} excluída!")
+                                    st.experimental_rerun()
+
+        # Editor inline (para pais e filhos)
         if "edit_prod" in st.session_state:
             eid = st.session_state["edit_prod"]
-            row = produtos[produtos["ID"]==str(eid)]
+            row = produtos[produtos["ID"] == str(eid)]
             if not row.empty:
                 st.subheader("Editar produto")
                 row = row.iloc[0]
-                c1,c2,c3 = st.columns(3)
+                c1, c2, c3 = st.columns(3)
                 with c1:
                     novo_nome = st.text_input("Nome", value=row["Nome"], key=f"edit_nome_{eid}")
                     nova_marca = st.text_input("Marca", value=row["Marca"], key=f"edit_marca_{eid}")
                     nova_cat = st.text_input("Categoria", value=row["Categoria"], key=f"edit_cat_{eid}")
                 with c2:
                     nova_qtd = st.number_input("Quantidade", min_value=0, step=1, value=int(row["Quantidade"]), key=f"edit_qtd_{eid}")
-                    novo_preco_custo = st.text_input("Preço de Custo", value=str(row["PrecoCusto"]).replace(".",","), key=f"edit_pc_{eid}")
-                    novo_preco_vista = st.text_input("Preço à Vista", value=str(row["PrecoVista"]).replace(".",","), key=f"edit_pv_{eid}")
+                    novo_preco_custo = st.text_input("Preço de Custo", value=str(row["PrecoCusto"]).replace(".", ","), key=f"edit_pc_{eid}")
+                    novo_preco_vista = st.text_input("Preço à Vista", value=str(row["PrecoVista"]).replace(".", ","), key=f"edit_pv_{eid}")
                 with c3:
                     try:
                         vdata = datetime.strptime(str(row["Validade"] or date.today()), "%Y-%m-%d").date()
@@ -1240,7 +1372,8 @@ if view == "Produtos":
                         vdata = date.today()
                     nova_validade = st.date_input("Validade", value=vdata, key=f"edit_val_{eid}")
                     nova_foto = st.text_input("URL da Foto", value=row["FotoURL"], key=f"edit_foto_{eid}")
-                    novo_cb = st.text_input("Código de Barras", value=str(row.get("CodigoBarras","")), key=f"edit_cb_{eid}")
+                    novo_cb = st.text_input("Código de Barras", value=str(row.get("CodigoBarras", "")), key=f"edit_cb_{eid}")
+
                     foto_codigo_edit = st.camera_input("📷 Atualizar código de barras", key=f"edit_cam_{eid}")
                     if foto_codigo_edit is not None:
                         codigo_lido = ler_codigo_barras_api(foto_codigo_edit.getbuffer())
@@ -1248,13 +1381,13 @@ if view == "Produtos":
                             novo_cb = codigo_lido
                             st.success(f"Código lido: {novo_cb}")
 
-                col_save, col_cancel = st.columns([1,1])
+                col_save, col_cancel = st.columns([1, 1])
                 with col_save:
                     if st.button("Salvar alterações", key=f"save_{eid}"):
-                        produtos.loc[produtos["ID"]==str(eid), [
-                            "Nome","Marca","Categoria","Quantidade",
-                            "PrecoCusto","PrecoVista","PrecoCartao",
-                            "Validade","FotoURL","CodigoBarras"
+                        produtos.loc[produtos["ID"] == str(eid), [
+                            "Nome", "Marca", "Categoria", "Quantidade",
+                            "PrecoCusto", "PrecoVista", "PrecoCartao",
+                            "Validade", "FotoURL", "CodigoBarras"
                         ]] = [
                             novo_nome.strip(),
                             nova_marca.strip(),
@@ -1262,7 +1395,7 @@ if view == "Produtos":
                             int(nova_qtd),
                             to_float(novo_preco_custo),
                             to_float(novo_preco_vista),
-                            round(to_float(novo_preco_vista) / FATOR_CARTAO, 2) if to_float(novo_preco_vista)>0 else 0.0,
+                            round(to_float(novo_preco_vista) / FATOR_CARTAO, 2) if to_float(novo_preco_vista) > 0 else 0.0,
                             str(nova_validade),
                             nova_foto.strip(),
                             str(novo_cb).strip()
@@ -1271,13 +1404,14 @@ if view == "Produtos":
                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
                         del st.session_state["edit_prod"]
                         st.success("Produto atualizado!")
-                        st.rerun()
+                        st.experimental_rerun()
 
                 with col_cancel:
                     if st.button("Cancelar edição", key=f"cancel_{eid}"):
                         del st.session_state["edit_prod"]
                         st.info("Edição cancelada.")
-                        st.rerun()
+                        st.experimental_rerun()
+
 
 
 
