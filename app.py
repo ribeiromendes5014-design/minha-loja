@@ -887,7 +887,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     if st.button("📊\nDashboard", key="dashboard"):
         st.session_state.page = "Dashboard"
-    if st.button("📦\nProdutos", key="produtos"):
+    if st.button("📦\nProdutos", key="menu_produtos"):
         st.session_state.page = "Produtos"
     if st.button("🧾\nVendas", key="vendas"):
         st.session_state.page = "Vendas"
