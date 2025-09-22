@@ -1140,7 +1140,39 @@ if view == "Dashboard":
                         )
 
 
+# =====================================
+# INÍCIO - GARANTIR CARREGAMENTO DO CSV
+# =====================================
 
+import pandas as pd
+
+# Exemplo de função para carregar o CSV do GitHub (modifique conforme sua implementação)
+def carregar_csv_github(arquivo_csv):
+    url = f"https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/{arquivo_csv}"
+    return pd.read_csv(url, dtype=str).fillna("")
+
+# Arquivo de produtos
+ARQ_PRODUTOS = "produtos.csv"
+
+# Inicializa o DataFrame se ainda não estiver no session_state
+if "produtos" not in st.session_state:
+    try:
+        produtos = carregar_csv_github(ARQ_PRODUTOS)
+        st.session_state["produtos"] = produtos
+    except Exception as e:
+        st.error(f"Erro ao carregar produtos: {e}")
+        st.session_state["produtos"] = pd.DataFrame(columns=[
+            "ID", "Nome", "Marca", "Categoria", "Quantidade",
+            "PrecoCusto", "PrecoVista", "PrecoCartao",
+            "Validade", "FotoURL", "CodigoBarras", "PaiID"
+        ])
+
+# Pega os produtos carregados do session_state
+produtos = st.session_state["produtos"]
+
+# =====================================
+# FIM - GARANTIR CARREGAMENTO DO CSV
+# =====================================
     
 # =====================================
 # PRODUTOS COM GRADE (PAI/FILHO)
@@ -1333,41 +1365,6 @@ with st.expander("🔍 Pesquisar produto"):
     # ✅ Garantir que PaiID exista mesmo após filtro
     if "PaiID" not in produtos_filtrados.columns:
         produtos_filtrados["PaiID"] = None
-
-
-    # =====================================
-# INÍCIO - GARANTIR CARREGAMENTO DO CSV
-# =====================================
-
-import pandas as pd
-
-# Exemplo de função para carregar o CSV do GitHub (modifique conforme sua implementação)
-def carregar_csv_github(arquivo_csv):
-    url = f"https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/{arquivo_csv}"
-    return pd.read_csv(url, dtype=str).fillna("")
-
-# Arquivo de produtos
-ARQ_PRODUTOS = "produtos.csv"
-
-# Inicializa o DataFrame se ainda não estiver no session_state
-if "produtos" not in st.session_state:
-    try:
-        produtos = carregar_csv_github(ARQ_PRODUTOS)
-        st.session_state["produtos"] = produtos
-    except Exception as e:
-        st.error(f"Erro ao carregar produtos: {e}")
-        st.session_state["produtos"] = pd.DataFrame(columns=[
-            "ID", "Nome", "Marca", "Categoria", "Quantidade",
-            "PrecoCusto", "PrecoVista", "PrecoCartao",
-            "Validade", "FotoURL", "CodigoBarras", "PaiID"
-        ])
-
-# Pega os produtos carregados do session_state
-produtos = st.session_state["produtos"]
-
-# =====================================
-# FIM - GARANTIR CARREGAMENTO DO CSV
-# =====================================
 
 # --- Lista de produtos com agrupamento por Pai e Variações ---
 st.markdown("### Lista de produtos")
