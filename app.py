@@ -903,7 +903,7 @@ with col1:
     if st.button("📦\nProdutos", key="menu_produtos"):
         nav_clicked = "Produtos"
     if st.button("🧾\nVendas", key="btn_vendas"):
-    nav_clicked = "Vendas"
+        nav_clicked = "Vendas"
 
 with col2:
     if st.button("👥\nClientes", key="clientes"):
