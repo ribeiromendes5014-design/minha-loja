@@ -1224,47 +1224,55 @@ if view == "Produtos":
             produtos_filtrados = produtos.copy()
 
       # --- Lista de produtos ---
-    st.markdown("### Lista de produtos")
-    if produtos_filtrados.empty:
-        st.info("Nenhum produto encontrado.")
-    else:
-        for _, row in produtos_filtrados.iterrows():
-            with st.container():
-                c = st.columns([1,2,2,2,2])
-                if str(row["FotoURL"]).strip():
-                    try:
-                        c[0].image(row["FotoURL"], width=80)
-                    except Exception:
-                        c[0].write("Sem imagem")
-                else:
-                    c[0].write("—")
-                cb = f' • CB: {row["CodigoBarras"]}' if str(row.get("CodigoBarras","")).strip() else ""
-                c[1].markdown(f"**{row['Nome']}**  \nMarca: {row['Marca']}  \nCat: {row['Categoria']}{cb}")
-                c[2].write(f"Estoque: {row['Quantidade']}")
-                c[3].write(f"Validade: {row['Validade']}")
-                col_btn = c[4]
+st.markdown("### Lista de produtos")
+if produtos_filtrados.empty:
+    st.info("Nenhum produto encontrado.")
+else:
+    for _, row in produtos_filtrados.iterrows():
+        with st.container():
+            c = st.columns([1, 2, 2, 2, 2])
+            if str(row["FotoURL"]).strip():
                 try:
-                    eid = int(row["ID"])
+                    c[0].image(row["FotoURL"], width=80)
                 except Exception:
-                    continue
+                    c[0].write("Sem imagem")
+            else:
+                c[0].write("—")
 
-                # 🔽 Novo seletor de ação
-                acao = col_btn.selectbox(
-                    "Ação",
-                    ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
-                    key=f"acao_{eid}"
-                )
+            cb = f' • CB: {row["CodigoBarras"]}' if str(row.get("CodigoBarras", "")).strip() else ""
+            c[1].markdown(
+                f"**{row['Nome']}**  \nMarca: {row['Marca']}  \nCat: {row['Categoria']}{cb}"
+            )
+            c[2].write(f"Estoque: {row['Quantidade']}")
+            c[3].write(f"Validade: {row['Validade']}")
+            col_btn = c[4]
 
-                if acao == "✏️ Editar":
-                    st.session_state["edit_prod"] = eid  # só marca, sem rerun
+            try:
+                eid = int(row["ID"])
+            except Exception:
+                continue
 
-                if acao == "🗑️ Excluir":
-                    if col_btn.button("Confirmar exclusão", key=f"conf_del_{eid}"):
-                        produtos = produtos[produtos["ID"] != str(eid)]
-                        st.session_state["produtos"] = produtos
-                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-                        st.warning(f"Produto {row['Nome']} excluído!")
-                        st.rerun()
+            # 🔽 Novo seletor de ação
+            acao = col_btn.selectbox(
+                "Ação",
+                ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
+                key=f"acao_{eid}"
+            )
+
+            if acao == "✏️ Editar":
+                st.session_state["edit_prod"] = eid  # só marca, sem rerun
+
+            if acao == "🗑️ Excluir":
+                if col_btn.button("Confirmar exclusão", key=f"conf_del_{eid}"):
+                    produtos = produtos[produtos["ID"] != str(eid)]
+
+                    # 🔹 Corrigido: salvar de forma serializável
+                    st.session_state["produtos"] = produtos.to_dict("records")
+
+                    save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                    st.warning(f"Produto {row['Nome']} excluído!")
+                    st.rerun()
+
 
         # Editor inline
 if "edit_prod" in st.session_state:
