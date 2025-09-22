@@ -906,8 +906,8 @@ with col1:
         nav_clicked = "Vendas"
 
 with col2:
-    if st.button("👥\nClientes", key="clientes"):
-        nav_clicked = "Clientes"
+    if st.button("👥\nClientes", key="btn_clientes"):
+    st.session_state.page = "Clientes"
     if st.button("🎉\nPromoções", key="promocoes"):
         nav_clicked = "Promoções"
     if st.button("💰\nPrecificação", key="precificacao"):
