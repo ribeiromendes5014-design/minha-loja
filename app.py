@@ -961,7 +961,7 @@ if "page" in st.session_state:
 # =====================================
 # DASHBOARD
 # =====================================
-if view == "Dashboard":
+if "page" in st.session_state and st.session_state.page == "Dashboard":
     st.columns([1,3])[0].markdown("")
     show_logo("main")
     st.title("📊 Dashboard")
