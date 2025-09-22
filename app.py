@@ -849,17 +849,61 @@ st.session_state["clientes"]  = clientes
 st.session_state["promocoes"] = promocoes
 
 # =====================================
-# Sidebar
+# Menu principal em cards
 # =====================================
-show_logo("sidebar")
-st.sidebar.title("📚 Menu")
-view = st.sidebar.radio(
-    "Navegar",
-    ["Dashboard", "Produtos", "Vendas", "Clientes", "Promoções", "precificação", "Papelaria", "Sair"],
-    index=0
-)
-st.sidebar.markdown("---")
-st.sidebar.number_input(
+
+# CSS para os cards
+st.markdown("""
+    <style>
+    .card {
+        padding: 20px;
+        border-radius: 10px;
+        background-color: #f9f9f9;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: 0.3s;
+        cursor: pointer;
+        margin: 10px;
+    }
+    .card:hover {
+        background-color: #e6ffe6;
+        transform: scale(1.02);
+    }
+    .icon {
+        font-size: 30px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.title("📊 Sistema de Gestão")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    if st.button("📊 Dashboard"):
+        st.session_state.page = "Dashboard"
+    if st.button("📦 Produtos"):
+        st.session_state.page = "Produtos"
+    if st.button("🧾 Vendas"):
+        st.session_state.page = "Vendas"
+
+with col2:
+    if st.button("👥 Clientes"):
+        st.session_state.page = "Clientes"
+    if st.button("🎉 Promoções"):
+        st.session_state.page = "Promoções"
+    if st.button("💰 Precificação"):
+        st.session_state.page = "precificação"
+
+with col3:
+    if st.button("📚 Papelaria"):
+        st.session_state.page = "Papelaria"
+    if st.button("🚪 Sair"):
+        st.session_state.page = "Sair"
+
+# Campo de estoque mínimo (que antes ficava na sidebar)
+st.markdown("---")
+st.number_input(
     "🔔 Estoque mínimo (alerta)",
     min_value=0,
     step=1,
@@ -867,16 +911,42 @@ st.sidebar.number_input(
     key="estoque_minimo"
 )
 
-if view == "Sair":
-    # 🔹 Limpa sessão e também zera o "Manter"
-    usuarios = norm_usuarios(pd.DataFrame())
-    if "Manter" in usuarios.columns and st.session_state.get("usuario_logado"):
-        usuarios.loc[usuarios["Usuario"] == st.session_state["usuario_logado"], "Manter"] = False
-        save_csv_github(usuarios, ARQ_USUARIOS, "Logout do usuário")
+# =====================================
+# Lógica de navegação
+# =====================================
+if "page" in st.session_state:
+    if st.session_state.page == "Dashboard":
+        pagina_dashboard()
 
-    st.session_state.clear()
-    st.success("Sessão encerrada.")
-    st.stop()
+    elif st.session_state.page == "Produtos":
+        pagina_produtos()
+
+    elif st.session_state.page == "Vendas":
+        pagina_vendas()
+
+    elif st.session_state.page == "Clientes":
+        pagina_clientes()
+
+    elif st.session_state.page == "Promoções":
+        pagina_promocoes()
+
+    elif st.session_state.page == "precificação":
+        pagina_precificacao()
+
+    elif st.session_state.page == "Papelaria":
+        pagina_papelaria()
+
+    elif st.session_state.page == "Sair":
+        # 🔹 Limpa sessão e também zera o "Manter"
+        usuarios = norm_usuarios(pd.DataFrame())
+        if "Manter" in usuarios.columns and st.session_state.get("usuario_logado"):
+            usuarios.loc[usuarios["Usuario"] == st.session_state["usuario_logado"], "Manter"] = False
+            save_csv_github(usuarios, ARQ_USUARIOS, "Logout do usuário")
+
+        st.session_state.clear()
+        st.success("Sessão encerrada.")
+        st.stop()
+
 
 
 
