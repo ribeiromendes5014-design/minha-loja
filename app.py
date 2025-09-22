@@ -881,30 +881,84 @@ st.markdown("""
 
 st.title("📊 Sistema de Gestão")
 
-# Criar colunas
+import streamlit as st
+
+# Inicializar a página padrão, se necessário
+if "page" not in st.session_state:
+    st.session_state.page = "Dashboard"
+
+# =====================================
+# MENU DE NAVEGAÇÃO
+# =====================================
+
+# Criar colunas para os botões
 col1, col2, col3 = st.columns(3)
+
+# Variável temporária para controlar a navegação
+nav_clicked = None
 
 with col1:
     if st.button("📊\nDashboard", key="dashboard"):
-        st.session_state.page = "Dashboard"
+        nav_clicked = "Dashboard"
     if st.button("📦\nProdutos", key="menu_produtos"):
-        st.session_state.page = "Produtos"
+        nav_clicked = "Produtos"
     if st.button("🧾\nVendas", key="vendas"):
-        st.session_state.page = "Vendas"
+        nav_clicked = "Vendas"
 
 with col2:
     if st.button("👥\nClientes", key="clientes"):
-        st.session_state.page = "Clientes"
+        nav_clicked = "Clientes"
     if st.button("🎉\nPromoções", key="promocoes"):
-        st.session_state.page = "Promoções"
+        nav_clicked = "Promoções"
     if st.button("💰\nPrecificação", key="precificacao"):
-        st.session_state.page = "precificacao"
+        nav_clicked = "Precificação"
 
 with col3:
     if st.button("📚\nPapelaria", key="papelaria"):
-        st.session_state.page = "Papelaria"
+        nav_clicked = "Papelaria"
     if st.button("🚪\nSair", key="sair"):
-        st.session_state.page = "Sair"
+        nav_clicked = "Sair"
+
+# Alterar o estado da página de forma segura
+if nav_clicked:
+    st.session_state.page = nav_clicked
+
+# =====================================
+# RENDERIZAÇÃO DAS PÁGINAS
+# =====================================
+
+if st.session_state.page == "Dashboard":
+    st.header("📊 Dashboard")
+    # Coloque aqui o conteúdo do dashboard
+
+elif st.session_state.page == "Produtos":
+    st.header("📦 Produtos")
+    # Coloque aqui o conteúdo da página de produtos
+
+elif st.session_state.page == "Vendas":
+    st.header("🧾 Vendas")
+    # Coloque aqui o conteúdo da página de vendas
+
+elif st.session_state.page == "Clientes":
+    st.header("👥 Clientes")
+    # Coloque aqui o conteúdo da página de clientes
+
+elif st.session_state.page == "Promoções":
+    st.header("🎉 Promoções")
+    # Coloque aqui o conteúdo da página de promoções
+
+elif st.session_state.page == "Precificação":
+    st.header("💰 Precificação")
+    # Coloque aqui o conteúdo da página de precificação
+
+elif st.session_state.page == "Papelaria":
+    st.header("📚 Papelaria")
+    # Coloque aqui o conteúdo da página de papelaria
+
+elif st.session_state.page == "Sair":
+    st.success("Você saiu do sistema.")
+    # Coloque aqui a lógica para logout ou redirecionamento
+
 
 # Campo de estoque mínimo
 st.markdown("---")
