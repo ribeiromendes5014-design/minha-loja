@@ -1262,8 +1262,7 @@ if view == "Produtos":
             st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
             st.experimental_rerun()
 
-
-    # --- Busca minimalista ---
+# --- Busca minimalista ---
 with st.expander("🔍 Pesquisar produto"):
     criterio = st.selectbox(
         "Pesquisar por:",
