@@ -19,7 +19,7 @@ def ler_codigo_barras_api(image_bytes):
         # 1. Tentar POST com timeout maior para mitigar lentidão ou recusas temporárias
         files = {"f": ("barcode.png", image_bytes, "image/png")}
         # Adicionado um timeout de 30 segundos
-        response = requests.post("https://zxing.org/w/decode", files=files, timeout=30) 
+        response = requests.post("https://api.qrserver.com/v1/read-qr-code/", files=files, timeout=30) 
 
         # 2. Verificar Status HTTP
         if response.status_code != 200:
