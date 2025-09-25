@@ -1369,7 +1369,7 @@ if view == "Produtos":
                     del st.session_state.cb_grade_lidos 
                 save_csv_github(produtos, ARQ_PRODUTOS, "Novo produto cadastrado")
                 st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
-                st.experimental_rerun()
+                st.rerun()
 
     # ================================
     # SUBABA: LISTA & BUSCA
