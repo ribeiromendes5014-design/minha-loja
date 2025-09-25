@@ -1407,169 +1407,172 @@ if view == "Produtos":
                 produtos_filtrados["PaiID"] = None
 
         # --- Lista de produtos com agrupamento por Pai e Variações ---
-        st.markdown("### Lista de produtos")
+st.markdown("### Lista de produtos")
 
-        if produtos_filtrados.empty:
-            st.info("Nenhum produto encontrado.")
-        else:
-            # Separar produtos pais e variações (filhos)
-            produtos_pai = produtos_filtrados[produtos_filtrados["PaiID"].isnull()]
-            produtos_filho = produtos_filtrados[produtos_filtrados["PaiID"].notnull()]
+if produtos_filtrados.empty:
+    st.info("Nenhum produto encontrado.")
+else:
+    # Separar produtos pais e variações (filhos)
+    produtos_pai = produtos_filtrados[produtos_filtrados["PaiID"].isnull()]
+    produtos_filho = produtos_filtrados[produtos_filtrados["PaiID"].notnull()]
 
-            for index, pai in produtos_pai.iterrows():
-                with st.container():
-                    c = st.columns([1, 3, 1, 1, 1])
-                    # Imagem do produto pai
-                    if str(pai["FotoURL"]).strip():
-                        try:
-                            c[0].image(pai["FotoURL"], width=80)
-                        except Exception:
-                            c[0].write("Sem imagem")
-                    else:
-                        c[0].write("—")
-
-                    cb = f' • CB: {pai["CodigoBarras"]}' if str(pai.get("CodigoBarras", "")).strip() else ""
-                    c[1].markdown(f"**{pai['Nome']}** \nMarca: {pai['Marca']}  \nCat: {pai['Categoria']}{cb}")
-                    c[2].write(f"Estoque: {pai['Quantidade']}")
-                    c[3].write(f"Validade: {pai['Validade']}")
-                    col_btn = c[4]
-
-                    try:
-                        eid = int(pai["ID"])
-                    except Exception:
-                        continue
-
-                    acao = col_btn.selectbox(
-                        "Ação",
-                        ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
-                        key=f"acao_pai_{index}_{eid}"
-                    )
-
-                    if acao == "✏️ Editar":
-                        st.session_state["edit_prod"] = eid
-
-                    if acao == "🗑️ Excluir":
-                        if col_btn.button("Confirmar exclusão", key=f"conf_del_pai_{index}_{eid}"):
-                            # ✅ Garante que a coluna 'PaiID' existe
-                            if "PaiID" not in produtos.columns:
-                                produtos["PaiID"] = None
-
-                            # Apaga o pai
-                            produtos = produtos[produtos["ID"] != str(eid)]
-
-                            # Apaga as variações ligadas ao pai
-                            produtos = produtos[produtos["PaiID"] != str(eid)]
-
-                            # Atualiza estado e salva
-                            st.session_state["produtos"] = produtos
-                            save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-                            st.warning(f"Produto {pai['Nome']} e suas variações excluídas!")
-                            st.experimental_rerun()
-
-                    # Listar variações filhas do produto
-                    filhos = produtos_filho[produtos_filho["PaiID"] == str(pai["ID"])]
-                    if not filhos.empty:
-                        with st.expander(f"Variações de {pai['Nome']}"):
-                            for index_var, var in filhos.iterrows():
-                                c_var = st.columns([1, 3, 1, 1, 1])
-                                if str(var["FotoURL"]).strip():
-                                    try:
-                                        c_var[0].image(var["FotoURL"], width=60)
-                                    except Exception:
-                                        c_var[0].write("Sem imagem")
-                                else:
-                                    c_var[0].write("—")
-
-                                cb_var = f' • CB: {var["CodigoBarras"]}' if str(var.get("CodigoBarras", "")).strip() else ""
-                                c_var[1].markdown(f"**{var['Nome']}** \nMarca: {var['Marca']}  \nCat: {var['Categoria']}{cb_var}")
-                                c_var[2].write(f"Estoque: {var['Quantidade']}")
-                                c_var[3].write(f"Validade: {var['Validade']}")
-                                col_btn_var = c_var[4]
-
-                                try:
-                                    eid_var = int(var["ID"])
-                                except Exception:
-                                    continue
-
-                                acao_var = col_btn_var.selectbox(
-                                    "Ação",
-                                    ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
-                                    key=f"acao_filho_{index_var}_{eid_var}"
-                                )
-
-                                if acao_var == "✏️ Editar":
-                                    st.session_state["edit_prod"] = eid_var
-
-                                if acao_var == "🗑️ Excluir":
-                                    if col_btn_var.button("Confirmar exclusão", key=f"conf_del_filho_{index_var}_{eid_var}"):
-                                        produtos = produtos[produtos["ID"] != str(eid_var)]
-                                        st.session_state["produtos"] = produtos
-                                        save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-                                        st.warning(f"Variação {var['Nome']} excluída!")
-                                        st.experimental_rerun()
-
-    # Editor inline (para pais e filhos)
-    if "edit_prod" in st.session_state:
-        eid = st.session_state["edit_prod"]
-        row = produtos[produtos["ID"] == str(eid)]
-        if not row.empty:
-            st.subheader("Editar produto")
-            row = row.iloc[0]
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                novo_nome = st.text_input("Nome", value=row["Nome"], key=f"edit_nome_{eid}")
-                nova_marca = st.text_input("Marca", value=row["Marca"], key=f"edit_marca_{eid}")
-                nova_cat = st.text_input("Categoria", value=row["Categoria"], key=f"edit_cat_{eid}")
-            with c2:
-                nova_qtd = st.number_input("Quantidade", min_value=0, step=1, value=int(row["Quantidade"]), key=f"edit_qtd_{eid}")
-                novo_preco_custo = st.text_input("Preço de Custo", value=str(row["PrecoCusto"]).replace(".", ","), key=f"edit_pc_{eid}")
-                novo_preco_vista = st.text_input("Preço à Vista", value=str(row["PrecoVista"]).replace(".", ","), key=f"edit_pv_{eid}")
-            with c3:
+    for index, pai in produtos_pai.iterrows():
+        with st.container():
+            c = st.columns([1, 3, 1, 1, 1])
+            # Imagem do produto pai
+            if str(pai["FotoURL"]).strip():
                 try:
-                    vdata = datetime.strptime(str(row["Validade"] or date.today()), "%Y-%m-%d").date()
+                    c[0].image(pai["FotoURL"], width=80)
                 except Exception:
-                    vdata = date.today()
-                nova_validade = st.date_input("Validade", value=vdata, key=f"edit_val_{eid}")
-                nova_foto = st.text_input("URL da Foto", value=row["FotoURL"], key=f"edit_foto_{eid}")
-                novo_cb = st.text_input("Código de Barras", value=str(row.get("CodigoBarras", "")), key=f"edit_cb_{eid}")
+                    c[0].write("Sem imagem")
+            else:
+                c[0].write("—")
 
-                foto_codigo_edit = st.camera_input("📷 Atualizar código de barras", key=f"edit_cam_{eid}")
-                if foto_codigo_edit is not None:
-                    codigo_lido = ler_codigo_barras_api(foto_codigo_edit.getbuffer())
-                    if codigo_lido:
-                        novo_cb = codigo_lido
-                        st.success(f"Código lido: {novo_cb}")
+            cb = f' • CB: {pai["CodigoBarras"]}' if str(pai.get("CodigoBarras", "")).strip() else ""
+            c[1].markdown(f"**{pai['Nome']}** \nMarca: {pai['Marca']}  \nCat: {pai['Categoria']}{cb}")
+            c[2].write(f"Estoque: {pai['Quantidade']}")
+            c[3].write(f"Validade: {pai['Validade']}")
+            col_btn = c[4]
 
-            col_save, col_cancel = st.columns([1, 1])
-            with col_save:
-                if st.button("Salvar alterações", key=f"save_{eid}"):
-                    produtos.loc[produtos["ID"] == str(eid), [
-                        "Nome", "Marca", "Categoria", "Quantidade",
-                        "PrecoCusto", "PrecoVista", "PrecoCartao",
-                        "Validade", "FotoURL", "CodigoBarras"
-                    ]] = [
-                        novo_nome.strip(),
-                        nova_marca.strip(),
-                        nova_cat.strip(),
-                        int(nova_qtd),
-                        to_float(novo_preco_custo),
-                        to_float(novo_preco_vista),
-                        round(to_float(novo_preco_vista) / FATOR_CARTAO, 2) if to_float(novo_preco_vista) > 0 else 0.0,
-                        str(nova_validade),
-                        nova_foto.strip(),
-                        str(novo_cb).strip()
-                    ]
+            try:
+                eid = int(pai["ID"])
+            except Exception:
+                continue
+
+            acao = col_btn.selectbox(
+                "Ação",
+                ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
+                key=f"acao_pai_{index}_{eid}"
+            )
+
+            if acao == "✏️ Editar":
+                st.session_state["edit_prod"] = eid
+
+            if acao == "🗑️ Excluir":
+                if col_btn.button("Confirmar exclusão", key=f"conf_del_pai_{index}_{eid}"):
+                    # ✅ Garante que a coluna 'PaiID' existe
+                    if "PaiID" not in produtos.columns:
+                        produtos["PaiID"] = None
+
+                    # Apaga o pai
+                    produtos = produtos[produtos["ID"] != str(eid)]
+
+                    # Apaga as variações ligadas ao pai
+                    produtos = produtos[produtos["PaiID"] != str(eid)]
+
+                    # Atualiza estado e salva
                     st.session_state["produtos"] = produtos
                     save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-                    del st.session_state["edit_prod"]
-                    st.success("Produto atualizado!")
-                    st.rerun()
-                    
-            with col_cancel:
-                if st.button("Cancelar edição", key=f"cancel_{eid}"):
-                    del st.session_state["edit_prod"]
-                    st.info("Edição cancelada.")
-                    st.rerun()
+                    st.warning(f"Produto {pai['Nome']} e suas variações excluídas!")
+                    st.experimental_rerun()
+
+            # Listar variações filhas do produto
+            filhos = produtos_filho[produtos_filho["PaiID"] == str(pai["ID"])]
+            if not filhos.empty:
+                with st.expander(f"Variações de {pai['Nome']}"):
+                    for index_var, var in filhos.iterrows():
+                        c_var = st.columns([1, 3, 1, 1, 1])
+                        if str(var["FotoURL"]).strip():
+                            try:
+                                c_var[0].image(var["FotoURL"], width=60)
+                            except Exception:
+                                c_var[0].write("Sem imagem")
+                        else:
+                            c_var[0].write("—")
+
+                        cb_var = f' • CB: {var["CodigoBarras"]}' if str(var.get("CodigoBarras", "")).strip() else ""
+                        c_var[1].markdown(f"**{var['Nome']}** \nMarca: {var['Marca']}  \nCat: {var['Categoria']}{cb_var}")
+                        c_var[2].write(f"Estoque: {var['Quantidade']}")
+                        c_var[3].write(f"Validade: {var['Validade']}")
+                        col_btn_var = c_var[4]
+
+                        try:
+                            eid_var = int(var["ID"])
+                        except Exception:
+                            continue
+
+                        acao_var = col_btn_var.selectbox(
+                            "Ação",
+                            ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
+                            key=f"acao_filho_{index_var}_{eid_var}"
+                        )
+
+                        if acao_var == "✏️ Editar":
+                            st.session_state["edit_prod"] = eid_var
+
+                        if acao_var == "🗑️ Excluir":
+                            if col_btn_var.button("Confirmar exclusão", key=f"conf_del_filho_{index_var}_{eid_var}"):
+                                produtos = produtos[produtos["ID"] != str(eid_var)]
+                                st.session_state["produtos"] = produtos
+                                save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                                st.warning(f"Variação {var['Nome']} excluída!")
+                                st.experimental_rerun()
+
+# Editor inline (para pais e filhos)
+if "edit_prod" in st.session_state:
+    eid = st.session_state["edit_prod"]
+    row = produtos[produtos["ID"] == str(eid)]
+    if not row.empty:
+        st.subheader("Editar produto")
+        row = row.iloc[0]
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            novo_nome = st.text_input("Nome", value=row["Nome"], key=f"edit_nome_{eid}")
+            nova_marca = st.text_input("Marca", value=row["Marca"], key=f"edit_marca_{eid}")
+            nova_cat = st.text_input("Categoria", value=row["Categoria"], key=f"edit_cat_{eid}")
+        with c2:
+            nova_qtd = st.number_input("Quantidade", min_value=0, step=1, value=int(row["Quantidade"]), key=f"edit_qtd_{eid}")
+            novo_preco_custo = st.text_input("Preço de Custo", value=str(row["PrecoCusto"]).replace(".", ","), key=f"edit_pc_{eid}")
+            novo_preco_vista = st.text_input("Preço à Vista", value=str(row["PrecoVista"]).replace(".", ","), key=f"edit_pv_{eid}")
+        with c3:
+            try:
+                vdata = datetime.strptime(str(row["Validade"] or date.today()), "%Y-%m-%d").date()
+            except Exception:
+                vdata = date.today()
+            nova_validade = st.date_input("Validade", value=vdata, key=f"edit_val_{eid}")
+            nova_foto = st.text_input("URL da Foto", value=row["FotoURL"], key=f"edit_foto_{eid}")
+            novo_cb = st.text_input("Código de Barras", value=str(row.get("CodigoBarras", "")), key=f"edit_cb_{eid}")
+
+            foto_codigo_edit = st.camera_input("📷 Atualizar código de barras", key=f"edit_cam_{eid}")
+            if foto_codigo_edit is not None:
+                codigo_lido = ler_codigo_barras_api(foto_codigo_edit.getbuffer())
+                if codigo_lido:
+                    novo_cb = codigo_lido
+                    st.success(f"Código lido: {novo_cb}")
+
+        col_save, col_cancel = st.columns([1, 1])
+        with col_save:
+            if st.button("Salvar alterações", key=f"save_{eid}"):
+                produtos.loc[produtos["ID"] == str(eid), [
+                    "Nome", "Marca", "Categoria", "Quantidade",
+                    "PrecoCusto", "PrecoVista", "PrecoCartao",
+                    "Validade", "FotoURL", "CodigoBarras"
+                ]] = [
+                    novo_nome.strip(),
+                    nova_marca.strip(),
+                    nova_cat.strip(),
+                    int(nova_qtd),
+                    to_float(novo_preco_custo),
+                    to_float(novo_preco_vista),
+                    round(to_float(novo_preco_vista) / FATOR_CARTAO, 2) if to_float(novo_preco_vista) > 0 else 0.0,
+                    str(nova_validade),
+                    nova_foto.strip(),
+                    str(novo_cb).strip()
+                ]
+                st.session_state["produtos"] = produtos
+                save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
+                # Remove a chave para fechar a aba de edição
+                del st.session_state["edit_prod"]
+                st.success("Produto atualizado!")
+                st.experimental_rerun()
+                
+        with col_cancel:
+            if st.button("Cancelar edição", key=f"cancel_{eid}"):
+                # Remove a chave para fechar a aba de edição
+                del st.session_state["edit_prod"]
+                st.info("Edição cancelada.")
+                st.experimental_rerun()
+
 
 
 
