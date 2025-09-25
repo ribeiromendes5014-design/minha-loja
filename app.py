@@ -12,31 +12,51 @@ import requests
 # Funções auxiliares
 # =====================================
 
+import requests # Certifique-se de que requests está importado no topo
+
 def ler_codigo_barras_api(image_bytes):
     try:
+        # 1. Tentar POST com timeout maior para mitigar lentidão ou recusas temporárias
         files = {"f": ("barcode.png", image_bytes, "image/png")}
-        response = requests.post("https://zxing.org/w/decode", files=files)
+        # Adicionado um timeout de 30 segundos
+        response = requests.post("https://zxing.org/w/decode", files=files, timeout=30) 
 
+        # 2. Verificar Status HTTP
         if response.status_code != 200:
-            st.error(f"Erro na API ZXing: {response.status_code}")
+            st.error(f"❌ Erro na API ZXing. Status HTTP: {response.status_code} - O servidor pode estar sobrecarregado.")
             return []
 
-        # A resposta é HTML, então fazemos um parse simples
+        # 3. Parse e retorno de códigos
         text = response.text
         codigos = []
-
-        # Os códigos geralmente aparecem entre <pre>...</pre>
         if "<pre>" in text:
             partes = text.split("<pre>")
             for p in partes[1:]:
                 codigo = p.split("</pre>")[0].strip()
-                codigos.append(codigo)
+                # Adiciona uma checagem simples para evitar adicionar mensagens de erro da API ao array
+                if codigo and not codigo.startswith("Erro na decodificação"):
+                    codigos.append(codigo)
 
         st.write("Debug API ZXing:", codigos)
+        
+        if not codigos:
+             st.warning("⚠️ API ZXing não retornou nenhum código válido. Tente novamente ou use uma imagem mais clara.")
+             
         return codigos
 
+    except requests.exceptions.ConnectionError as ce:
+        # CAPTURA O ERRO 'Connection refused' ou DNS/URL inválida
+        st.error(f"❌ Erro de Conexão: A API zxing.org recusou ou falhou na conexão. O servidor pode estar fora do ar ou inacessível. Detalhe: {ce}")
+        return []
+        
+    except requests.exceptions.RequestException as e:
+        # CAPTURA OUTROS ERROS (Timeout, etc.)
+        st.error(f"❌ Erro de Requisição (Timeout/Outro): Não foi possível completar a chamada à API. Detalhe: {e}")
+        return []
+    
     except Exception as e:
-        st.error(f"Erro ao chamar API ZXing: {e}")
+        # Erros inesperados
+        st.error(f"❌ Erro inesperado ao chamar API ZXing: {e}")
         return []
 
 
