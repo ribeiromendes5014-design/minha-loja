@@ -229,6 +229,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import mm
 from datetime import datetime
+import pandas as pd
+import os
 
 def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     """Gera um PDF estilo cupom com fundo amarelo claro"""
@@ -277,6 +279,11 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 
     # --- Produtos ---
     tabela = [["Produto", "Qtd", "Preço Unit.", "Total"]]
+    
+    # Adicionando um tratamento de dados para garantir que os valores sejam numéricos
+    venda_sel["PrecoUnitario"] = pd.to_numeric(venda_sel["PrecoUnitario"], errors='coerce').fillna(0.0)
+    venda_sel["Total"] = pd.to_numeric(venda_sel["Total"], errors='coerce').fillna(0.0)
+
     for _, row in venda_sel.iterrows():
         tabela.append([
             str(row["NomeProduto"]),
@@ -318,6 +325,7 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 
     # gera PDF com fundo amarelo
     doc.build(story, onFirstPage=draw_background, onLaterPages=draw_background)
+
 
 
 
