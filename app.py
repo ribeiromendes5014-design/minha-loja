@@ -1464,7 +1464,7 @@ else:
                     st.session_state["produtos"] = produtos
                     save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
                     st.warning(f"Produto {pai['Nome']} e suas variações excluídas!")
-                    st.experimental_rerun()
+                    st.rerun()
 
             # Listar variações filhas do produto
             filhos = produtos_filho[produtos_filho["PaiID"] == str(pai["ID"])]
@@ -1506,7 +1506,7 @@ else:
                                 st.session_state["produtos"] = produtos
                                 save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
                                 st.warning(f"Variação {var['Nome']} excluída!")
-                                st.experimental_rerun()
+                                st.rerun()
 
 # Editor inline (para pais e filhos)
 if "edit_prod" in st.session_state:
@@ -1564,14 +1564,14 @@ if "edit_prod" in st.session_state:
                 # Remove a chave para fechar a aba de edição
                 del st.session_state["edit_prod"]
                 st.success("Produto atualizado!")
-                st.experimental_rerun()
+                st.rerun()
                 
         with col_cancel:
             if st.button("Cancelar edição", key=f"cancel_{eid}"):
                 # Remove a chave para fechar a aba de edição
                 del st.session_state["edit_prod"]
                 st.info("Edição cancelada.")
-                st.experimental_rerun()
+                st.rerun()
 
 
 
