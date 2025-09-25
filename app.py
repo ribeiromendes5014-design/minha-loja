@@ -1442,7 +1442,7 @@ if view == "Produtos":
                     acao = col_btn.selectbox(
                         "Ação",
                         ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
-                        key=f"acao_{eid}"
+                        key=f"acao_pai_{eid}"
                     )
 
                     if acao == "✏️ Editar":
