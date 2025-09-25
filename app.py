@@ -219,10 +219,7 @@ def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
 
     doc.build(story)
 
-
-def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
-    """Gera um PDF estilo cupom com fundo amarelo claro"""
-    from reportlab.pdfgen import canvas
+from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.colors import HexColor
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -234,50 +231,47 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     import pandas as pd
     import os
 
+def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     page_size = (80*mm, 200*mm)
-
     def draw_background(canvas, doc):
         canvas.setFillColor(HexColor("#FFF9C4"))
         canvas.rect(0, 0, page_size[0], page_size[1], fill=True, stroke=False)
-
     doc = SimpleDocTemplate(path, pagesize=page_size,
                             rightMargin=10, leftMargin=10,
                             topMargin=10, bottomMargin=10)
-
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="NormalCenter", fontSize=9, alignment=1))
     styles.add(ParagraphStyle(name="BoldCenter", fontSize=10, alignment=1, spaceAfter=6))
     styles.add(ParagraphStyle(name="BoldLeft", fontSize=10, alignment=0, spaceAfter=6))
     styles.add(ParagraphStyle(name="Total", fontSize=12, alignment=1, spaceBefore=6, spaceAfter=6, leading=14))
-
     story = []
-
     try:
         story.append(RLImage("logo_docebella.png", width=55*mm, height=25*mm))
     except Exception:
         story.append(Paragraph("Doce&Bella Cosmético", styles["BoldCenter"]))
-
     story.append(Spacer(1, 6))
     story.append(Paragraph("📞 (41) 99168-6525", styles["NormalCenter"]))
     story.append(Paragraph("📷 @docebellacosmetico", styles["NormalCenter"]))
     story.append(Spacer(1, 10))
-
-    venda_sel = vendas[vendas["IDVenda"].astype(int) == int(venda_id)]
+    venda_sel = vendas[vendas["IDVenda"].astype(str) == str(venda_id)]
     if venda_sel.empty:
         story.append(Paragraph("Venda não encontrada.", styles["NormalCenter"]))
         doc.build(story, onFirstPage=draw_background, onLaterPages=draw_background)
         return
-
     venda_info = venda_sel.iloc[0]
     story.append(Paragraph(f"<b>Data:</b> {venda_info['Data']}", styles["BoldLeft"]))
     story.append(Paragraph(f"<b>Forma de Pagamento:</b> {venda_info['FormaPagamento']}", styles["BoldLeft"]))
     story.append(Spacer(1, 10))
-
     tabela = [["Produto", "Qtd", "Preço Unit.", "Total"]]
     
-    # 📌 Agora a coluna PrecoUnitario existe, então apenas a convertemos.
-    venda_sel["PrecoUnitario"] = pd.to_numeric(venda_sel["PrecoUnitario"], errors='coerce').fillna(0.0)
-    venda_sel["Total"] = pd.to_numeric(venda_sel["Total"], errors='coerce').fillna(0.0)
+    # 📌 Garante que as colunas existam e sejam numéricas
+    if 'PrecoUnitario' not in venda_sel.columns:
+        venda_sel['PrecoUnitario'] = 0.0
+    if 'Total' not in venda_sel.columns:
+        venda_sel['Total'] = 0.0
+
+    venda_sel['PrecoUnitario'] = pd.to_numeric(venda_sel['PrecoUnitario'], errors='coerce').fillna(0.0)
+    venda_sel['Total'] = pd.to_numeric(venda_sel['Total'], errors='coerce').fillna(0.0)
 
     for _, row in venda_sel.iterrows():
         tabela.append([
@@ -286,7 +280,6 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
             f"R$ {float(row['PrecoUnitario']):.2f}",
             f"R$ {float(row['Total']):.2f}",
         ])
-
     t = Table(tabela, colWidths=[80*mm*0.4, 80*mm*0.15, 80*mm*0.2, 80*mm*0.25])
     t.setStyle(TableStyle([
         ("LINEABOVE", (0, 0), (-1, 0), 0.5, colors.black),
@@ -296,7 +289,6 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
         ("FONTSIZE", (0, 0), (-1, -1), 9),
     ]))
     story.append(t)
-
     valor_total = venda_sel["Total"].sum()
     story.append(Spacer(1, 6))
     story.append(Table(
@@ -311,11 +303,9 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
         ]
     ))
     story.append(Spacer(1, 10))
-
     story.append(Paragraph("Obrigado pela sua compra,<br/>volte sempre!", styles["NormalCenter"]))
     story.append(Spacer(1, 10))
     story.append(Paragraph(datetime.now().strftime("%d/%m/%Y %H:%M:%S"), styles["NormalCenter"]))
-
     doc.build(story, onFirstPage=draw_background, onLaterPages=draw_background)
 
 
