@@ -1631,6 +1631,7 @@ def fechar_caixa():
 # Funções de Venda
 # =====================
 def enviar_telegram(mensagem, thread_id=None):
+    # Acessa o token e chat_id do st.secrets
     url = f"https://api.telegram.org/bot{st.secrets['telegram']['token']}/sendMessage"
     data = {
         "chat_id": st.secrets['telegram']['chat_id'],
@@ -1645,6 +1646,7 @@ def enviar_telegram(mensagem, thread_id=None):
         st.error(f"Erro ao enviar Telegram: {e}")
 
 def enviar_pdf_telegram(caminho_arquivo, thread_id=None):
+    # Acessa o token e chat_id do st.secrets
     url = f"https://api.telegram.org/bot{st.secrets['telegram']['token']}/sendDocument"
     try:
         with open(caminho_arquivo, 'rb') as arquivo_pdf:
@@ -1661,6 +1663,7 @@ def enviar_pdf_telegram(caminho_arquivo, thread_id=None):
                 st.error(f"Erro Telegram no envio do PDF: {resp}")
     except Exception as e:
         st.error(f"Erro ao enviar PDF no Telegram: {e}")
+
 
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
