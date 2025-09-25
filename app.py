@@ -329,20 +329,28 @@ import requests
 
 def ler_codigo_barras_api(image_bytes):
     # API alternativa: WebQR (mais estável que ZXing)
-    url_webqr = "https://api.qrserver.com/v1/read-qr-code/"
+    URL_DECODER = "https://api.qrserver.com/v1/read-qr-code/"
     
     try:
-        # A API WebQR espera o arquivo no campo 'file' ou 'f'
-        files = {"file": ("barcode.png", image_bytes, "image/png")} 
-        
-        # Usando um timeout de 30 segundos
-        response = requests.post(url_webqr, files=files, timeout=30) 
+        # Tenta inferir o tipo de conteúdo com base na extensão e envia o binário
+        # Remove a especificação do mimetype para que 'requests' cuide disso, 
+        # o que geralmente resolve erros 400 em APIs de upload simples.
+        files = {"file": ("barcode.png", image_bytes)} 
 
+        # Usando um timeout de 30 segundos
+        response = requests.post(URL_DECODER, files=files, timeout=30) 
+
+        # ⚠️ Verificação de erro e status 400
         if response.status_code != 200:
-            st.error(f"❌ Erro na API WebQR. Status HTTP: {response.status_code}")
+            # Tenta ler a resposta JSON para ver o erro específico, se houver
+            try:
+                error_detail = response.json().get('error', response.text)
+                st.error(f"❌ Erro na API WebQR. Status HTTP: {response.status_code}. Detalhe: {error_detail}")
+            except:
+                st.error(f"❌ Erro na API WebQR. Status HTTP: {response.status_code}. O servidor não gostou do arquivo enviado.")
             return []
 
-        # A resposta é JSON (mais fácil de parsear que HTML)
+        # A resposta é JSON
         data = response.json()
         codigos = []
         
@@ -360,17 +368,16 @@ def ler_codigo_barras_api(image_bytes):
         return codigos
 
     except requests.exceptions.ConnectionError as ce:
-        st.error(f"❌ Erro de Conexão: O WebQR recusou ou falhou na conexão. O servidor pode estar fora do ar. Detalhe: {ce}")
+        st.error(f"❌ Erro de Conexão: O servidor {URL_DECODER} falhou na conexão. Detalhe: {ce}")
         return []
         
     except requests.exceptions.RequestException as e:
-        st.error(f"❌ Erro de Requisição (Timeout/Outro): Falha ao completar a chamada à API WebQR. Detalhe: {e}")
+        st.error(f"❌ Erro de Requisição (Timeout/Outro): Falha ao completar a chamada à API. Detalhe: {e}")
         return []
     
     except Exception as e:
         st.error(f"❌ Erro inesperado ao chamar API de leitura: {e}")
         return []
-
 
 
 # =====================================
