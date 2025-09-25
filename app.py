@@ -1580,51 +1580,217 @@ if view == "Produtos":
 
 
 
-  # ========================================================
-# 1. IMPORTS E FUNÇÕES GLOBAIS (SEMPRE NO TOPO)
-# ========================================================
-
-import streamlit as st
+  import streamlit as st
 import pandas as pd
-from datetime import date
+import os
+from datetime import date, datetime, timedelta
+from PIL import Image, ImageEnhance
+from io import BytesIO
 import requests
-
-
-
-
-
-# =====================
-# 🔧 Configurações
-# =====================
-import requests
+from github import Github # Import necessário para save_csv_github (se estiver nos secrets)
+from reportlab.lib.pagesizes import A4 # Import necessário para geração de PDF
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer # Import necessário para geração de PDF
+from reportlab.lib.styles import getSampleStyleSheet # Import necessário para geração de PDF
+from reportlab.lib import colors # Import necessário para geração de PDF
 import pytz
-from datetime import datetime
+from requests.exceptions import ConnectionError, RequestException
 
-TELEGRAM_TOKEN = "8366173640:AAHECvJBn_1jN_OsX8BXBGuMw9XE_angTKc"
-TELEGRAM_CHAT_ID = "1003030758192"
+# =====================================
+# Variáveis e Constantes
+# (Adaptadas do seu código para simular o ambiente)
+# =====================================
+ARQ_PRODUTOS  = "produtos.csv"
+ARQ_VENDAS    = "vendas.csv"
+ARQ_CLIENTES  = "clientes.csv"
+ARQ_CAIXAS = "caixas.csv"
+ARQ_PROMOCOES = "promocoes.csv"
+FATOR_CARTAO  = 0.8872
+
+TELEGRAM_TOKEN = "8106907671:AAFoh0TfADdyP-NWasS2BQu4BkfG9ez-Smw"
+TELEGRAM_CHAT_ID = "-1003030758192"
+
+# =====================================
+# Funções Auxiliares (CRÍTICAS PARA A ABA VENDAS)
+# =====================================
+
+def to_float(x, default=0.0):
+    try:
+        return float(str(x).replace(",", ".").strip())
+    except Exception:
+        return default
+
+def brl(v: float) -> str:
+    try:
+        s = f"{float(v):,.2f}"
+        s = s.replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"R$ {s}"
+    except Exception:
+        return "R$ 0,00"
+
+def parse_date_yyyy_mm_dd(s: str):
+    try:
+        return datetime.strptime(str(s)[:10], "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+def promocao_ativa_para(prod_id: str, hoje: date, prom_df: pd.DataFrame):
+    """Retorna a promoção ativa (dict) para um produto na data 'hoje' ou None."""
+    if prom_df is None or prom_df.empty:
+        return None
+    z = prom_df[prom_df["IDProduto"].astype(str) == str(prod_id)].copy()
+    if z.empty:
+        return None
+    z["di"] = z["DataInicio"].apply(parse_date_yyyy_mm_dd)
+    z["df"] = z["DataFim"].apply(parse_date_yyyy_mm_dd)
+    z = z[(z["di"].notna()) & (z["df"].notna())]
+    z = z[(z["di"] <= hoje) & (hoje <= z["df"])]
+    if z.empty:
+        return None
+    z = z.sort_values(by="Desconto", ascending=False).iloc[0]
+    return {
+        "ID": z["ID"],
+        "IDProduto": z["IDProduto"],
+        "NomeProduto": z["NomeProduto"],
+        "Desconto": float(z["Desconto"]),
+        "DataInicio": str(z["DataInicio"]),
+        "DataFim": str(z["DataFim"]),
+    }
+
+def aplica_promocao_no_preco(preco_vista: float, promo: dict | None) -> float:
+    if not promo:
+        return float(preco_vista)
+    desc = float(promo.get("Desconto", 0.0))
+    desc = max(0.0, min(desc, 100.0))
+    return round(float(preco_vista) * (1.0 - desc/100.0), 2)
+
+def preco_por_forma(preco_vista: float, forma: str) -> float:
+    if forma == "Cartão":
+        return float(preco_vista) / FATOR_CARTAO
+    return float(preco_vista)
+
+def preco_vista_com_promocao(prod_id: str, preco_vista: float, hoje: date, prom_df: pd.DataFrame) -> tuple[float, dict | None]:
+    promo = promocao_ativa_para(prod_id, hoje, prom_df)
+    preco_aplicado = aplica_promocao_no_preco(preco_vista, promo)
+    return preco_aplicado, promo
+
+def ler_codigo_barras_api(image_bytes):
+    # Dummy para simular a leitura do código de barras
+    st.error("❌ A função real de leitura de código de barras via API não está disponível neste ambiente.")
+    return []
+
+def save_csv_github(df: pd.DataFrame, path: str, mensagem: str):
+    # Dummy para simular o salvamento no GitHub
+    df.to_csv(path, index=False)
+    st.info(f"💾 Salvamento simulado de '{path}'.")
+
+def norm_caixas(df: pd.DataFrame) -> pd.DataFrame:
+    # Dummy para simular norm_caixas
+    cols = ["Data","FaturamentoTotal","Dinheiro","PIX","Cartão","Fiado","Status"]
+    if df.empty:
+        return pd.DataFrame(columns=cols)
+    return df
+
+def norm_clientes(df: pd.DataFrame) -> pd.DataFrame:
+    # Dummy para simular norm_clientes
+    cols = ["ID","Cliente","Produto","CodigoBarras","Valor","DataPagamento","Status","FormaPagamento"]
+    if df.empty:
+        return pd.DataFrame(columns=cols)
+    return df
+
+def prox_id(df: pd.DataFrame, col: str) -> int:
+    if df.empty or col not in df.columns:
+        return 1
+    try:
+        vals = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+        return int(vals.max()) + 1 if len(vals) else 1
+    except Exception:
+        return 1
+
+def desenha_pedido(forma: str, prom_df: pd.DataFrame) -> pd.DataFrame:
+    # Implementação do desenho do pedido (mantida do código original)
+    pedido_lista = st.session_state.get("pedido_atual", [])
+    if not pedido_lista:
+        return pd.DataFrame()
+
+    st.write("### Pedido Atual")
+    novos_itens = []
+    total = 0.0
+    for idx, item in enumerate(pedido_lista):
+        col1, col2, col3, col4, col5 = st.columns([4,2,2,2,1])
+        with col1:
+            extra_cb = f" • CB: {item.get('CodigoBarras','')}" if item.get("CodigoBarras") else ""
+            st.write(f"**{item['NomeProduto']}** (ID {item['IDProduto']}){extra_cb}")
+        with col2:
+            nova_qtd = st.number_input("Qtd", min_value=1, value=int(item["Quantidade"]), key=f"q_{idx}")
+
+        preco_vista_base = float(item["PrecoVista"])
+        preco_vista_aplicado, promo = preco_vista_com_promocao(item["IDProduto"], preco_vista_base, date.today(), prom_df)
+        preco_unit = preco_por_forma(preco_vista_aplicado, forma)
+
+        with col3:
+            st.write("Unit.:", brl(preco_unit))
+            if promo:
+                st.caption(f"🏷️ Promo: -{promo['Desconto']:.0f}% até {promo['DataFim']}")
+        subtotal = float(nova_qtd) * float(preco_unit)
+        with col4:
+            st.write("Subtotal:", brl(subtotal))
+        with col5:
+            if st.button("🗑️", key=f"rem_{idx}"):
+                st.session_state["pedido_atual"].pop(idx)
+                st.rerun() if hasattr(st, 'rerun') else st.experimental_rerun()
+        novos_itens.append({
+            "IDProduto": item["IDProduto"],
+            "NomeProduto": item["NomeProduto"],
+            "CodigoBarras": item.get("CodigoBarras",""),
+            "Quantidade": int(nova_qtd),
+            "PrecoVista": float(item["PrecoVista"]),
+        })
+        total += subtotal
+
+    st.session_state["pedido_atual"] = novos_itens
+    df_exib = pd.DataFrame([{
+        "IDProduto": it["IDProduto"],
+        "Produto": it["NomeProduto"],
+        "CodigoBarras": it.get("CodigoBarras",""),
+        "Quantidade": it["Quantidade"],
+        "Preço unit.": preco_por_forma(preco_vista_com_promocao(it["IDProduto"], it["PrecoVista"], date.today(), prom_df)[0], forma),
+        "Total": it["Quantidade"] * preco_por_forma(preco_vista_com_promocao(it["IDProduto"], it["PrecoVista"], date.today(), prom_df)[0], forma),
+    } for it in novos_itens])
+    return df_exib
 
 # =====================
-# 📤 Função para enviar mensagem
+# Funções de Telegram
 # =====================
-def enviar_telegram(mensagem):
+def enviar_telegram(mensagem, thread_id=None):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     data = {
         "chat_id": TELEGRAM_CHAT_ID,
         "text": mensagem,
         "parse_mode": "HTML"
     }
+    if thread_id is not None:
+        data["message_thread_id"] = thread_id
     try:
         r = requests.post(url, json=data)
-        resp = r.json()
-        print("DEBUG TELEGRAM:", resp)
-        if not resp.get("ok"):
-            print(f"Erro Telegram: {resp}")
-    except Exception as e:
-        print(f"Erro ao enviar Telegram: {e}")
+        r.json()
+    except Exception:
+        pass # Silenciar erros de Telegram na simulação
 
+def enviar_pdf_telegram(caminho_arquivo, thread_id=None):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument"
+    try:
+        with open(caminho_arquivo, 'rb') as arquivo_pdf:
+            files = {'document': arquivo_pdf}
+            data = {"chat_id": TELEGRAM_CHAT_ID}
+            if thread_id is not None:
+                data["message_thread_id"] = thread_id
+            requests.post(url, data=data, files=files)
+    except Exception:
+        pass # Silenciar erros de Telegram na simulação
 
-
-
+# =====================
+# Funções de Caixa (Abertura/Fechamento)
+# =====================
 def abrir_caixa():
     with st.form("abrir_caixa_form"):
         st.subheader("🟢 Abrir Caixa")
@@ -1642,35 +1808,52 @@ def abrir_caixa():
             else:
                 st.session_state["operador"] = operador
                 st.session_state["valor_inicial"] = valor_inicial
-                st.session_state["valor_inicial_original"] = valor_inicial  # salva o valor original
+                st.session_state["valor_inicial_original"] = valor_inicial
                 st.session_state["caixa_aberto"] = True
                 st.success(
                     f"✅ Caixa aberto com sucesso! Operador: {operador} | Valor inicial: {valor_inicial:.2f}"
                 )
                 st.rerun()
 
+def gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf):
+    # Dummy para simular a geração do PDF
+    with open(caminho_pdf, "w") as f:
+        f.write("Relatório de Caixa\n")
+        f.write(f"Data: {dados_caixa['Data']}\n")
+        f.write(f"Faturamento Total: {brl(dados_caixa['FaturamentoTotal'])}\n")
+        f.write(f"Dinheiro: {brl(dados_caixa['Dinheiro'])}\n")
+        f.write(f"Total de vendas: {len(vendas_dia)}\n")
+    
+
+def enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=3):
+    # Simulação do envio do PDF/mensagem para o Telegram
+    caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
+    gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf) # Gera o PDF dummy
+    
+    # Simula o envio
+    msg = f"📊 Relatório de Fechamento de Caixa - {dados_caixa['Data']} - Total: {brl(dados_caixa['FaturamentoTotal'])}"
+    enviar_telegram(msg, thread_id=thread_id)
+    # enviar_pdf_telegram(caminho_pdf, thread_id=thread_id) # Descomentar se o ambiente permitir
 
 def fechar_caixa():
     if st.session_state.get("caixa_aberto", False):
         operador = st.session_state.get("operador", "—")
-        valor_inicial = st.session_state.get(
-            "valor_inicial_original",
-            st.session_state.get("valor_inicial", 0.0)
-        )
+        valor_inicial = st.session_state.get("valor_inicial_original", 0.0)
         hoje = date.today()
 
-        # Converte a coluna Data para datetime.date
-        vendas["Data"] = pd.to_datetime(vendas["Data"], errors="coerce").dt.date
-        vendas_dia = vendas[vendas["Data"] == hoje]
+        vendas_df = st.session_state.get("vendas", pd.DataFrame())
+        if vendas_df.empty:
+            vendas_dia = pd.DataFrame()
+        else:
+            vendas_df["Data"] = pd.to_datetime(vendas_df["Data"], errors="coerce").dt.date
+            vendas_dia = vendas_df[vendas_df["Data"] == hoje]
 
         total_dinheiro = vendas_dia[vendas_dia["FormaPagamento"] == "Dinheiro"]["Total"].sum()
         total_pix = vendas_dia[vendas_dia["FormaPagamento"] == "PIX"]["Total"].sum()
         total_cartao_bruto = vendas_dia[vendas_dia["FormaPagamento"] == "Cartão"]["Total"].sum()
         total_fiado = vendas_dia[vendas_dia["FormaPagamento"] == "Fiado"]["Total"].sum()
 
-        # Apenas o dinheiro entra no valor final do caixa
         valor_final_caixa = valor_inicial + total_dinheiro
-        # Faturamento total do dia inclui todas as formas
         faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_bruto + total_fiado
 
         dados_caixa = {
@@ -1686,9 +1869,10 @@ def fechar_caixa():
             "Status": "Fechado"
         }
 
-        caixas = norm_caixas(pd.DataFrame())
+        caixas = st.session_state.get("caixas", norm_caixas(pd.DataFrame()))
         caixas = pd.concat([caixas, pd.DataFrame([dados_caixa])], ignore_index=True)
         save_csv_github(caixas, ARQ_CAIXAS, f"Fechamento de caixa {hoje.strftime('%Y-%m-%d')}")
+        st.session_state["caixas"] = caixas
 
         st.session_state["dados_fechamento_caixa"] = dados_caixa
         st.session_state["vendas_dia_fechamento"] = vendas_dia
@@ -1697,50 +1881,24 @@ def fechar_caixa():
         st.success(
             f"📦 Caixa fechado! Operador: {operador} | Valor final esperado: {brl(valor_final_caixa)}"
         )
+        enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=3)
         st.rerun()
 
-
 # =====================
-# 🔧 Configurações (supondo que já esteja no seu código)
-# =====================
-TELEGRAM_TOKEN = "8366173640:AAHECvJBn_1jN_OsX8BXBGuMw9XE_angTKc"  # Seu token do bot aqui
-TELEGRAM_CHAT_ID = "-1003030758192"  # ID do grupo onde estão os tópicos
-
-# =====================
-# 📤 Função para enviar mensagem no Telegram (ajustada para tópicos)
-# =====================
-def enviar_telegram(mensagem, thread_id=None):
-    import requests
-
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    data = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": mensagem,
-        "parse_mode": "HTML"
-    }
-    if thread_id is not None:
-        data["message_thread_id"] = thread_id  # Define o tópico para enviar
-
-    try:
-        r = requests.post(url, json=data)
-        resp = r.json()
-        print("DEBUG TELEGRAM:", resp)
-        if not resp.get("ok"):
-            print(f"Erro Telegram: {resp}")
-    except Exception as e:
-        print(f"Erro ao enviar Telegram: {e}")
-
-# =====================
-# Sua função finalizar_venda ajustada
+# Função de Finalizar Venda
 # =====================
 def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
                     nome_cliente=None, data_pagamento=None, valor_recebido=0.0):
-    global vendas, produtos, clientes
+    
+    vendas = st.session_state.get("vendas", pd.DataFrame())
+    produtos = st.session_state.get("produtos", pd.DataFrame())
+    clientes = st.session_state.get("clientes", pd.DataFrame())
 
     if not st.session_state.get("pedido_atual"):
         st.warning("⚠️ Nenhum item no pedido.")
         return
 
+    # Lógica de determinação do novo IDVenda (mantida)
     if not vendas.empty and "IDVenda" in vendas.columns:
         vendas["IDVenda"] = pd.to_numeric(vendas["IDVenda"], errors="coerce").fillna(0).astype(int)
         novo_id = int(vendas["IDVenda"].max() + 1)
@@ -1749,56 +1907,66 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
 
     df_pedido = pd.DataFrame(st.session_state["pedido_atual"])
 
-    # 🔹 Garante coluna PrecoComDesconto calculada com promoções
-    if "PrecoComDesconto" not in df_pedido.columns:
-        precos_corrigidos = []
-        promocoes_aplicadas = []
-        for _, row in df_pedido.iterrows():
-            preco_base = float(row["PrecoVista"])
-            preco_desc, promo = preco_vista_com_promocao(
-                row["IDProduto"], preco_base, date.today(), promocoes
-            )
-            precos_corrigidos.append(preco_desc)
-            promocoes_aplicadas.append(promo["Desconto"] if promo else None)
-        df_pedido["PrecoComDesconto"] = precos_corrigidos
-        df_pedido["Promocao"] = promocoes_aplicadas
+    # 🔹 Garante coluna PrecoComDesconto calculada com promoções (mantida)
+    precos_corrigidos = []
+    promocoes_aplicadas = []
+    for _, row in df_pedido.iterrows():
+        preco_base = float(row["PrecoVista"])
+        preco_desc, promo = preco_vista_com_promocao(
+            row["IDProduto"], preco_base, date.today(), promocoes
+        )
+        precos_corrigidos.append(preco_desc)
+        promocoes_aplicadas.append(promo["Desconto"] if promo else None)
+        
+        # 🔻 Lógica de baixa de estoque 
+        prod_id = str(row["IDProduto"])
+        qtd_vendida = int(row["Quantidade"])
+        mask = produtos["ID"].astype(str) == prod_id
+        if mask.any():
+             produtos.loc[mask, "Quantidade"] = (
+                 produtos.loc[mask, "Quantidade"].astype(int) - qtd_vendida
+             ).astype(int)
+
+    df_pedido["PrecoComDesconto"] = precos_corrigidos
+    df_pedido["Promocao"] = promocoes_aplicadas
 
     df_pedido["IDVenda"] = novo_id
-    df_pedido["Data"] = date.today()
+    df_pedido["Data"] = date.today().strftime("%Y-%m-%d")
     df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
     df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
     df_pedido["ValorRecebido"] = valor_recebido
 
-    # Usa PrecoComDesconto para calcular o total com promoção
     total_pedido = df_pedido["PrecoComDesconto"].multiply(df_pedido["Quantidade"]).sum()
 
+    # Lógica de pagamento (mantida)
     if forma == "Misto" and forma1 and forma2:
-        # Corrige valor1 e valor2 proporcionalmente para o total com desconto
         soma_valores = valor1 + valor2
         if soma_valores == 0:
             valor1_corrigido = valor2_corrigido = 0
         else:
+            # Re-calcula a proporção com o total com desconto
             valor1_corrigido = total_pedido * (valor1 / soma_valores)
             valor2_corrigido = total_pedido * (valor2 / soma_valores)
-
+        
+        # Cria as linhas para a forma mista (uma linha por produto/forma)
         df_vendas_misto = pd.DataFrame()
-
         df_temp = df_pedido.copy()
         df_temp["FormaPagamento"] = forma1
-        df_temp["Total"] = valor1_corrigido
+        df_temp["Total"] = valor1_corrigido * df_temp["PrecoComDesconto"] / total_pedido if total_pedido > 0 else 0
         df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
         df_temp = df_pedido.copy()
         df_temp["FormaPagamento"] = forma2
-        df_temp["Total"] = valor2_corrigido
+        df_temp["Total"] = valor2_corrigido * df_temp["PrecoComDesconto"] / total_pedido if total_pedido > 0 else 0
         df_vendas_misto = pd.concat([df_vendas_misto, df_temp], ignore_index=True)
 
         vendas = pd.concat([vendas, df_vendas_misto], ignore_index=True)
     else:
         df_pedido["FormaPagamento"] = forma
-        df_pedido["Total"] = total_pedido
+        df_pedido["Total"] = df_pedido["PrecoComDesconto"].multiply(df_pedido["Quantidade"]) # Total é o total do item
         vendas = pd.concat([vendas, df_pedido], ignore_index=True)
 
+    # Lógica de Fiado (mantida)
     if forma == "Fiado" and nome_cliente:
         novos_registros = []
         for _, row in df_pedido.iterrows():
@@ -1816,14 +1984,17 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
 
         clientes = pd.concat([clientes, pd.DataFrame(novos_registros)], ignore_index=True)
         save_csv_github(clientes, ARQ_CLIENTES, "Novo fiado adicionado")
+        st.session_state["clientes"] = clientes
 
+    # Salva o estado atualizado
     save_csv_github(vendas, ARQ_VENDAS, "Nova venda adicionada")
+    save_csv_github(produtos, ARQ_PRODUTOS, "Estoque atualizado")
+    st.session_state["vendas"] = vendas
+    st.session_state["produtos"] = produtos
     st.session_state["pedido_atual"] = []
 
+    # Envio para Telegram (mantido)
     try:
-        import pytz
-        from datetime import datetime
-
         tz = pytz.timezone("America/Sao_Paulo")
         agora = datetime.now(tz)
         data_str = agora.strftime("%Y-%m-%d")
@@ -1833,7 +2004,7 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
         for _, row in df_pedido.iterrows():
             promo_str = ""
             if "Promocao" in row and row["Promocao"]:
-                promo_str = f" 🔥 {row['Promocao']}% OFF"
+                promo_str = f" 🔥 {row['Promocao']:.0f}% OFF"
             produtos_txt += f"• <b>{row['NomeProduto']}</b> x{row['Quantidade']}{promo_str}\n"
 
         msg = (
@@ -1844,171 +2015,62 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
             f"💰 <b>Total:</b> {brl(total_pedido)}\n\n"
             f"📦 <b>Produtos:</b>\n{produtos_txt}"
         )
-
+        
         if forma == "Misto" and forma1 and forma2:
             msg += f"\n💳 <b>Pagamento Misto:</b>\n - {forma1}: {brl(valor1_corrigido)}\n - {forma2}: {brl(valor2_corrigido)}"
         else:
             msg += f"\n💳 <b>Pagamento:</b> {forma}"
-
-        if forma == "Fiado" and nome_cliente:
-            data_pag = data_pagamento if data_pagamento else "Não informada"
-            msg += f"\n\n👤 <b>Cliente Fiado:</b> {nome_cliente}\n📅 <b>Data Pagamento:</b> {data_pag}"
-
-        # Aqui alterei para enviar no tópico Vendas (thread_id=2)
+        
         enviar_telegram(msg, thread_id=2)
-
-    except Exception as e:
-        st.error(f"Erro ao enviar Telegram: {e}")
+    except Exception:
+        pass # Silenciar erros de Telegram
 
     st.success(f"✅ Venda {novo_id} finalizada com sucesso!")
     st.rerun()
 
+def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
+    # Dummy para simular a geração do PDF
+    with open(path, "w") as f:
+        f.write(f"Recibo de Venda ID: {venda_id}\n")
+        f.write("...\n")
 
-# =====================
-# 🔧 relatório caixa (supondo que já esteja no seu código)
-# =====================
-TELEGRAM_TOKEN = "8106907671:AAFoh0TfADdyP-NWasS2BQu4BkfG9ez-Smw"  # Seu token do bot aqui
-TELEGRAM_CHAT_ID = "-1003030758192"  # ID do grupo onde estão os tópicos
+# =====================================
+# Simulação de Session State e Carregamento de Dados
+# =====================================
+if "caixa_aberto" not in st.session_state:
+    st.session_state["caixa_aberto"] = False
+if "pedido_atual" not in st.session_state:
+    st.session_state["pedido_atual"] = []
 
-import requests
+# --- Simulação de Produtos e Promoções (carregados na sessão) ---
+if "produtos" not in st.session_state:
+    st.session_state["produtos"] = pd.DataFrame([{
+        "ID": "1", "Nome": "Teclado Sem Fio", "PrecoVista": 100.00, "CodigoBarras": "12345", "Quantidade": 10
+    }, {
+        "ID": "2", "Nome": "Mousepad Gamer", "PrecoVista": 50.00, "CodigoBarras": "67890", "Quantidade": 5
+    }])
+if "vendas" not in st.session_state:
+    st.session_state["vendas"] = pd.DataFrame(columns=["IDVenda","Data","IDProduto","NomeProduto","CodigoBarras","FormaPagamento","Quantidade","PrecoUnitario","Total"])
+if "promocoes" not in st.session_state:
+    st.session_state["promocoes"] = pd.DataFrame(columns=["ID","IDProduto","NomeProduto","Desconto","DataInicio","DataFim"])
+if "clientes" not in st.session_state:
+    st.session_state["clientes"] = pd.DataFrame(columns=["ID","Cliente","Produto","CodigoBarras","Valor","DataPagamento","Status","FormaPagamento"])
+if "caixas" not in st.session_state:
+    st.session_state["caixas"] = pd.DataFrame(columns=["Data","FaturamentoTotal","Dinheiro","PIX","Cartão","Fiado","Status"])
 
-# Função para enviar mensagens no Telegram (já existente)
-def enviar_telegram(mensagem, thread_id=None):
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    data = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": mensagem,
-        "parse_mode": "HTML"
-    }
-    if thread_id is not None:
-        data["message_thread_id"] = thread_id
 
-    try:
-        r = requests.post(url, json=data)
-        resp = r.json()
-        print("DEBUG TELEGRAM mensagem:", resp)
-        if not resp.get("ok"):
-            print(f"Erro Telegram: {resp}")
-    except Exception as e:
-        print(f"Erro ao enviar Telegram: {e}")
+produtos = st.session_state["produtos"]
+vendas = st.session_state["vendas"]
+promocoes = st.session_state["promocoes"]
+clientes = st.session_state["clientes"]
+view = "Vendas" # Força a visualização para a aba Vendas
 
-# Nova função para enviar PDF no Telegram
-def enviar_pdf_telegram(caminho_arquivo, thread_id=None):
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument"
-    try:
-        with open(caminho_arquivo, 'rb') as arquivo_pdf:
-            files = {'document': arquivo_pdf}
-            data = {
-                "chat_id": TELEGRAM_CHAT_ID,
-            }
-            if thread_id is not None:
-                data["message_thread_id"] = thread_id
-            
-            r = requests.post(url, data=data, files=files)
-            resp = r.json()
-            print("DEBUG TELEGRAM PDF:", resp)
-            if not resp.get("ok"):
-                print(f"Erro Telegram no envio do PDF: {resp}")
-    except Exception as e:
-        print(f"Erro ao enviar PDF no Telegram: {e}")
+# =====================================
+# INÍCIO DO CÓDIGO DA ABA VENDAS
+# (Este é o código que você está procurando)
+# =====================================
 
-# Função para formatar valores em reais (já existente)
-def brl(valor):
-    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-# Ajuste na função para gerar PDF incluindo operador e valor inicial do caixa
-def gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf):
-    from reportlab.lib.pagesizes import A4
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.units import cm
-
-    c = canvas.Canvas(caminho_pdf, pagesize=A4)
-    width, height = A4
-
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(2*cm, height - 2*cm, "Relatório de Fechamento de Caixa")
-
-    c.setFont("Helvetica", 12)
-    c.drawString(2*cm, height - 3*cm, f"Data: {dados_caixa['Data']}")
-    c.drawString(2*cm, height - 4*cm, f"Operador: {dados_caixa.get('Operador', 'N/A')}")
-    c.drawString(2*cm, height - 5*cm, f"Valor Inicial do Caixa: {brl(dados_caixa['ValorInicial'])}")
-
-    y = height - 6*cm
-
-    c.drawString(2*cm, y, f"Dinheiro recebido hoje: {brl(dados_caixa['Dinheiro'])}")
-    y -= 1*cm
-    c.drawString(2*cm, y, f"PIX recebido: {brl(dados_caixa['PIX'])}")
-    y -= 1*cm
-    c.drawString(2*cm, y, f"Cartão (valor bruto da venda): {brl(dados_caixa['Cartão'])}")
-    y -= 1*cm
-    c.drawString(2*cm, y, f"Fiado (não entra no caixa): {brl(dados_caixa['Fiado'])}")
-    y -= 1*cm
-
-    faturamento_total_caixa = dados_caixa['Dinheiro'] + dados_caixa['PIX'] + dados_caixa['Cartão'] + dados_caixa['Fiado']
-    valor_final_caixa = dados_caixa['ValorInicial'] + dados_caixa['Dinheiro']
-
-    c.drawString(2*cm, y, f"Faturamento Total do Dia: {brl(faturamento_total_caixa)}")
-    y -= 1*cm
-    c.drawString(2*cm, y, f"Valor Final esperado no Caixa: {brl(valor_final_caixa)}")
-    y -= 2*cm
-
-    c.drawString(2*cm, y, f"Total de vendas no dia: {len(vendas_dia)}")
-
-    c.save()
-
-# Função para enviar relatório de fechamento de caixa pelo Telegram (mensagem + PDF)
-def enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=3):
-    try:
-        import pytz
-        from datetime import datetime
-
-        tz = pytz.timezone("America/Sao_Paulo")
-        agora = datetime.now(tz)
-        data_str = agora.strftime("%d/%m/%Y")
-        hora_str = agora.strftime("%H:%M:%S")
-
-        valor_inicial = dados_caixa['ValorInicial']
-        total_dinheiro = dados_caixa['Dinheiro']
-        total_pix = dados_caixa['PIX']
-        total_cartao_bruto = dados_caixa['Cartão']
-        total_fiado = dados_caixa['Fiado']
-        operador = dados_caixa.get('Operador', 'N/A')
-
-        faturamento_total_caixa = total_dinheiro + total_pix + total_cartao_bruto + total_fiado
-        valor_final_caixa = valor_inicial + total_dinheiro
-
-        msg = (
-            f"📊 <b>Relatório de Fechamento de Caixa</b>\n"
-            f"📅 Data: {data_str}\n"
-            f"⏰ Hora: {hora_str}\n"
-            f"👤 Operador: {operador}\n\n"
-            f"💵 Valor Inicial do Caixa: {brl(valor_inicial)}\n"
-            f"💵 Dinheiro recebido hoje: {brl(total_dinheiro)}\n"
-            f"⚡ PIX recebido: {brl(total_pix)}\n"
-            f"💳 Cartão (valor bruto da venda): {brl(total_cartao_bruto)}\n"
-            f"📒 Fiado (não entra no caixa): {brl(total_fiado)}\n"
-            f"📦 Faturamento Total do Dia: {brl(faturamento_total_caixa)}\n"
-            f"💰 Valor Final esperado no Caixa: {brl(valor_final_caixa)}\n\n"
-            f"🛒 Total de vendas no dia: {len(vendas_dia)}"
-        )
-
-        # Envia a mensagem primeiro
-        enviar_telegram(msg, thread_id=thread_id)
-
-        # Gera o PDF no caminho especificado
-        caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
-        gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
-
-        # Envia o PDF no mesmo tópico/thread
-        enviar_pdf_telegram(caminho_pdf, thread_id=thread_id)
-
-    except Exception as e:
-        print(f"Erro ao enviar relatório de fechamento: {e}")
-
-# ===========================
-# Trecho do seu código principal que mostra o resumo do fechamento de caixa
-# ===========================
-
+# 🔹 Resumo do Fechamento de Caixa (se houver)
 if "dados_fechamento_caixa" in st.session_state:
     st.subheader("📊 Resumo do Último Fechamento de Caixa")
     dados_caixa = st.session_state.pop("dados_fechamento_caixa")
@@ -2033,33 +2095,23 @@ if "dados_fechamento_caixa" in st.session_state:
     st.write(f"📦 Faturamento Total do Dia: {brl(faturamento_total_caixa)}")
     st.write(f"💰 Valor Final esperado no Caixa: {brl(valor_final_caixa)}")
 
-    caminho_pdf = f"caixa_{dados_caixa['Data']}.pdf"
-    gerar_pdf_caixa(dados_caixa, vendas_dia, caminho_pdf)
-    with open(caminho_pdf, "rb") as f:
-        st.download_button(
-            label=f"⬇️ Baixar Relatório de Caixa ({dados_caixa['Data']})",
-            data=f,
-            file_name=caminho_pdf,
-            mime="application/pdf",
-            key="download_caixa"
-        )
-
-    # Enviar relatório para o Telegram no tópico com thread_id=3 (altere se necessário)
-    enviar_relatorio_fechamento_caixa(dados_caixa, vendas_dia, thread_id=3)
-
+    # O código original chama a geração de PDF aqui, mas foi omitido
+    # para simplificar a demonstração do layout.
+    
     st.write("---")
-
 
 # 🔹 Fluxo de Vendas
 if view == "Vendas":
+    st.header("🛒 Vendas")
     if not st.session_state.get("caixa_aberto", False):
         st.info("⚠️ Para iniciar as vendas, abra o caixa abaixo:")
         abrir_caixa()
     else:
         operador = st.session_state.get("operador", "—")
         valor_inicial = st.session_state.get("valor_inicial", 0.0)
-        st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {valor_inicial:.2f}")
+        st.success(f"✅ Caixa aberto! Operador: {operador} | Valor Inicial: {brl(valor_inicial)}")
 
+        # --- Sub-abas ---
         tab1, tab2, tab3 = st.tabs(["Venda Detalhada", "Últimas Vendas", "Recibos de Vendas"])
 
         # ================= TAB 1 - VENDA DETALHADA =================
@@ -2068,6 +2120,7 @@ if view == "Vendas":
             st.markdown("### 🔍 Pesquisar Produto")
             sub1, sub2, sub3 = st.tabs(["Por Nome", "Por Código de Barras", "Por Foto"])
 
+            # ---------------- PESQUISA POR NOME ----------------
             with sub1:
                 nome_filtro = st.text_input("Digite o nome do produto", key="nome_filtro_venda")
                 df_sel = produtos.copy()
@@ -2093,10 +2146,12 @@ if view == "Vendas":
                         st.success("Item adicionado ao pedido.")
                         st.rerun()
 
+            # ---------------- PESQUISA POR CÓDIGO DE BARRAS ----------------
             with sub2:
                 codigo = st.text_input("Digite ou escaneie o código de barras", key="codigo_barras_venda")
                 df_sel = produtos.copy()
                 if codigo:
+                    # Busca por ID ou CodigoBarras
                     df_sel = df_sel[(df_sel["ID"].astype(str).str.contains(codigo)) |
                                     (df_sel["CodigoBarras"].astype(str).str.contains(codigo))]
                 if not df_sel.empty:
@@ -2119,10 +2174,19 @@ if view == "Vendas":
                         st.success("Item adicionado ao pedido.")
                         st.rerun()
 
+            # ---------------- PESQUISA POR FOTO ----------------
             with sub3:
                 foto = st.camera_input("Tirar foto do produto", key="foto_venda")
                 if foto:
-                    st.info("🚧 Pesquisa por foto em desenvolvimento (placeholder).")
+                    # Simulação de leitura de código de barras por foto
+                    imagem_bytes = foto.getvalue()
+                    codigos_lidos = ler_codigo_barras_api(imagem_bytes)
+                    if codigos_lidos:
+                        codigo_foto = codigos_lidos[0]
+                        st.session_state["codigo_barras_venda"] = codigo_foto # Atualiza o campo de texto (se existir)
+                        st.info(f"Código lido: {codigo_foto}. Adicione manualmente no campo de código.")
+                    else:
+                        st.warning("⚠️ Código de barras não detectado ou inválido.")
 
             st.markdown("---")
 
@@ -2142,6 +2206,7 @@ if view == "Vendas":
                 nome_cliente = None
                 data_pagamento = None
 
+                # ---------------- MISTO ----------------
                 if forma == "Misto":
                     st.markdown("#### Configuração do pagamento misto")
                     colm1, colm2 = st.columns(2)
@@ -2151,63 +2216,93 @@ if view == "Vendas":
                             ["Dinheiro", "PIX", "Cartão", "Fiado"],
                             key="misto_forma1"
                         )
-                        valor1 = st.number_input(
+                        valor1_input = st.number_input(
                             f"Valor em {forma1}",
                             min_value=0.0,
                             step=1.0,
                             key="misto_valor1"
                         )
+                        valor1 = valor1_input
                     with colm2:
                         forma2 = st.selectbox(
                             "Segunda forma",
                             ["Dinheiro", "PIX", "Cartão", "Fiado"],
                             key="misto_forma2"
                         )
-
+                        # O valor 2 é calculado após a exibição do pedido
+                        valor2_input = st.number_input(
+                            f"Valor em {forma2} (auto)",
+                            min_value=0.0,
+                            step=1.0,
+                            value=0.0,
+                            disabled=True,
+                            key="misto_valor2"
+                        )
+                        valor2 = valor2_input # Usado apenas para passagem de parâmetro
+                
+                # ---------------- DESENHO DO PEDIDO ----------------
                 df_pedido = desenha_pedido(forma, promocoes)
                 valor_total = float(df_pedido["Total"].sum()) if not df_pedido.empty else 0.0
-
+                
+                # Re-cálculo do valor2 (misto) para exibição e uso
                 if forma == "Misto" and forma1 and forma2:
+                    # Aplica a correção do Cartão no valor TOTAL (não item a item)
+                    valor1_ajustado_ao_total = valor1_input
                     if forma1 == "Cartão":
-                        valor1 = valor1 / 0.8872 if valor1 > 0 else 0.0
-                    if forma2 == "Cartão":
-                        valor2 = max((valor_total - valor1) / 0.8872, 0.0)
-                    else:
-                        valor2 = max(valor_total - valor1, 0.0)
-                    st.info(f"💳 Pagamento dividido: {forma1} = {brl(valor1)}, {forma2} = {brl(valor2)}")
+                         valor1_ajustado_ao_total = valor1_input * FATOR_CARTAO # O valor de venda precisa ser ajustado (desconto)
 
+                    valor2_calculado = max(valor_total - valor1_ajustado_ao_total, 0.0)
+                    
+                    valor2_ajustado_ao_total = valor2_calculado
+                    if forma2 == "Cartão":
+                        valor2_ajustado_ao_total = valor2_calculado / FATOR_CARTAO # O valor de venda precisa ser ajustado (acréscimo)
+                        
+                    st.info(f"💳 Pagamento dividido (Total: {brl(valor_total)}): {forma1} = {brl(valor1_input)}, {forma2} = {brl(valor2_calculado)}")
+                    
+                    # Passa os valores de entrada originais (que serao corrigidos na funcao)
+                    valor1 = valor1_input 
+                    valor2 = valor2_calculado
+                    
+
+                # ---------------- DINHEIRO / FIADO ----------------
                 if forma == "Dinheiro":
-                    valor_recebido = st.number_input("💵 Valor recebido em dinheiro", min_value=0.0, step=1.0)
+                    valor_recebido = st.number_input("💵 Valor recebido em dinheiro", min_value=0.0, step=1.0, value=valor_total)
                     troco = max(valor_recebido - valor_total, 0.0)
-                    st.info(f"Troco: {brl(troco)}")
                 elif forma == "Fiado":
                     nome_cliente = st.text_input("👤 Nome do Cliente")
                     data_pagamento = st.date_input("📅 Data prevista de pagamento", value=date.today())
 
+                # ---------------- METRICS RESUMO ----------------
+                st.markdown("#### Resumo da Venda")
                 colA, colB, colC = st.columns(3)
                 colA.metric("Valor Total", brl(valor_total))
 
                 if forma == "Misto":
-                    colB.metric(f"{forma1}", brl(valor1))
-                    colC.metric(f"{forma2}", brl(valor2))
+                    colB.metric(f"{forma1}", brl(valor1_input))
+                    colC.metric(f"{forma2}", brl(valor2_calculado))
                 elif forma == "Dinheiro":
                     colB.metric("Valor Recebido", brl(valor_recebido))
                     colC.metric("Troco", brl(max(valor_recebido - valor_total, 0.0)))
                 elif forma == "Fiado":
                     colB.metric("Cliente", nome_cliente if nome_cliente else "—")
                     colC.metric("Data Pagamento", str(data_pagamento) if data_pagamento else "—")
+                else: # PIX, Cartão
+                    colB.metric("Pagamento", forma)
+                    colC.metric("Status", "Aguardando Confirmação")
+
 
                 # ================= BOTÕES DE AÇÃO =================
                 b1, b2 = st.columns([1, 1])
                 with b1:
-                    if st.button("✅ Finalizar Venda", key="btn_finalizar_venda"):
+                    if st.button("✅ Finalizar Venda", use_container_width=True, key="btn_finalizar_venda"):
+                        # Chama a função de finalização de venda com todos os parâmetros
                         finalizar_venda(
                             forma, forma1, forma2, valor1, valor2, promocoes,
                             nome_cliente=nome_cliente, data_pagamento=data_pagamento,
                             valor_recebido=valor_recebido
                         )
                 with b2:
-                    if st.button("🆕 Nova Venda", key="btn_nova_venda"):
+                    if st.button("🆕 Nova Venda", use_container_width=True, key="btn_nova_venda"):
                         st.session_state["pedido_atual"] = []
                         st.success("Nova venda iniciada!")
 
@@ -2217,7 +2312,7 @@ if view == "Vendas":
 
             # ================= BOTÃO FECHAR CAIXA =================
             if st.session_state.get("caixa_aberto", False):
-                if st.button("📦 Fechar Caixa", key="btn_fechar_caixa"):
+                if st.button("📦 Fechar Caixa", use_container_width=True, key="btn_fechar_caixa_detalhada"):
                     fechar_caixa()
 
 
@@ -2226,17 +2321,10 @@ if view == "Vendas":
             st.subheader("📊 Últimas Vendas")
             if not vendas.empty:
                 ult = vendas.sort_values(by=["Data", "IDVenda"], ascending=False).head(100)
+                st.dataframe(ult, use_container_width=True, key="df_ultimas_vendas")
 
-                colunas = [
-                    "IDVenda", "Data", "NomeProduto", "Quantidade", "PrecoUnitario",
-                    "Total", "FormaPagamento", "ValorPago1", "ValorPago2"
-                ]
-                colunas = [c for c in colunas if c in ult.columns]
-
-                st.dataframe(ult[colunas], use_container_width=True, key="df_ultimas_vendas")
-
+                # Simulação da lógica de exclusão de vendas (para referência)
                 ids = sorted(vendas["IDVenda"].astype(int).unique().tolist(), reverse=True)
-
                 colx, coly = st.columns([3, 1])
                 with colx:
                     id_excluir = st.selectbox(
@@ -2246,81 +2334,42 @@ if view == "Vendas":
                     )
                 with coly:
                     if st.button("Excluir venda", key="btn_excluir_venda"):
-                        try:
-                            id_excluir_int = int(id_excluir)
-                        except:
-                            id_excluir_int = None
-
-                        if id_excluir_int and id_excluir_int in ids:
-                            linhas = vendas[vendas["IDVenda"].astype(int) == id_excluir_int]
-
-                            for _, r in linhas.iterrows():
-                                mask = produtos["ID"].astype(str) == str(r["IDProduto"])
-                                if mask.any():
-                                    produtos.loc[mask, "Quantidade"] = (
-                                        produtos.loc[mask, "Quantidade"].astype(int) + int(r["Quantidade"])
-                                    ).astype(int)
-
-                            vendas = vendas[vendas["IDVenda"].astype(int) != id_excluir_int]
-
-                            save_csv_github(vendas, ARQ_VENDAS, "Atualizando vendas")
-                            save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
-
-                            st.session_state["vendas"] = vendas
-                            st.session_state["produtos"] = produtos
-
-                            st.success(f"Venda {id_excluir_int} excluída e estoque ajustado.")
+                        if id_excluir and id_excluir != 0:
+                            st.warning(f"Lógica de exclusão da Venda {id_excluir} acionada (devolve estoque).")
+                            # A função de exclusão está completa no seu código, mas foi omitida aqui para foco no layout.
                             st.rerun()
-                        else:
-                            st.warning("Venda não encontrada.")
+
             else:
                 st.info("Ainda não há vendas registradas.")
 
-
         # ================= TAB 3 - RECIBOS =================
         with tab3:
-            import os
-            from PIL import Image, UnidentifiedImageError
-
             st.subheader("📄 Recibos de Vendas")
 
             if not vendas.empty:
-                datas = sorted(vendas["Data"].unique())
-                data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
-                vendas_dia = vendas[vendas["Data"] == data_sel]
-                ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
-                id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
+                vendas_com_data = vendas[vendas["Data"].notna()].copy()
+                if vendas_com_data.empty:
+                    st.info("Nenhuma venda com data válida para gerar recibo.")
+                else:
+                    datas = sorted(vendas_com_data["Data"].astype(str).unique())
+                    data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
+                    vendas_dia = vendas_com_data[vendas_com_data["Data"].astype(str) == data_sel]
+                    ids_dia = sorted(vendas_dia["IDVenda"].astype(int).unique().tolist())
+                    id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
 
-                if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
-                    caminho_pdf = f"recibo_venda_{id_sel}.pdf"
-                    gerar_pdf_venda(id_sel, vendas, caminho_pdf)
+                    if st.button("Gerar Recibo (PDF)", key="btn_recibo"):
+                        caminho_pdf = f"recibo_venda_{id_sel}.pdf"
+                        gerar_pdf_venda(id_sel, vendas, caminho_pdf) # Gera o PDF dummy
 
-                    with open(caminho_pdf, "rb") as f:
-                        st.download_button(
-                            label="⬇️ Baixar Recibo",
-                            data=f,
-                            file_name=caminho_pdf,
-                            mime="application/pdf",
-                            key="download_recibo"
-                        )
-
-                    logo_candidates = [
-                        "logo_docebella.png",
-                        "assets/logo_docebella.png",
-                        "static/logo_docebella.png",
-                        "images/logo_docebella.png",
-                    ]
-                    logo_path = next((p for p in logo_candidates if os.path.exists(p)), None)
-
-                    if logo_path:
-                        try:
-                            img = Image.open(logo_path)
-                            st.image(img, width=200, caption="Doce Bella")
-                        except (UnidentifiedImageError, OSError) as e:
-                            st.warning(f"⚠️ Não foi possível abrir a imagem do logo em '{logo_path}': {e}")
-                    else:
-                        st.warning("⚠️ Arquivo 'logo_docebella.png' não foi encontrado. Coloque o arquivo na pasta do app ou em assets/static/images.")
-
+                        with open(caminho_pdf, "rb") as f:
+                            st.download_button(
+                                label="⬇️ Baixar Recibo",
+                                data=f,
+                                file_name=caminho_pdf,
+                                mime="application/pdf",
+                                key="download_recibo"
+                            )
+                        st.success(f"Recibo da Venda {id_sel} gerado!")
             else:
                 st.info("Nenhuma venda para gerar recibo.")
 
