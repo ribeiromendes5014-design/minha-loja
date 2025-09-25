@@ -1416,7 +1416,7 @@ if view == "Produtos":
             produtos_pai = produtos_filtrados[produtos_filtrados["PaiID"].isnull()]
             produtos_filho = produtos_filtrados[produtos_filtrados["PaiID"].notnull()]
 
-            for _, pai in produtos_pai.iterrows():
+            for index, pai in produtos_pai.iterrows():
                 with st.container():
                     c = st.columns([1, 3, 1, 1, 1])
                     # Imagem do produto pai
@@ -1442,14 +1442,14 @@ if view == "Produtos":
                     acao = col_btn.selectbox(
                         "Ação",
                         ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
-                        key=f"acao_pai_{eid}"
+                        key=f"acao_pai_{index}_{eid}"
                     )
 
                     if acao == "✏️ Editar":
                         st.session_state["edit_prod"] = eid
 
                     if acao == "🗑️ Excluir":
-                        if col_btn.button("Confirmar exclusão", key=f"conf_del_pai_{eid}"):
+                        if col_btn.button("Confirmar exclusão", key=f"conf_del_pai_{index}_{eid}"):
                             # ✅ Garante que a coluna 'PaiID' existe
                             if "PaiID" not in produtos.columns:
                                 produtos["PaiID"] = None
@@ -1470,7 +1470,7 @@ if view == "Produtos":
                     filhos = produtos_filho[produtos_filho["PaiID"] == str(pai["ID"])]
                     if not filhos.empty:
                         with st.expander(f"Variações de {pai['Nome']}"):
-                            for _, var in filhos.iterrows():
+                            for index_var, var in filhos.iterrows():
                                 c_var = st.columns([1, 3, 1, 1, 1])
                                 if str(var["FotoURL"]).strip():
                                     try:
@@ -1494,14 +1494,14 @@ if view == "Produtos":
                                 acao_var = col_btn_var.selectbox(
                                     "Ação",
                                     ["Nenhuma", "✏️ Editar", "🗑️ Excluir"],
-                                    key=f"acao_filho_{eid_var}"
+                                    key=f"acao_filho_{index_var}_{eid_var}"
                                 )
 
                                 if acao_var == "✏️ Editar":
                                     st.session_state["edit_prod"] = eid_var
 
                                 if acao_var == "🗑️ Excluir":
-                                    if col_btn_var.button("Confirmar exclusão", key=f"conf_del_filho_{eid_var}"):
+                                    if col_btn_var.button("Confirmar exclusão", key=f"conf_del_filho_{index_var}_{eid_var}"):
                                         produtos = produtos[produtos["ID"] != str(eid_var)]
                                         st.session_state["produtos"] = produtos
                                         save_csv_github(produtos, ARQ_PRODUTOS, "Atualizando produtos")
@@ -1570,6 +1570,7 @@ if view == "Produtos":
                     del st.session_state["edit_prod"]
                     st.info("Edição cancelada.")
                     st.experimental_rerun()
+
 
 
 
