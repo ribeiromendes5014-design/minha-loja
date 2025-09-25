@@ -12,42 +12,49 @@ import requests
 # Funções auxiliares
 # =====================================
 
-import streamlit as st # Mantém a importação
-from PIL import Image # Necessário para abrir a imagem localmente
-from pyzbar.pyzbar import decode # O decodificador de código de barras
-from io import BytesIO # Para ler a imagem em memória
-
-
-def ler_codigo_barras_local(image_bytes):
-    """
-    Substitui a API externa usando pyzbar para decodificar o código de barras
-    diretamente no servidor Streamlit (solução local e estável).
-    """
+def ler_codigo_barras_api(image_bytes):
+    # API alternativa: WebQR (mais estável que ZXing)
+    url_webqr = "https://api.qrserver.com/v1/read-qr-code/"
+    
     try:
-        # Abre a imagem a partir dos bytes recebidos pelo st.camera_input/st.file_uploader
-        img = Image.open(BytesIO(image_bytes))
+        # A API WebQR espera o arquivo no campo 'file' ou 'f'
+        files = {"file": ("barcode.png", image_bytes, "image/png")} 
         
-        # Tenta decodificar os códigos de barras na imagem
-        codigos = decode(img)
+        # Usando um timeout de 30 segundos
+        response = requests.post(url_webqr, files=files, timeout=30) 
+
+        if response.status_code != 200:
+            st.error(f"❌ Erro na API WebQR. Status HTTP: {response.status_code}")
+            return []
+
+        # A resposta é JSON (mais fácil de parsear que HTML)
+        data = response.json()
+        codigos = []
         
-        codigos_lidos = []
-        if codigos:
-            # Converte os bytes decodificados para string (UTF-8)
-            codigos_lidos = [c.data.decode('utf-8') for c in codigos]
+        # Navega na estrutura JSON da resposta
+        if data and isinstance(data, list) and data[0].get('symbol'):
+            for symbol in data[0]['symbol']:
+                if symbol['data'] is not None:
+                    codigos.append(symbol['data'])
         
-        st.write("Debug Local Pyzbar:", codigos_lidos)
+        st.write("Debug API WebQR:", codigos)
         
-        if not codigos_lidos:
-             # Usa st.error para a mesma saída de erro visual anterior
-             st.error("❌ Não foi possível ler nenhum código. Tente uma imagem mais clara.")
+        if not codigos:
+             st.warning("⚠️ API WebQR não retornou nenhum código válido. Tente novamente ou use uma imagem mais clara.")
              
-        return codigos_lidos
+        return codigos
 
-    except Exception as e:
-        # Captura qualquer erro de processamento da imagem ou da biblioteca local
-        st.error(f"❌ Erro ao processar imagem (Verifique se pyzbar está instalado corretamente): {e}")
+    except requests.exceptions.ConnectionError as ce:
+        st.error(f"❌ Erro de Conexão: O WebQR recusou ou falhou na conexão. O servidor pode estar fora do ar. Detalhe: {ce}")
         return []
-
+        
+    except requests.exceptions.RequestException as e:
+        st.error(f"❌ Erro de Requisição (Timeout/Outro): Falha ao completar a chamada à API WebQR. Detalhe: {e}")
+        return []
+    
+    except Exception as e:
+        st.error(f"❌ Erro inesperado ao chamar API de leitura: {e}")
+        return []
 
 
 # =====================================
