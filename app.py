@@ -327,22 +327,19 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 # =====================================
 import requests
 
+# FUNÇÃO CORRIGIDA PARA RESOLVER HTTP 400
 def ler_codigo_barras_api(image_bytes):
-    # API alternativa: WebQR (mais estável que ZXing)
+    # API alternativa (WebQR) para contornar a falha do ZXing
     URL_DECODER = "https://api.qrserver.com/v1/read-qr-code/"
     
     try:
-        # Tenta inferir o tipo de conteúdo com base na extensão e envia o binário
-        # Remove a especificação do mimetype para que 'requests' cuide disso, 
-        # o que geralmente resolve erros 400 em APIs de upload simples.
-        files = {"file": ("barcode.png", image_bytes)} 
-
-        # Usando um timeout de 30 segundos
+        # CORREÇÃO: Define explicitamente o mimetype e nome de arquivo para o servidor WebQR
+        # 'requests' tentará ler o mimetype, mas forçamos 'image/jpeg' aqui, que é comum.
+        files = {"file": ("barcode.jpeg", image_bytes, "image/jpeg")} 
+        
         response = requests.post(URL_DECODER, files=files, timeout=30) 
 
-        # ⚠️ Verificação de erro e status 400
         if response.status_code != 200:
-            # Tenta ler a resposta JSON para ver o erro específico, se houver
             try:
                 error_detail = response.json().get('error', response.text)
                 st.error(f"❌ Erro na API WebQR. Status HTTP: {response.status_code}. Detalhe: {error_detail}")
@@ -368,7 +365,7 @@ def ler_codigo_barras_api(image_bytes):
         return codigos
 
     except requests.exceptions.ConnectionError as ce:
-        st.error(f"❌ Erro de Conexão: O servidor {URL_DECODER} falhou na conexão. Detalhe: {ce}")
+        st.error(f"❌ Erro de Conexão: O servidor {URL_DECODER} recusou ou falhou na conexão. Detalhe: {ce}")
         return []
         
     except requests.exceptions.RequestException as e:
@@ -378,6 +375,8 @@ def ler_codigo_barras_api(image_bytes):
     except Exception as e:
         st.error(f"❌ Erro inesperado ao chamar API de leitura: {e}")
         return []
+
+
 
 
 # =====================================
