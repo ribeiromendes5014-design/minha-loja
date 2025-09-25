@@ -1095,10 +1095,6 @@ if "produtos" not in st.session_state:
 # Pega os produtos carregados do session_state
 produtos = st.session_state["produtos"]
 
-# =====================================
-# FIM - GARANTIR CARREGAMENTO DO CSV
-# =====================================
-
 
 # =====================================
 # PRODUTOS COM GRADE (PAI/FILHO)
@@ -1107,15 +1103,17 @@ if view == "Produtos":
     show_logo("main")
     st.header("📦 Produtos")
 
-    # Função auxiliar para criar um novo ID sequencial
+    # Função auxiliar para criar um novo ID sequencial (usada aqui)
     def prox_id(df, coluna_id="ID"):
         if df.empty:
             return "1"
         else:
             try:
-                return str(int(df[coluna_id].max()) + 1)
+                # O pd.to_numeric e .max() garantem a maior segurança para IDs mistos
+                return str(pd.to_numeric(df[coluna_id], errors='coerce').fillna(0).astype(int).max() + 1)
             except:
                 return str(len(df) + 1)
+
 
     # ================================
     # SUBABAS
@@ -1201,70 +1199,74 @@ if view == "Produtos":
                     
                 variações = []
                 for i in range(int(qtd_variações)):
+                    # Adicionado separador de linha para melhor visualização
                     st.markdown(f"--- **Variação {i+1}** ---")
                     
-                    var_c1, var_c2, var_c3, var_c4 = st.columns([2, 1, 1, 1])
+                    # Colunas para Nome, Qtd, Custo e Vista
+                    var_c1, var_c2, var_c3, var_c4 = st.columns(4)
                     
-                    # Coluna do Código de Barras (com o valor lido da sessão)
-                    with var_c1:
-                        # Puxa o valor da sessão para ser exibido (ou o valor digitado)
-                        valor_cb_inicial = st.session_state.cb_grade_lidos.get(f"var_cb_{i}", "")
-                        var_codigo_barras = st.text_input(f"Código de barras variação {i+1}", value=valor_cb_inicial, key=f"var_cb_{i}")
-                    
-                    # Colunas de outros dados
-                    var_nome = var_c2.text_input(f"Nome da variação {i+1}", key=f"var_nome_{i}")
-                    var_qtd = var_c3.number_input(f"Quantidade variação {i+1}", min_value=0, step=1, value=0, key=f"var_qtd_{i}")
-                    var_preco_custo = var_c4.text_input(f"Preço de custo variação {i+1}", value="0,00", key=f"var_pc_{i}")
-
-                    # Linha separada para campos de preço e leitor
-                    var_c5, var_c6, var_c7, var_c8 = st.columns([1, 1, 1, 1])
-                    var_preco_vista = var_c5.text_input(f"Preço à vista variação {i+1}", value="0,00", key=f"var_pv_{i}")
+                    var_nome = var_c1.text_input(f"Nome da variação {i+1}", key=f"var_nome_{i}")
+                    var_qtd = var_c2.number_input(f"Quantidade variação {i+1}", min_value=0, step=1, value=0, key=f"var_qtd_{i}")
+                    var_preco_custo = var_c3.text_input(f"Preço de custo variação {i+1}", value="0,00", key=f"var_pc_{i}")
+                    var_preco_vista = var_c4.text_input(f"Preço à vista variação {i+1}", value="0,00", key=f"var_pv_{i}")
                     
                     # --- Leitura/Upload de Código de Barras para a Variação ---
-                    # Upload
-                    var_foto_upload = var_c6.file_uploader(
-                        "Upload da foto do CB", 
-                        type=["png", "jpg", "jpeg"], 
-                        key=f"var_cb_upload_{i}"
-                    )
-                    # Câmera
-                    var_foto_cam = var_c7.camera_input(
-                        "Escanear CB", 
-                        key=f"var_cb_cam_{i}"
-                    )
+                    # Colunas para Código de Barras (texto), Upload e Câmera
+                    var_cb_c1, var_cb_c2, var_cb_c3 = st.columns([2, 1, 1])
+
+                    # 1. Campo de texto do Código de Barras (puxa o valor lido da sessão)
+                    with var_cb_c1:
+                        valor_cb_inicial = st.session_state.cb_grade_lidos.get(f"var_cb_{i}", "")
+                        var_codigo_barras = st.text_input(
+                            f"Código de barras variação {i+1}", 
+                            value=valor_cb_inicial, 
+                            key=f"var_cb_{i}" # Chave principal para o CB da variação
+                        )
+                        # Nota: o campo acima é o que será salvo.
+                    
+                    # 2. Upload da foto
+                    with var_cb_c2:
+                        var_foto_upload = st.file_uploader(
+                            "Upload CB", 
+                            type=["png", "jpg", "jpeg"], 
+                            key=f"var_cb_upload_{i}"
+                        )
+                    
+                    # 3. Câmera
+                    with var_cb_c3:
+                        var_foto_cam = st.camera_input(
+                            "Escanear CB", 
+                            key=f"var_cb_cam_{i}"
+                        )
                     
                     # Logica de leitura do Código de Barras
                     foto_lida = var_foto_upload or var_foto_cam
                     if foto_lida:
-                        imagem_bytes = foto_lida.getvalue()
+                        # ⚠️ Se for ler o código, usa o buffer do objeto file_uploader/camera_input
+                        imagem_bytes = foto_lida.getvalue() 
                         codigos_lidos = ler_codigo_barras_api(imagem_bytes)
                         if codigos_lidos:
-                            # Armazena o código lido no estado da sessão com a chave específica da variação
+                            # Armazena o código lido no estado da sessão (será puxado pelo campo de texto acima)
                             st.session_state.cb_grade_lidos[f"var_cb_{i}"] = codigos_lidos[0]
                             st.success(f"CB Variação {i+1} lido: {codigos_lidos[0]}")
                             st.experimental_rerun()
                         else:
                             st.error(f"❌ Variação {i+1}: Não foi possível ler o código.")
 
-
+                    # Coleta os dados da variação para salvar
                     variações.append({
                         "Nome": var_nome.strip(),
                         "Quantidade": int(var_qtd),
                         "PrecoCusto": to_float(var_preco_custo),
                         "PrecoVista": to_float(var_preco_vista),
                         "PrecoCartao": round(to_float(var_preco_vista) / FATOR_CARTAO, 2) if to_float(var_preco_vista) > 0 else 0.0,
-                        # Usa o código digitado (ou o lido que está no campo de texto)
+                        # Usa o valor final do campo de texto (que pode ter sido preenchido pela leitura)
                         "CodigoBarras": var_codigo_barras.strip() 
                     })
 
             if st.button("💾 Salvar Produto", use_container_width=True, key="cad_salvar"):
                 novo_id = prox_id(produtos, "ID")
-                # ... (Restante da lógica de salvamento: Produto Simples / Produto Pai e Filhos)
                 
-                # ... (A lógica de salvamento original continua aqui) ...
-                
-                # O restante do seu código de salvamento deve ser colocado aqui.
-                # A lógica abaixo é baseada no seu código original e é mantida.
                 if tipo_produto == "Produto simples":
                     novo = {
                         "ID": novo_id,
@@ -1320,10 +1322,9 @@ if view == "Produtos":
                         produtos = pd.concat([produtos, pd.DataFrame([novo_filho])], ignore_index=True)
 
                 st.session_state["produtos"] = produtos
-                # Nota: A função 'save_csv_github' e as variáveis 'ARQ_PRODUTOS'
-                # precisam estar definidas no escopo global do seu script.
-                # st.session_state.cb_grade_lidos é limpo após o sucesso
-                del st.session_state.cb_grade_lidos 
+                # Limpa a sessão de códigos de barras lidos da grade
+                if 'cb_grade_lidos' in st.session_state:
+                    del st.session_state.cb_grade_lidos 
                 save_csv_github(produtos, ARQ_PRODUTOS, "Novo produto cadastrado")
                 st.success(f"✅ Produto '{nome}' cadastrado com sucesso!")
                 st.experimental_rerun()
