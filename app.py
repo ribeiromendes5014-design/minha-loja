@@ -1,11 +1,20 @@
-
 import streamlit as st
 import pandas as pd
 import os
 from datetime import date, datetime, timedelta
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, UnidentifiedImageError
 from io import BytesIO
 import requests  
+from github import Github
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, Image as RLImage
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+import pytz
+import requests
+from requests.exceptions import ConnectionError, RequestException
 
 
 # =====================================
@@ -1898,7 +1907,6 @@ def enviar_telegram(mensagem, thread_id=None):
     }
     if thread_id is not None:
         data["message_thread_id"] = thread_id
-
     try:
         r = requests.post(url, json=data)
         resp = r.json()
@@ -2294,55 +2302,55 @@ if view == "Vendas":
 
 
         # ================= TAB 3 - RECIBOS =================
-with tab3:
-    import os
-    from PIL import Image, UnidentifiedImageError
+        with tab3:
+            import os
+            from PIL import Image, UnidentifiedImageError
 
-    st.subheader("📄 Recibos de Vendas")
+            st.subheader("📄 Recibos de Vendas")
 
-    if not vendas.empty:
-        datas = sorted(vendas["Data"].unique())
-        data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
-        vendas_dia = vendas[vendas["Data"] == data_sel]
-        ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
-        id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
+            if not vendas.empty:
+                datas = sorted(vendas["Data"].unique())
+                data_sel = st.selectbox("Selecione a data da venda", datas, key="recibo_data")
+                vendas_dia = vendas[vendas["Data"] == data_sel]
+                ids_dia = sorted(vendas_dia["IDVenda"].unique().tolist())
+                id_sel = st.selectbox("Selecione o ID da venda", ids_dia, key="recibo_id")
 
-        if st.button("Gerar e Enviar Recibo (PDF)", key="btn_recibo"):
-            caminho_pdf = f"recibo_venda_{id_sel}.pdf"
-            gerar_pdf_venda(id_sel, vendas, caminho_pdf)
+                if st.button("Gerar e Enviar Recibo (PDF)", key="btn_recibo"):
+                    caminho_pdf = f"recibo_venda_{id_sel}.pdf"
+                    gerar_pdf_venda(id_sel, vendas, caminho_pdf)
 
-            # Envia o PDF para o Telegram no tópico de vendas (thread_id=2)
-            enviar_pdf_telegram(caminho_pdf, thread_id=2)
-            st.success(f"✅ Recibo da venda {id_sel} enviado para o bot de vendas!")
+                    # Envia o PDF para o Telegram no tópico de vendas (thread_id=2)
+                    enviar_pdf_telegram(caminho_pdf, thread_id=2)
+                    st.success(f"✅ Recibo da venda {id_sel} enviado para o bot de vendas!")
 
-            with open(caminho_pdf, "rb") as f:
-                st.download_button(
-                    label="⬇️ Baixar Recibo",
-                    data=f,
-                    file_name=caminho_pdf,
-                    mime="application/pdf",
-                    key="download_recibo"
-                )
+                    with open(caminho_pdf, "rb") as f:
+                        st.download_button(
+                            label="⬇️ Baixar Recibo",
+                            data=f,
+                            file_name=caminho_pdf,
+                            mime="application/pdf",
+                            key="download_recibo"
+                        )
 
-            logo_candidates = [
-                "logo_docebella.png",
-                "assets/logo_docebella.png",
-                "static/logo_docebella.png",
-                "images/logo_docebella.png",
-            ]
-            logo_path = next((p for p in logo_candidates if os.path.exists(p)), None)
+                    logo_candidates = [
+                        "logo_docebella.png",
+                        "assets/logo_docebella.png",
+                        "static/logo_docebella.png",
+                        "images/logo_docebella.png",
+                    ]
+                    logo_path = next((p for p in logo_candidates if os.path.exists(p)), None)
 
-            if logo_path:
-                try:
-                    img = Image.open(logo_path)
-                    st.image(img, width=200, caption="Doce Bella")
-                except (UnidentifiedImageError, OSError) as e:
-                    st.warning(f"⚠️ Não foi possível abrir a imagem do logo em '{logo_path}': {e}")
+                    if logo_path:
+                        try:
+                            img = Image.open(logo_path)
+                            st.image(img, width=200, caption="Doce Bella")
+                        except (UnidentifiedImageError, OSError) as e:
+                            st.warning(f"⚠️ Não foi possível abrir a imagem do logo em '{logo_path}': {e}")
+                    else:
+                        st.warning("⚠️ Arquivo 'logo_docebella.png' não foi encontrado. Coloque o arquivo na pasta do app ou em assets/static/images.")
+
             else:
-                st.warning("⚠️ Arquivo 'logo_docebella.png' não foi encontrado. Coloque o arquivo na pasta do app ou em assets/static/images.")
-
-    else:
-        st.info("Nenhuma venda para gerar recibo.")
+                st.info("Nenhuma venda para gerar recibo.")
 
 
 
@@ -2642,7 +2650,7 @@ elif view == "precificação":
     st.write("⚙️ Precificação em construção...")
 
 elif view == "Papelaria":
-    papelaria_aba()
+    st.write("papelaria aba")
 
 elif view == "Vendas":
     st.write("🛒 Vendas em construção...")
@@ -2652,6 +2660,3 @@ elif view == "Clientes":
 
 elif view == "Promoções":
     st.write("🏷️ Promoções em construção...")
-      
-
-
