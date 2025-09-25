@@ -1569,7 +1569,7 @@ if view == "Produtos":
                 if st.button("Cancelar edição", key=f"cancel_{eid}"):
                     del st.session_state["edit_prod"]
                     st.info("Edição cancelada.")
-                    st.experimental_rerun()
+                    st.rerun()
 
 
 
