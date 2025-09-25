@@ -323,58 +323,59 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 
 
 # =====================================
-# Leitura de Código de Barras (API ZXing)
+# Funções auxiliares (CORRIGIDO: API ZXing com tratamento de erros de conexão)
 # =====================================
-import requests
 
-# FUNÇÃO CORRIGIDA PARA RESOLVER HTTP 400
+import requests
+from requests.exceptions import ConnectionError, RequestException # Importa exceções de rede
+
 def ler_codigo_barras_api(image_bytes):
-    # API alternativa (WebQR) para contornar a falha do ZXing
-    URL_DECODER = "https://api.qrserver.com/v1/read-qr-code/"
+    # Endpoint original que você disse que funcionava
+    URL_DECODER_ZXING = "https://zxing.org/w/decode"
     
     try:
-        # CORREÇÃO: Define explicitamente o mimetype e nome de arquivo para o servidor WebQR
-        # 'requests' tentará ler o mimetype, mas forçamos 'image/jpeg' aqui, que é comum.
-        files = {"file": ("barcode.jpeg", image_bytes, "image/jpeg")} 
+        # Define o arquivo com o mimetype que a API ZXing espera
+        files = {"f": ("barcode.png", image_bytes, "image/png")}
         
-        response = requests.post(URL_DECODER, files=files, timeout=30) 
+        # Faz a requisição com um timeout de 30 segundos
+        response = requests.post(URL_DECODER_ZXING, files=files, timeout=30) 
 
         if response.status_code != 200:
-            try:
-                error_detail = response.json().get('error', response.text)
-                st.error(f"❌ Erro na API WebQR. Status HTTP: {response.status_code}. Detalhe: {error_detail}")
-            except:
-                st.error(f"❌ Erro na API WebQR. Status HTTP: {response.status_code}. O servidor não gostou do arquivo enviado.")
+            st.error(f"❌ Erro na API ZXing. Status HTTP: {response.status_code}")
             return []
 
-        # A resposta é JSON
-        data = response.json()
+        # Parse de HTML (lógica original)
+        text = response.text
         codigos = []
-        
-        # Navega na estrutura JSON da resposta
-        if data and isinstance(data, list) and data[0].get('symbol'):
-            for symbol in data[0]['symbol']:
-                if symbol['data'] is not None:
-                    codigos.append(symbol['data'])
-        
-        st.write("Debug API WebQR:", codigos)
+        if "<pre>" in text:
+            partes = text.split("<pre>")
+            for p in partes[1:]:
+                codigo = p.split("</pre>")[0].strip()
+                if codigo and not codigo.startswith("Erro na decodificação"):
+                    codigos.append(codigo)
+
+        st.write("Debug API ZXing:", codigos)
         
         if not codigos:
-             st.warning("⚠️ API WebQR não retornou nenhum código válido. Tente novamente ou use uma imagem mais clara.")
+             st.warning("⚠️ API ZXing não retornou nenhum código válido. Tente novamente ou use uma imagem mais clara.")
              
         return codigos
 
-    except requests.exceptions.ConnectionError as ce:
-        st.error(f"❌ Erro de Conexão: O servidor {URL_DECODER} recusou ou falhou na conexão. Detalhe: {ce}")
+    except ConnectionError as ce:
+        # CAPTURA O ERRO 'Connection refused'
+        st.error(f"❌ Erro de Conexão (Rede Bloqueada): O servidor {URL_DECODER_ZXING} recusou a conexão. O problema é na rede do seu host.")
         return []
         
-    except requests.exceptions.RequestException as e:
+    except RequestException as e:
+        # CAPTURA OUTROS ERROS (Timeout, etc.)
         st.error(f"❌ Erro de Requisição (Timeout/Outro): Falha ao completar a chamada à API. Detalhe: {e}")
         return []
     
     except Exception as e:
-        st.error(f"❌ Erro inesperado ao chamar API de leitura: {e}")
+        st.error(f"❌ Erro inesperado: {e}")
         return []
+
+# O resto do seu código permanece como está.
 
 
 
