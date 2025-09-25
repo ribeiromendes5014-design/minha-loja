@@ -12,24 +12,25 @@ import requests
 # Funções auxiliares
 # =====================================
 
-import requests # Certifique-se de que requests está importado no topo
+import requests
+from requests.exceptions import ConnectionError, RequestException # Importa exceções específicas
 
 def ler_codigo_barras_api(image_bytes):
-    # API alternativa: WebQR (mais estável que ZXing)
-    url_webqr = "https://api.qrserver.com/v1/read-qr-code/"
+    # API alternativa (WebQR) para contornar a falha do ZXing
+    # Se você mudar para uma API paga, pode configurar a URL e o TOKEN no st.secrets
+    URL_DECODER = "https://api.qrserver.com/v1/read-qr-code/"
     
     try:
-        # A API WebQR espera o arquivo no campo 'file' ou 'f'
         files = {"file": ("barcode.png", image_bytes, "image/png")} 
         
         # Usando um timeout de 30 segundos
-        response = requests.post(url_webqr, files=files, timeout=30) 
+        response = requests.post(URL_DECODER, files=files, timeout=30) 
 
         if response.status_code != 200:
             st.error(f"❌ Erro na API WebQR. Status HTTP: {response.status_code}")
             return []
 
-        # A resposta é JSON (mais fácil de parsear que HTML)
+        # A resposta é JSON
         data = response.json()
         codigos = []
         
@@ -46,12 +47,12 @@ def ler_codigo_barras_api(image_bytes):
              
         return codigos
 
-    except requests.exceptions.ConnectionError as ce:
-        st.error(f"❌ Erro de Conexão: O WebQR recusou ou falhou na conexão. O servidor pode estar fora do ar. Detalhe: {ce}")
+    except ConnectionError as ce:
+        st.error(f"❌ Erro de Conexão: O servidor {URL_DECODER} recusou ou falhou na conexão. O ambiente de hospedagem pode estar bloqueando a requisição.")
         return []
         
-    except requests.exceptions.RequestException as e:
-        st.error(f"❌ Erro de Requisição (Timeout/Outro): Falha ao completar a chamada à API WebQR. Detalhe: {e}")
+    except RequestException as e:
+        st.error(f"❌ Erro de Requisição (Timeout/Outro): Falha ao completar a chamada à API. Detalhe: {e}")
         return []
     
     except Exception as e:
