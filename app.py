@@ -220,26 +220,24 @@ def gerar_pdf_caixa(dados_caixa: dict, vendas_dia: pd.DataFrame, path: str):
     doc.build(story)
 
 
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.colors import HexColor
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.platypus import Image as RLImage  # <- renomeado para não conflitar com Pillow
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
-from reportlab.lib.units import mm
-from datetime import datetime
-import pandas as pd
-import os
-
 def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     """Gera um PDF estilo cupom com fundo amarelo claro"""
-    # 📐 Tamanho tipo recibo (80mm x 200mm)
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.colors import HexColor
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.platypus import Image as RLImage
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm
+    from datetime import datetime
+    import pandas as pd
+    import os
+
     page_size = (80*mm, 200*mm)
 
-    # Função para desenhar o fundo antes do conteúdo
     def draw_background(canvas, doc):
-        canvas.setFillColor(HexColor("#FFF9C4"))  # amarelo claro
+        canvas.setFillColor(HexColor("#FFF9C4"))
         canvas.rect(0, 0, page_size[0], page_size[1], fill=True, stroke=False)
 
     doc = SimpleDocTemplate(path, pagesize=page_size,
@@ -254,7 +252,6 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
 
     story = []
 
-    # --- Logo fixa ---
     try:
         story.append(RLImage("logo_docebella.png", width=55*mm, height=25*mm))
     except Exception:
@@ -265,7 +262,6 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     story.append(Paragraph("📷 @docebellacosmetico", styles["NormalCenter"]))
     story.append(Spacer(1, 10))
 
-    # --- Seleciona venda ---
     venda_sel = vendas[vendas["IDVenda"].astype(int) == int(venda_id)]
     if venda_sel.empty:
         story.append(Paragraph("Venda não encontrada.", styles["NormalCenter"]))
@@ -277,10 +273,9 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     story.append(Paragraph(f"<b>Forma de Pagamento:</b> {venda_info['FormaPagamento']}", styles["BoldLeft"]))
     story.append(Spacer(1, 10))
 
-    # --- Produtos ---
     tabela = [["Produto", "Qtd", "Preço Unit.", "Total"]]
     
-    # Adicionando um tratamento de dados para garantir que os valores sejam numéricos
+    # 📌 Agora a coluna PrecoUnitario existe, então apenas a convertemos.
     venda_sel["PrecoUnitario"] = pd.to_numeric(venda_sel["PrecoUnitario"], errors='coerce').fillna(0.0)
     venda_sel["Total"] = pd.to_numeric(venda_sel["Total"], errors='coerce').fillna(0.0)
 
@@ -302,7 +297,6 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     ]))
     story.append(t)
 
-    # --- Total ---
     valor_total = venda_sel["Total"].sum()
     story.append(Spacer(1, 6))
     story.append(Table(
@@ -318,12 +312,10 @@ def gerar_pdf_venda(venda_id: int, vendas: pd.DataFrame, path: str):
     ))
     story.append(Spacer(1, 10))
 
-    # --- Mensagem final ---
     story.append(Paragraph("Obrigado pela sua compra,<br/>volte sempre!", styles["NormalCenter"]))
     story.append(Spacer(1, 10))
     story.append(Paragraph(datetime.now().strftime("%d/%m/%Y %H:%M:%S"), styles["NormalCenter"]))
 
-    # gera PDF com fundo amarelo
     doc.build(story, onFirstPage=draw_background, onLaterPages=draw_background)
 
 
@@ -1784,9 +1776,13 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
     df_pedido["Cliente"] = nome_cliente if nome_cliente else ""
     df_pedido["DataPagamento"] = str(data_pagamento) if data_pagamento else ""
     df_pedido["ValorRecebido"] = valor_recebido
+    
+    # 📌 Adiciona o PrecoUnitario para que ele seja salvo corretamente
+    df_pedido["PrecoUnitario"] = df_pedido["PrecoComDesconto"]
+    df_pedido["Total"] = df_pedido["PrecoUnitario"].multiply(df_pedido["Quantidade"])
 
     # Usa PrecoComDesconto para calcular o total com promoção
-    total_pedido = df_pedido["PrecoComDesconto"].multiply(df_pedido["Quantidade"]).sum()
+    total_pedido = df_pedido["Total"].sum()
 
     if forma == "Misto" and forma1 and forma2:
         # Corrige valor1 e valor2 proporcionalmente para o total com desconto
@@ -1812,7 +1808,6 @@ def finalizar_venda(forma, forma1, forma2, valor1, valor2, promocoes,
         vendas = pd.concat([vendas, df_vendas_misto], ignore_index=True)
     else:
         df_pedido["FormaPagamento"] = forma
-        df_pedido["Total"] = total_pedido
         vendas = pd.concat([vendas, df_pedido], ignore_index=True)
 
     if forma == "Fiado" and nome_cliente:
