@@ -2294,7 +2294,6 @@ if view == "Vendas":
 
 
         # ================= TAB 3 - RECIBOS =================
-        # ================= TAB 3 - RECIBOS =================
 with tab3:
     import os
     from PIL import Image, UnidentifiedImageError
